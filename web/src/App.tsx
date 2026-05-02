@@ -77,12 +77,32 @@ export default function App() {
                       ? 'border border-[var(--accent-soft)] bg-[var(--accent-gradient)] text-[var(--ink)] shadow-[var(--shadow-card)]'
                       : 'border border-transparent text-[var(--muted)] hover:bg-[var(--glass-hover)] hover:text-[var(--ink)]'
                   }`}
-                  onClick={() => navigate(item)}
+                  onClick={() => { navigate(item); setShowStats(false) }}
                 >
                   {{ flashcards: 'Cards', speak: 'Speak', preferences: 'Preferences' }[item]}
                 </button>
               ))}
+              {mode === 'flashcards' && (
+                <button
+                  className={`w-full rounded-[1rem] px-4 py-3 text-left text-sm font-semibold transition duration-200 ${
+                    showStats
+                      ? 'border border-[var(--sky-soft)] bg-[var(--cool-gradient)] text-[var(--ink)] shadow-[var(--shadow-card)]'
+                      : 'border border-transparent text-[var(--muted)] hover:bg-[var(--glass-hover)] hover:text-[var(--ink)]'
+                  }`}
+                  onClick={() => setShowStats(!showStats)}
+                >
+                  {showStats ? 'Back to Cards' : 'Word Stats'}
+                </button>
+              )}
             </nav>
+
+            {mode === 'flashcards' && (
+              <div className="mt-auto space-y-1 rounded-[1rem] border border-[var(--line)] bg-[var(--glass-soft)] p-3 text-[0.7rem] text-[var(--muted)]">
+                <div className="font-bold uppercase tracking-[0.15em]">Keyboard</div>
+                <div className="flex justify-between"><span>← →</span><span>Choose answer</span></div>
+                <div className="flex justify-between"><span>Space / Enter</span><span>Replay word</span></div>
+              </div>
+            )}
           </aside>
 
           {/* Mobile header */}
