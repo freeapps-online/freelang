@@ -139,13 +139,33 @@ export function SpeakTab({
   }, [dragX, goNext, goPrev])
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowRight') goNext()
-      if (e.key === 'ArrowLeft') goPrev()
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.repeat) return
+      const tag = (e.target as HTMLElement)?.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+
+      if (e.key === 'ArrowRight' || e.key === 'ArrowLeft' || e.key === 'Enter') {
+        e.preventDefault()
+        goNext()
+      }
+      if (e.key === ' ') {
+        e.preventDefault()
+        startRecording()
+      }
     }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [goNext, goPrev])
+    const onKeyUp = (e: KeyboardEvent) => {
+      if (e.key === ' ') {
+        e.preventDefault()
+        stopRecording()
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    window.addEventListener('keyup', onKeyUp)
+    return () => {
+      window.removeEventListener('keydown', onKeyDown)
+      window.removeEventListener('keyup', onKeyUp)
+    }
+  }, [goNext, startRecording, stopRecording])
 
   useEffect(() => () => { speech.stopSpeaking(); speech.stopListening() }, [])
 
