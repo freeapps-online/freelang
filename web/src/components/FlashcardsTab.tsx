@@ -29,14 +29,15 @@ export function FlashcardsTab({
 
   const display = getCardDisplay(round.card, nativeLang)
 
-  const [lastCorrectAnswer, setLastCorrectAnswer] = useState('')
+  const [lastFeedback, setLastFeedback] = useState<{ nativeWord: string; correctAnswer: string } | null>(null)
+  const feedbackTimer = useRef<number>(0)
 
   const handleAnswer = useCallback((side: 'left' | 'right') => {
     if (transitioning) return
     const correct = side === round.correctSide
     const correctAnswer = round.correctSide === 'left' ? round.leftOption : round.rightOption
     setResult(correct ? 'correct' : 'wrong')
-    setLastCorrectAnswer(correctAnswer)
+    setLastFeedback({ nativeWord: display.text, correctAnswer })
     setScores((prev) => recordAnswer(prev, correct))
     setTransitioning(true)
     setDragX(side === 'left' ? -420 : 420)
@@ -47,11 +48,12 @@ export function FlashcardsTab({
       setTransitioning(false)
     }, 400)
 
-    // Keep the result visible longer
-    window.setTimeout(() => {
+    window.clearTimeout(feedbackTimer.current)
+    feedbackTimer.current = window.setTimeout(() => {
       setResult(null)
-    }, 2000)
-  }, [round, nativeLang, targetLang, transitioning])
+      setLastFeedback(null)
+    }, 3500)
+  }, [round, nativeLang, targetLang, transitioning, display.text])
 
 
   useEffect(() => {
@@ -145,11 +147,11 @@ export function FlashcardsTab({
           <div className="flex items-center justify-between gap-3">
             <div className="rounded-[1.2rem] border border-[var(--line)] bg-[var(--glass)] px-4 py-3 text-center">
               <div className="font-semibold text-[var(--ink)]" style={{ fontSize: 'calc(0.875rem * var(--content-scale))' }}>← {round.leftOption}</div>
-              {round.leftTranslit && <div className="mt-1 text-xs italic text-[var(--muted)]">{round.leftTranslit}</div>}
+              {round.leftTranslit && <div className="mt-1 italic text-[var(--muted)]" style={{ fontSize: 'calc(0.875rem * var(--content-scale))' }}>{round.leftTranslit}</div>}
             </div>
             <div className="rounded-[1.2rem] border border-[var(--line)] bg-[var(--glass)] px-4 py-3 text-center">
               <div className="font-semibold text-[var(--ink)]" style={{ fontSize: 'calc(0.875rem * var(--content-scale))' }}>{round.rightOption} →</div>
-              {round.rightTranslit && <div className="mt-1 text-xs italic text-[var(--muted)]">{round.rightTranslit}</div>}
+              {round.rightTranslit && <div className="mt-1 italic text-[var(--muted)]" style={{ fontSize: 'calc(0.875rem * var(--content-scale))' }}>{round.rightTranslit}</div>}
             </div>
           </div>
 
@@ -187,9 +189,9 @@ export function FlashcardsTab({
           </div>
 
           <div className="min-h-7 text-center font-semibold" style={{ fontSize: 'calc(0.875rem * var(--content-scale))' }}>
-            {result && (
+            {result && lastFeedback && (
               <span style={{ color: result === 'correct' ? 'var(--success)' : 'var(--error)' }}>
-                {result === 'correct' ? 'Correct!' : `Wrong — it was "${lastCorrectAnswer}"`}
+                {lastFeedback.nativeWord} = {lastFeedback.correctAnswer}
               </span>
             )}
           </div>
