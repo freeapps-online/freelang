@@ -66,7 +66,7 @@ export default function App() {
         <div className="absolute bottom-[-10%] left-[10%] h-80 w-80 rounded-full bg-[var(--mint-soft)]/25 blur-3xl lg:left-[45%] lg:h-[26rem] lg:w-[26rem]" />
       </div>
 
-      <div className={`relative mx-auto max-w-[1540px] px-3 pt-3 sm:px-4 lg:px-8 lg:py-8 ${mode === 'flashcards' ? 'flex min-h-[100dvh] flex-col pb-24' : 'min-h-[100dvh] pb-24'}`}>
+      <div className={`relative mx-auto max-w-[1540px] px-3 pt-2 sm:px-4 lg:px-8 lg:py-8 ${mode === 'flashcards' ? 'flex min-h-[100dvh] flex-col pb-20' : 'min-h-[100dvh] pb-20'}`}>
         <div className={`${mode === 'flashcards' ? 'flex flex-1 flex-col lg:grid lg:grid-cols-[17rem_minmax(0,1fr)] lg:gap-7' : 'lg:grid lg:grid-cols-[17rem_minmax(0,1fr)] lg:gap-7'}`}>
           {/* Desktop sidebar */}
           <aside className="hidden lg:flex lg:min-h-[calc(100dvh-4rem)] lg:flex-col lg:gap-5 lg:rounded-[2rem] lg:border lg:border-[var(--line)] lg:bg-[var(--glass-strong)] lg:p-6 lg:shadow-[var(--shadow-soft)] lg:backdrop-blur-xl">
@@ -102,11 +102,8 @@ export default function App() {
           </aside>
 
           {/* Mobile header */}
-          <header className="mb-3 flex items-center justify-between gap-3 lg:hidden">
-            <div className="flex items-center gap-2">
-              <img src="/logo.svg" alt="" className="h-5 w-5 rounded-[0.35rem]" />
-              <span className="text-sm font-semibold text-[var(--ink)]">{MODE_LABELS[mode]}</span>
-            </div>
+          <header className="mb-2 flex items-center justify-between gap-3 lg:hidden">
+            <span className="text-sm font-semibold text-[var(--ink)]">{MODE_LABELS[mode]}</span>
             <div className="flex items-center gap-2">
               {mode === 'flashcards' && (
                 <button
@@ -133,8 +130,8 @@ export default function App() {
 
           {/* Content */}
           <main className={`min-w-0 ${mode === 'flashcards' ? 'flex flex-1 flex-col lg:block' : ''}`}>
-            <section className={`rounded-[1.75rem] border border-[var(--line)] bg-[var(--panel)] shadow-[var(--shadow-soft)] backdrop-blur-xl lg:rounded-[2rem] ${mode === 'flashcards' ? 'flex flex-1 flex-col p-2 sm:p-4 lg:p-5' : 'p-3 sm:p-4 lg:p-5'}`}>
-              <div className={`rounded-[1.35rem] bg-[var(--panel-quiet)] lg:rounded-[1.6rem] ${mode === 'flashcards' ? 'flex flex-1 flex-col p-2 sm:p-4 lg:p-5' : 'min-h-[34rem] p-3 sm:min-h-[36rem] sm:p-4 lg:min-h-0 lg:p-5'}`}>
+            <section className={`rounded-[1.25rem] bg-[var(--panel-quiet)] backdrop-blur-xl lg:rounded-[2rem] lg:border lg:border-[var(--line)] lg:bg-[var(--panel)] lg:p-5 lg:shadow-[var(--shadow-soft)] ${mode === 'flashcards' ? 'flex flex-1 flex-col p-2 sm:p-3' : 'p-3 sm:p-4'}`}>
+              <div className={`lg:rounded-[1.6rem] lg:bg-[var(--panel-quiet)] lg:p-5 ${mode === 'flashcards' ? 'flex flex-1 flex-col' : 'min-h-[34rem] sm:min-h-[36rem] lg:min-h-0'}`}>
                 {mode === 'practice' && <PracticeTab nativeLang={settings.nativeLang} targetLang={settings.targetLang} />}
                 {mode === 'flashcards' && (
                   <FlashcardsTab
@@ -155,8 +152,8 @@ export default function App() {
       </div>
 
       {/* Mobile dock */}
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--line)] bg-[var(--dock)]/92 px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-3 backdrop-blur-2xl lg:hidden">
-        <div className="mx-auto grid max-w-xl grid-cols-5 gap-2 rounded-[1.4rem] border border-[var(--line-strong)] bg-[var(--glass)] p-1.5 shadow-[var(--shadow-soft)]">
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--line)] bg-[var(--dock)]/92 px-4 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] pt-2 backdrop-blur-2xl lg:hidden">
+        <div className="mx-auto grid max-w-xl grid-cols-5 gap-1">
           <TabButton icon="practice" label="Practice" active={mode === 'practice'} onClick={() => navigate('practice')} />
           <TabButton icon="flashcards" label="Cards" active={mode === 'flashcards'} onClick={() => navigate('flashcards')} />
           <TabButton icon="translate" label="Translate" active={mode === 'translate'} onClick={() => navigate('translate')} />
