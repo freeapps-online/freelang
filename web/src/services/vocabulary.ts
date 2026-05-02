@@ -60,11 +60,14 @@ export function getFlashCardRound(nativeLang: string, _targetLang: string, words
   }
 }
 
+import { getTranslit } from './translit.ts'
+
 export function getCardDisplay(card: FlashCard, targetLang: string): { text: string; emoji: string; translit?: string } {
+  const text = card.translations[targetLang] ?? card.word
   return {
-    text: card.translations[targetLang] ?? card.word,
+    text,
     emoji: card.emoji,
-    translit: card.transliterations?.[targetLang],
+    translit: card.transliterations?.[targetLang] ?? getTranslit(text, targetLang) ?? undefined,
   }
 }
 

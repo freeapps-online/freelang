@@ -130,21 +130,12 @@ export function FlashcardsTab({
   const pct = scores.total > 0 ? Math.round((scores.correct / scores.total) * 100) : 0
 
   return (
-    <div className="h-[calc(100dvh-5.5rem)] lg:h-auto lg:grid lg:grid-cols-[17rem_minmax(0,1fr)] lg:gap-4">
-      <aside className="hidden rounded-[1.5rem] border border-[var(--line)] bg-[var(--glass-strong)] p-4 shadow-[var(--shadow-card)] lg:block lg:order-1">
-        <div className="text-[0.72rem] font-bold uppercase tracking-[0.22em] text-[var(--muted)]">Deck pace</div>
-        <div className="mt-3 grid gap-3">
-          <MetricCard label="Accuracy" value={`${pct}%`} detail={`${scores.correct}/${scores.total} correct`} />
-          <MetricCard label="Current streak" value={`${scores.streak}`} detail="Keep the run alive" />
-          <MetricCard label="Best streak" value={`${scores.bestStreak}`} detail="Your strongest session" />
-        </div>
-      </aside>
-
+    <div className="flex h-[calc(100dvh-5.5rem)] flex-col lg:h-auto">
       <section
-        className="flex h-full flex-col p-2 sm:p-4 lg:order-2 lg:rounded-[1.5rem] lg:border lg:border-[var(--line)] lg:shadow-[var(--shadow-card)]"
+        className="flex flex-1 flex-col p-2 sm:p-3 lg:p-4"
         style={{ background: 'var(--warm-gradient)' }}
       >
-        <div className="flex h-full flex-col gap-2 sm:gap-3">
+        <div className="flex h-full flex-col gap-2">
           {showStats ? (
             <WordStatsPanel words={words} wordStats={wordStats} targetLang={targetLang} nativeLang={nativeLang} />
           ) : (<>
@@ -204,6 +195,26 @@ export function FlashcardsTab({
           </>)}
         </div>
       </section>
+
+      {/* Desktop: always-visible stats bar */}
+      {!showStats && (
+        <div className="hidden border-t border-[var(--line)] bg-[var(--glass)] px-4 py-2 lg:flex lg:items-center lg:gap-6">
+          <span className="text-xs font-semibold text-[var(--muted)]">
+            Accuracy: <span className="text-[var(--ink)]">{pct}%</span> ({scores.correct}/{scores.total})
+          </span>
+          <span className="text-xs font-semibold text-[var(--muted)]">
+            Streak: <span className="text-[var(--ink)]">{scores.streak}</span>
+          </span>
+          <span className="text-xs font-semibold text-[var(--muted)]">
+            Best: <span className="text-[var(--ink)]">{scores.bestStreak}</span>
+          </span>
+          {result && lastFeedback && (
+            <span className="ml-auto text-sm font-semibold" style={{ color: result === 'correct' ? 'var(--success)' : 'var(--error)' }}>
+              {lastFeedback.nativeWord} = {lastFeedback.correctAnswer}
+            </span>
+          )}
+        </div>
+      )}
     </div>
   )
 }
@@ -362,12 +373,3 @@ function MiniStat({ label, value, color, detail }: { label: string; value: strin
   )
 }
 
-function MetricCard({ label, value, detail }: { label: string; value: string; detail: string }) {
-  return (
-    <div className="rounded-[1.2rem] border border-[var(--line)] bg-[var(--panel-quiet)] p-4">
-      <div className="text-[0.68rem] font-bold uppercase tracking-[0.18em] text-[var(--muted)]">{label}</div>
-      <div className="mt-2 text-2xl font-extrabold text-[var(--ink)]">{value}</div>
-      <div className="mt-1 text-sm text-[var(--muted)]">{detail}</div>
-    </div>
-  )
-}

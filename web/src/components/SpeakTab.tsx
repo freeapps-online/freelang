@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 import { speech } from '../services/speech.ts'
 import { useSpeech } from '../hooks.ts'
 import { reportSentenceScore } from '../services/cloud.ts'
+import { getTranslit } from '../services/translit.ts'
 import type { Sentence } from '../types.ts'
 
 const sentenceModules: Record<number, () => Promise<{ default: Sentence[] }>> = {
@@ -203,6 +204,9 @@ export function SpeakTab({ nativeLang, targetLang, level: rawLevel, showStats: s
         >
           <div className="drop-shadow-sm" style={{ fontSize: 'calc(3rem * var(--content-scale))' }}>{sentence.emoji}</div>
           <button className="display-font leading-snug text-[var(--ink)]" style={{ fontSize: 'calc(1.5rem * var(--content-scale))' }} onClick={playAudio}>{targetText}</button>
+          {getTranslit(targetText, targetLang) && (
+            <div className="italic text-[var(--muted)]" style={{ fontSize: 'calc(1rem * var(--content-scale))' }}>{getTranslit(targetText, targetLang)}</div>
+          )}
           <div className="text-sm text-[var(--muted)]">{nativeText}</div>
 
           {/* Live transcription */}
