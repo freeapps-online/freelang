@@ -4,13 +4,19 @@ export interface Language {
   flag: string
 }
 
-export type Mode = 'practice' | 'flashcards' | 'translate' | 'conversation' | 'preferences'
+export type Mode = 'practice' | 'flashcards' | 'speak' | 'translate' | 'conversation' | 'preferences'
 
 export interface FlashCard {
   word: string
   emoji: string
   translations: Record<string, string>
   transliterations?: Record<string, string>
+}
+
+export interface Sentence {
+  id: string
+  emoji: string
+  text: Record<string, string>
 }
 
 export interface FlashCardRound {

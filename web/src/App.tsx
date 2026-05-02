@@ -3,16 +3,18 @@ import { useApplySettings, useSettings } from './hooks.ts'
 import { PracticeTab } from './components/PracticeTab.tsx'
 import { FlashcardsTab } from './components/FlashcardsTab.tsx'
 import { TranslateTab } from './components/TranslateTab.tsx'
+import { SpeakTab } from './components/SpeakTab.tsx'
 import { ConversationTab } from './components/ConversationTab.tsx'
 import { PreferencesTab } from './components/PreferencesTab.tsx'
 import { LanguagePicker } from './components/LanguagePicker.tsx'
 import { LANGUAGES, type Mode } from './types.ts'
 
-const MODES: Mode[] = ['practice', 'flashcards', 'translate', 'conversation', 'preferences']
+const MODES: Mode[] = ['practice', 'flashcards', 'speak', 'translate', 'conversation', 'preferences']
 
 const MODE_LABELS: Record<Mode, string> = {
   practice: 'Practice',
   flashcards: 'Cards',
+  speak: 'Speak',
   translate: 'Translate',
   conversation: 'Conversation',
   preferences: 'Preferences',
@@ -22,6 +24,7 @@ const PATH_TO_MODE: Record<string, Mode> = {
   '/': 'practice',
   '/practice': 'practice',
   '/cards': 'flashcards',
+  '/speak': 'speak',
   '/translate': 'translate',
   '/conversation': 'conversation',
   '/preferences': 'preferences',
@@ -30,6 +33,7 @@ const PATH_TO_MODE: Record<string, Mode> = {
 const MODE_TO_PATH: Record<Mode, string> = {
   practice: '/',
   flashcards: '/cards',
+  speak: '/speak',
   translate: '/translate',
   conversation: '/conversation',
   preferences: '/preferences',
@@ -66,8 +70,8 @@ export default function App() {
         <div className="absolute bottom-[-10%] left-[10%] h-80 w-80 rounded-full bg-[var(--mint-soft)]/25 blur-3xl lg:left-[45%] lg:h-[26rem] lg:w-[26rem]" />
       </div>
 
-      <div className={`relative mx-auto max-w-[1540px] px-2 pt-2 sm:px-4 lg:px-8 lg:py-8 ${mode === 'flashcards' ? 'flex min-h-[100dvh] flex-col pb-16' : 'min-h-[100dvh] pb-16'}`}>
-        <div className={`${mode === 'flashcards' ? 'flex flex-1 flex-col lg:grid lg:grid-cols-[17rem_minmax(0,1fr)] lg:gap-7' : 'lg:grid lg:grid-cols-[17rem_minmax(0,1fr)] lg:gap-7'}`}>
+      <div className={`relative mx-auto max-w-[1540px] px-2 pt-2 sm:px-4 lg:px-8 lg:py-8 ${(mode === 'flashcards' || mode === 'speak') ? 'flex min-h-[100dvh] flex-col pb-16' : 'min-h-[100dvh] pb-16'}`}>
+        <div className={`${(mode === 'flashcards' || mode === 'speak') ? 'flex flex-1 flex-col lg:grid lg:grid-cols-[17rem_minmax(0,1fr)] lg:gap-7' : 'lg:grid lg:grid-cols-[17rem_minmax(0,1fr)] lg:gap-7'}`}>
           {/* Desktop sidebar */}
           <aside className="hidden lg:flex lg:min-h-[calc(100dvh-4rem)] lg:flex-col lg:gap-5 lg:rounded-[2rem] lg:border lg:border-[var(--line)] lg:bg-[var(--glass-strong)] lg:p-6 lg:shadow-[var(--shadow-soft)] lg:backdrop-blur-xl">
             <div className="inline-flex items-center gap-2 rounded-full border border-[var(--line-strong)] bg-[var(--glass)] px-3 py-1 text-[0.65rem] font-bold uppercase tracking-[0.22em] text-[var(--accent-deep)]">
@@ -128,9 +132,9 @@ export default function App() {
           </header>
 
           {/* Content */}
-          <main className={`min-w-0 ${mode === 'flashcards' ? 'flex flex-1 flex-col lg:block' : ''}`}>
-            <section className={`rounded-[1.25rem] bg-[var(--panel-quiet)] backdrop-blur-xl lg:rounded-[2rem] lg:border lg:border-[var(--line)] lg:bg-[var(--panel)] lg:p-5 lg:shadow-[var(--shadow-soft)] ${mode === 'flashcards' ? 'flex flex-1 flex-col p-2 sm:p-3' : 'p-3 sm:p-4'}`}>
-              <div className={`lg:rounded-[1.6rem] lg:bg-[var(--panel-quiet)] lg:p-5 ${mode === 'flashcards' ? 'flex flex-1 flex-col' : 'min-h-[34rem] sm:min-h-[36rem] lg:min-h-0'}`}>
+          <main className={`min-w-0 ${(mode === 'flashcards' || mode === 'speak') ? 'flex flex-1 flex-col lg:block' : ''}`}>
+            <section className={`rounded-[1.25rem] bg-[var(--panel-quiet)] backdrop-blur-xl lg:rounded-[2rem] lg:border lg:border-[var(--line)] lg:bg-[var(--panel)] lg:p-5 lg:shadow-[var(--shadow-soft)] ${(mode === 'flashcards' || mode === 'speak') ? 'flex flex-1 flex-col p-2 sm:p-3' : 'p-3 sm:p-4'}`}>
+              <div className={`lg:rounded-[1.6rem] lg:bg-[var(--panel-quiet)] lg:p-5 ${(mode === 'flashcards' || mode === 'speak') ? 'flex flex-1 flex-col' : 'min-h-[34rem] sm:min-h-[36rem] lg:min-h-0'}`}>
                 {mode === 'practice' && <PracticeTab nativeLang={settings.nativeLang} targetLang={settings.targetLang} />}
                 {mode === 'flashcards' && (
                   <FlashcardsTab
@@ -141,6 +145,7 @@ export default function App() {
                     onLevelChange={(cardLevel) => update({ cardLevel })}
                   />
                 )}
+                {mode === 'speak' && <SpeakTab nativeLang={settings.nativeLang} targetLang={settings.targetLang} />}
                 {mode === 'translate' && <TranslateTab nativeLang={settings.nativeLang} targetLang={settings.targetLang} />}
                 {mode === 'conversation' && <ConversationTab targetLang={settings.targetLang} />}
                 {mode === 'preferences' && <PreferencesTab settings={settings} update={update} />}
@@ -152,9 +157,10 @@ export default function App() {
 
       {/* Mobile dock */}
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--line)] bg-[var(--dock)]/92 px-2 pb-[calc(env(safe-area-inset-bottom)+0.25rem)] pt-1 backdrop-blur-2xl lg:hidden">
-        <div className="mx-auto grid max-w-xl grid-cols-5">
+        <div className="mx-auto grid max-w-xl grid-cols-6">
           <TabButton icon="practice" label="Practice" active={mode === 'practice'} onClick={() => navigate('practice')} />
           <TabButton icon="flashcards" label="Cards" active={mode === 'flashcards'} onClick={() => navigate('flashcards')} />
+          <TabButton icon="speak" label="Speak" active={mode === 'speak'} onClick={() => navigate('speak')} />
           <TabButton icon="translate" label="Translate" active={mode === 'translate'} onClick={() => navigate('translate')} />
           <TabButton icon="conversation" label="Talk" active={mode === 'conversation'} onClick={() => navigate('conversation')} />
           <TabButton icon="preferences" label="Prefs" active={mode === 'preferences'} onClick={() => navigate('preferences')} />
@@ -193,6 +199,12 @@ function TabIcon({ name }: { name: string }) {
         <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.7}>
           <rect x="5" y="4" width="14" height="8" rx="1.5" strokeLinecap="round" strokeLinejoin="round" />
           <rect x="7" y="12" width="14" height="8" rx="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.5" />
+        </svg>
+      )
+    case 'speak':
+      return (
+        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.7}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a6 6 0 0 0 6-6v-1.5m-6 7.5a6 6 0 0 1-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 0 1-3-3V4.5a3 3 0 1 1 6 0v8.25a3 3 0 0 1-3 3Z" />
         </svg>
       )
     case 'translate':
