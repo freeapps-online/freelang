@@ -123,37 +123,29 @@ export function FlashcardsTab({
         style={{ background: 'var(--warm-gradient)' }}
       >
         <div className="flex h-full flex-col gap-5">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <div className="text-[0.72rem] font-bold uppercase tracking-[0.22em] text-[var(--accent-deep)]">Recall drill</div>
-              <h3 className="display-font mt-2 text-3xl leading-none text-[var(--ink)]">Listen, look, then choose fast.</h3>
-            </div>
-            <div className="flex flex-wrap gap-2 sm:justify-end">
-              <div className="rounded-full border border-[var(--line)] bg-[var(--glass)] px-4 py-2 text-sm font-semibold text-[var(--muted)]">
-                Swipe or use ← →
-              </div>
-              <button
-                className="rounded-full border border-[var(--line)] bg-[var(--glass)] px-4 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--glass-hover)]"
-                onClick={onToggleAudio}
-              >
-                {audioEnabled ? 'Mute' : 'Unmute'}
-              </button>
+          <div className="flex items-center justify-end gap-2">
+            <button
+              className="rounded-full border border-[var(--line)] bg-[var(--glass)] px-4 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--glass-hover)]"
+              onClick={onToggleAudio}
+            >
+              {audioEnabled ? 'Mute' : 'Unmute'}
+            </button>
+            {audioEnabled && (
               <button
                 className="rounded-full border border-[var(--line)] bg-[var(--glass)] px-4 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--glass-hover)]"
                 onClick={replayCardAudio}
-                disabled={!audioEnabled || sp.isSpeaking}
+                disabled={sp.isSpeaking}
               >
-                Replay sound
+                Replay
               </button>
-            </div>
+            )}
           </div>
 
-          <div className="grid gap-4 lg:grid-cols-[1fr_auto_1fr] lg:items-center">
-            <div className="rounded-[1.2rem] border border-[var(--line)] bg-[var(--glass)] px-4 py-3 text-center text-sm font-semibold text-[var(--muted)]">
+          <div className="flex items-center justify-between gap-3">
+            <div className="rounded-[1.2rem] border border-[var(--line)] bg-[var(--glass)] px-4 py-3 text-sm font-semibold text-[var(--muted)]">
               ← {round.leftOption}
             </div>
-            <div className="hidden h-px w-12 bg-[var(--line-strong)] lg:block" />
-            <div className="rounded-[1.2rem] border border-[var(--line)] bg-[var(--glass)] px-4 py-3 text-center text-sm font-semibold text-[var(--muted)]">
+            <div className="rounded-[1.2rem] border border-[var(--line)] bg-[var(--glass)] px-4 py-3 text-sm font-semibold text-[var(--muted)]">
               {round.rightOption} →
             </div>
           </div>
@@ -192,9 +184,6 @@ export function FlashcardsTab({
 
               <div className="text-7xl drop-shadow-sm">{display.emoji}</div>
               <div className="display-font text-4xl leading-none text-[var(--ink)]">{display.text}</div>
-              <div className="max-w-xs text-sm leading-6 text-[var(--muted)]">
-                Treat it like simple dictation: hear the word immediately, then answer from instinct.
-              </div>
             </div>
           </div>
 
@@ -206,22 +195,6 @@ export function FlashcardsTab({
             )}
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <button
-              className="rounded-[1.1rem] border border-[var(--line)] bg-[var(--glass)] px-5 py-3 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--glass-hover)]"
-              onClick={() => handleAnswer('left')}
-              disabled={transitioning}
-            >
-              Choose {round.leftOption}
-            </button>
-            <button
-              className="rounded-[1.1rem] border border-[var(--line)] bg-[var(--ink)] px-5 py-3 text-sm font-semibold text-[var(--paper)] hover:-translate-y-0.5"
-              onClick={() => handleAnswer('right')}
-              disabled={transitioning}
-            >
-              Choose {round.rightOption}
-            </button>
-          </div>
         </div>
       </section>
     </div>
