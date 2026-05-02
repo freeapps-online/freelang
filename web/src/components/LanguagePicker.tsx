@@ -5,31 +5,45 @@ export function LanguagePicker({
   value,
   onChange,
   label,
+  compact,
 }: {
   value: string
   onChange: (code: string) => void
   label: string
+  compact?: boolean
 }) {
   const [open, setOpen] = useState(false)
   const current = LANGUAGES.find((lang) => lang.code === value)
 
   return (
     <div className="relative">
-      <button
-        className="flex w-full items-center justify-between gap-3 rounded-[1.25rem] border border-[var(--line)] bg-[var(--glass)] px-4 py-3 text-left shadow-[var(--shadow-card)] hover:border-[var(--line-strong)] hover:bg-[var(--glass-hover)]"
-        onClick={() => setOpen(!open)}
-      >
-        <div className="min-w-0">
-          <div className="text-[0.68rem] font-bold uppercase tracking-[0.18em] text-[var(--muted)]">{label}</div>
-          <div className="mt-1 flex items-center gap-2 text-sm font-semibold text-[var(--ink)]">
-            <span className="text-base">{current?.flag}</span>
-            <span className="truncate">{current?.name}</span>
+      {compact ? (
+        <button
+          className="flex items-center gap-1 rounded-full border border-[var(--line)] bg-[var(--glass)] px-2 py-1.5 hover:bg-[var(--glass-hover)]"
+          onClick={() => setOpen(!open)}
+        >
+          <span className="text-lg">{current?.flag}</span>
+          <svg className={`h-3 w-3 text-[var(--muted)] transition-transform ${open ? 'rotate-180' : ''}`} fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+          </svg>
+        </button>
+      ) : (
+        <button
+          className="flex w-full items-center justify-between gap-3 rounded-[1.25rem] border border-[var(--line)] bg-[var(--glass)] px-4 py-3 text-left shadow-[var(--shadow-card)] hover:border-[var(--line-strong)] hover:bg-[var(--glass-hover)]"
+          onClick={() => setOpen(!open)}
+        >
+          <div className="min-w-0">
+            <div className="text-[0.68rem] font-bold uppercase tracking-[0.18em] text-[var(--muted)]">{label}</div>
+            <div className="mt-1 flex items-center gap-2 text-sm font-semibold text-[var(--ink)]">
+              <span className="text-base">{current?.flag}</span>
+              <span className="truncate">{current?.name}</span>
+            </div>
           </div>
-        </div>
-        <svg className={`h-4 w-4 shrink-0 text-[var(--muted)] transition-transform ${open ? 'rotate-180' : ''}`} fill="currentColor" viewBox="0 0 20 20">
-          <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-        </svg>
-      </button>
+          <svg className={`h-4 w-4 shrink-0 text-[var(--muted)] transition-transform ${open ? 'rotate-180' : ''}`} fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+          </svg>
+        </button>
+      )}
 
       {open && (
         <>

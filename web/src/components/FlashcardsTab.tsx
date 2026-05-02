@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { getFlashCardRound, getCardDisplay, loadLevel, getLoadedWords, LEVELS } from '../services/vocabulary.ts'
+import { getFlashCardRound, getCardDisplay, loadLevel, getLoadedWords } from '../services/vocabulary.ts'
 import { loadScores, recordAnswer, loadWordStats, recordWordAnswer, pickWeightedCard, type WordStatsMap } from '../services/scores.ts'
 import { speech } from '../services/speech.ts'
 import { useSpeech } from '../hooks.ts'
@@ -12,13 +12,11 @@ export function FlashcardsTab({
   targetLang,
   audioEnabled,
   level,
-  onLevelChange,
 }: {
   nativeLang: string
   targetLang: string
   audioEnabled: boolean
   level: number
-  onLevelChange: (level: number) => void
 }) {
   useSpeech()
   const [words, setWords] = useState<FlashCard[]>(getLoadedWords(level))
@@ -141,32 +139,17 @@ export function FlashcardsTab({
         style={{ background: 'var(--warm-gradient)' }}
       >
         <div className="flex min-h-0 flex-1 flex-col gap-2 sm:gap-3">
-          {/* Level selector + stats toggle */}
-          <div className="flex items-center gap-1">
-            <div className="flex flex-1 items-center gap-1 overflow-x-auto">
-              {LEVELS.map((l) => (
-                <button
-                  key={l}
-                  className={`shrink-0 rounded-full px-2.5 py-1 text-[0.65rem] font-semibold transition ${
-                    l === level
-                      ? 'bg-[var(--accent)] text-[var(--paper)]'
-                      : 'text-[var(--muted)] hover:text-[var(--ink)]'
-                  }`}
-                  onClick={() => { onLevelChange(l); setShowStats(false) }}
-                >
-                  {l}
-                </button>
-              ))}
-            </div>
+          {/* Stats toggle */}
+          <div className="flex justify-end">
             <button
               className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition ${
                 showStats
                   ? 'bg-[var(--sky)] text-[var(--paper)]'
-                  : 'border border-[var(--line)] bg-[var(--glass)] text-[var(--muted)]'
+                  : 'text-[var(--muted)]'
               }`}
               onClick={() => setShowStats(!showStats)}
             >
-              Stats
+              {showStats ? 'Play' : 'Stats'}
             </button>
           </div>
 

@@ -1,52 +1,36 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useApplySettings, useSettings } from './hooks.ts'
-import { PracticeTab } from './components/PracticeTab.tsx'
 import { FlashcardsTab } from './components/FlashcardsTab.tsx'
-import { TranslateTab } from './components/TranslateTab.tsx'
 import { SpeakTab } from './components/SpeakTab.tsx'
-import { ConversationTab } from './components/ConversationTab.tsx'
 import { PreferencesTab } from './components/PreferencesTab.tsx'
 import { LanguagePicker } from './components/LanguagePicker.tsx'
-import { LANGUAGES, type Mode } from './types.ts'
+import { LEVEL_LABELS, LEVELS } from './services/vocabulary.ts'
+import type { Mode } from './types.ts'
 
-const MODES: Mode[] = ['practice', 'flashcards', 'speak', 'translate', 'conversation', 'preferences']
-
-const MODE_LABELS: Record<Mode, string> = {
-  practice: 'Practice',
-  flashcards: 'Cards',
-  speak: 'Speak',
-  translate: 'Translate',
-  conversation: 'Conversation',
-  preferences: 'Preferences',
-}
+const MODES: Mode[] = ['flashcards', 'speak', 'preferences']
 
 const PATH_TO_MODE: Record<string, Mode> = {
-  '/': 'practice',
-  '/practice': 'practice',
+  '/': 'flashcards',
   '/cards': 'flashcards',
   '/speak': 'speak',
-  '/translate': 'translate',
-  '/conversation': 'conversation',
   '/preferences': 'preferences',
 }
 
 const MODE_TO_PATH: Record<Mode, string> = {
-  practice: '/',
   flashcards: '/cards',
   speak: '/speak',
-  translate: '/translate',
-  conversation: '/conversation',
   preferences: '/preferences',
 }
 
 function getModeFromPath(): Mode {
-  return PATH_TO_MODE[window.location.pathname] ?? 'practice'
+  return PATH_TO_MODE[window.location.pathname] ?? 'flashcards'
 }
 
 export default function App() {
   const [mode, setMode] = useState<Mode>(getModeFromPath)
   const { settings, update } = useSettings()
   useApplySettings(settings)
+  const [levelOpen, setLevelOpen] = useState(false)
 
   const navigate = useCallback((m: Mode) => {
     setMode(m)
@@ -59,8 +43,7 @@ export default function App() {
     return () => window.removeEventListener('popstate', onPop)
   }, [])
 
-  const native = LANGUAGES.find((lang) => lang.code === settings.nativeLang)
-  const target = LANGUAGES.find((lang) => lang.code === settings.targetLang)
+  const isFullscreen = mode === 'flashcards' || mode === 'speak'
 
   return (
     <div className="relative min-h-[100dvh] overflow-hidden">
@@ -70,8 +53,8 @@ export default function App() {
         <div className="absolute bottom-[-10%] left-[10%] h-80 w-80 rounded-full bg-[var(--mint-soft)]/25 blur-3xl lg:left-[45%] lg:h-[26rem] lg:w-[26rem]" />
       </div>
 
-      <div className={`relative mx-auto max-w-[1540px] px-2 pt-2 sm:px-4 lg:px-8 lg:py-8 ${(mode === 'flashcards' || mode === 'speak') ? 'flex min-h-[100dvh] flex-col pb-16' : 'min-h-[100dvh] pb-16'}`}>
-        <div className={`${(mode === 'flashcards' || mode === 'speak') ? 'flex flex-1 flex-col lg:grid lg:grid-cols-[17rem_minmax(0,1fr)] lg:gap-7' : 'lg:grid lg:grid-cols-[17rem_minmax(0,1fr)] lg:gap-7'}`}>
+      <div className={`relative mx-auto max-w-[1540px] px-2 pt-1 sm:px-4 lg:px-8 lg:py-8 ${isFullscreen ? 'flex min-h-[100dvh] flex-col pb-14' : 'min-h-[100dvh] pb-14'}`}>
+        <div className={`${isFullscreen ? 'flex flex-1 flex-col lg:grid lg:grid-cols-[17rem_minmax(0,1fr)] lg:gap-7' : 'lg:grid lg:grid-cols-[17rem_minmax(0,1fr)] lg:gap-7'}`}>
           {/* Desktop sidebar */}
           <aside className="hidden lg:flex lg:min-h-[calc(100dvh-4rem)] lg:flex-col lg:gap-5 lg:rounded-[2rem] lg:border lg:border-[var(--line)] lg:bg-[var(--glass-strong)] lg:p-6 lg:shadow-[var(--shadow-soft)] lg:backdrop-blur-xl">
             <div className="inline-flex items-center gap-2 rounded-full border border-[var(--line-strong)] bg-[var(--glass)] px-3 py-1 text-[0.65rem] font-bold uppercase tracking-[0.22em] text-[var(--accent-deep)]">
@@ -95,59 +78,84 @@ export default function App() {
                   }`}
                   onClick={() => navigate(item)}
                 >
-                  {MODE_LABELS[item]}
+                  {{ flashcards: 'Cards', speak: 'Speak', preferences: 'Preferences' }[item]}
                 </button>
               ))}
             </nav>
-
-            <div className="mt-auto text-xs text-[var(--muted)]">
-              {native?.flag} {native?.name} → {target?.flag} {target?.name}
-            </div>
           </aside>
 
           {/* Mobile header */}
-          <header className="mb-2 flex items-center justify-end gap-2 lg:hidden">
-            <div className="flex items-center gap-2">
-              {mode === 'flashcards' && (
+          <header className="mb-1 flex items-center gap-2 lg:hidden">
+            <LanguagePicker compact label="" value={settings.nativeLang} onChange={(code) => update({ nativeLang: code })} />
+            <span className="text-xs text-[var(--muted)]">→</span>
+            <LanguagePicker compact label="" value={settings.targetLang} onChange={(code) => update({ targetLang: code })} />
+
+            {(mode === 'flashcards' || mode === 'speak') && (
+              <div className="relative ml-auto">
                 <button
-                  className={`flex h-8 w-8 items-center justify-center rounded-full border border-[var(--line)] ${settings.flashcardAudio ? 'bg-[var(--accent)]/25 text-[var(--accent)]' : 'bg-[var(--glass)] text-[var(--muted)]'}`}
-                  onClick={() => update({ flashcardAudio: !settings.flashcardAudio })}
-                  aria-label={settings.flashcardAudio ? 'Mute' : 'Unmute'}
+                  className="flex items-center gap-1 rounded-full border border-[var(--line)] bg-[var(--glass)] px-2 py-1.5 text-xs font-semibold text-[var(--muted)]"
+                  onClick={() => setLevelOpen(!levelOpen)}
                 >
-                  {settings.flashcardAudio ? (
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M19.114 5.636a9 9 0 0 1 0 12.728M16.463 8.288a5.25 5.25 0 0 1 0 7.424M6.75 8.25l4.72-4.72a.75.75 0 0 1 1.28.53v15.88a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.009 9.009 0 0 1 2.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75Z" />
-                    </svg>
-                  ) : (
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 9.75 19.5 12m0 0 2.25 2.25M19.5 12l2.25-2.25M19.5 12l-2.25 2.25m-10.5-6 4.72-4.72a.75.75 0 0 1 1.28.531V19.94a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.009 9.009 0 0 1 2.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75Z" />
-                    </svg>
-                  )}
+                  Lv {settings.cardLevel}
+                  <svg className={`h-3 w-3 transition-transform ${levelOpen ? 'rotate-180' : ''}`} fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
                 </button>
-              )}
-              <LanguagePicker label="" value={settings.nativeLang} onChange={(code) => update({ nativeLang: code })} />
-              <span className="text-xs text-[var(--muted)]">→</span>
-              <LanguagePicker label="" value={settings.targetLang} onChange={(code) => update({ targetLang: code })} />
-            </div>
+                {levelOpen && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setLevelOpen(false)} />
+                    <div className="absolute right-0 top-full z-50 mt-1 max-h-72 w-48 overflow-y-auto rounded-[1rem] border border-[var(--line-strong)] bg-[var(--panel-strong)] p-1 shadow-[var(--shadow-soft)] backdrop-blur-xl">
+                      {LEVELS.map((l) => (
+                        <button
+                          key={l}
+                          className={`flex w-full items-center gap-2 rounded-[0.75rem] px-3 py-2 text-left text-sm ${
+                            l === settings.cardLevel
+                              ? 'bg-[var(--accent-gradient)] font-semibold text-[var(--ink)]'
+                              : 'text-[var(--muted)] hover:bg-[var(--glass-hover)] hover:text-[var(--ink)]'
+                          }`}
+                          onClick={() => { update({ cardLevel: l }); setLevelOpen(false) }}
+                        >
+                          <span className="font-bold">{l}</span>
+                          <span>{LEVEL_LABELS[l]}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
+            {mode === 'flashcards' && (
+              <button
+                className={`flex h-8 w-8 items-center justify-center rounded-full border border-[var(--line)] ${settings.flashcardAudio ? 'bg-[var(--accent)]/25 text-[var(--accent)]' : 'bg-[var(--glass)] text-[var(--muted)]'}`}
+                onClick={() => update({ flashcardAudio: !settings.flashcardAudio })}
+              >
+                {settings.flashcardAudio ? (
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.114 5.636a9 9 0 0 1 0 12.728M16.463 8.288a5.25 5.25 0 0 1 0 7.424M6.75 8.25l4.72-4.72a.75.75 0 0 1 1.28.53v15.88a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.009 9.009 0 0 1 2.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75Z" />
+                  </svg>
+                ) : (
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 9.75 19.5 12m0 0 2.25 2.25M19.5 12l2.25-2.25M19.5 12l-2.25 2.25m-10.5-6 4.72-4.72a.75.75 0 0 1 1.28.531V19.94a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.009 9.009 0 0 1 2.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75Z" />
+                  </svg>
+                )}
+              </button>
+            )}
           </header>
 
           {/* Content */}
-          <main className={`min-w-0 ${(mode === 'flashcards' || mode === 'speak') ? 'flex flex-1 flex-col lg:block' : ''}`}>
-            <section className={`rounded-[1.25rem] bg-[var(--panel-quiet)] backdrop-blur-xl lg:rounded-[2rem] lg:border lg:border-[var(--line)] lg:bg-[var(--panel)] lg:p-5 lg:shadow-[var(--shadow-soft)] ${(mode === 'flashcards' || mode === 'speak') ? 'flex flex-1 flex-col p-2 sm:p-3' : 'p-3 sm:p-4'}`}>
-              <div className={`lg:rounded-[1.6rem] lg:bg-[var(--panel-quiet)] lg:p-5 ${(mode === 'flashcards' || mode === 'speak') ? 'flex flex-1 flex-col' : 'min-h-[34rem] sm:min-h-[36rem] lg:min-h-0'}`}>
-                {mode === 'practice' && <PracticeTab nativeLang={settings.nativeLang} targetLang={settings.targetLang} />}
+          <main className={`min-w-0 ${isFullscreen ? 'flex flex-1 flex-col lg:block' : ''}`}>
+            <section className={`rounded-[1.25rem] bg-[var(--panel-quiet)] backdrop-blur-xl lg:rounded-[2rem] lg:border lg:border-[var(--line)] lg:bg-[var(--panel)] lg:p-5 lg:shadow-[var(--shadow-soft)] ${isFullscreen ? 'flex flex-1 flex-col p-1 sm:p-3' : 'p-3 sm:p-4'}`}>
+              <div className={`lg:rounded-[1.6rem] lg:bg-[var(--panel-quiet)] lg:p-5 ${isFullscreen ? 'flex flex-1 flex-col' : 'min-h-[34rem] sm:min-h-[36rem] lg:min-h-0'}`}>
                 {mode === 'flashcards' && (
                   <FlashcardsTab
                     nativeLang={settings.nativeLang}
                     targetLang={settings.targetLang}
                     audioEnabled={settings.flashcardAudio}
                     level={settings.cardLevel}
-                    onLevelChange={(cardLevel) => update({ cardLevel })}
                   />
                 )}
                 {mode === 'speak' && <SpeakTab nativeLang={settings.nativeLang} targetLang={settings.targetLang} />}
-                {mode === 'translate' && <TranslateTab nativeLang={settings.nativeLang} targetLang={settings.targetLang} />}
-                {mode === 'conversation' && <ConversationTab targetLang={settings.targetLang} />}
                 {mode === 'preferences' && <PreferencesTab settings={settings} update={update} />}
               </div>
             </section>
@@ -157,12 +165,9 @@ export default function App() {
 
       {/* Mobile dock */}
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--line)] bg-[var(--dock)]/92 px-2 pb-[calc(env(safe-area-inset-bottom)+0.25rem)] pt-1 backdrop-blur-2xl lg:hidden">
-        <div className="mx-auto grid max-w-xl grid-cols-6">
-          <TabButton icon="practice" label="Practice" active={mode === 'practice'} onClick={() => navigate('practice')} />
+        <div className="mx-auto grid max-w-xs grid-cols-3">
           <TabButton icon="flashcards" label="Cards" active={mode === 'flashcards'} onClick={() => navigate('flashcards')} />
           <TabButton icon="speak" label="Speak" active={mode === 'speak'} onClick={() => navigate('speak')} />
-          <TabButton icon="translate" label="Translate" active={mode === 'translate'} onClick={() => navigate('translate')} />
-          <TabButton icon="conversation" label="Talk" active={mode === 'conversation'} onClick={() => navigate('conversation')} />
           <TabButton icon="preferences" label="Prefs" active={mode === 'preferences'} onClick={() => navigate('preferences')} />
         </div>
       </nav>
@@ -173,7 +178,7 @@ export default function App() {
 function TabButton({ icon, label, active, onClick }: { icon: string; label: string; active: boolean; onClick: () => void }) {
   return (
     <button
-      className={`relative flex flex-col items-center gap-1 rounded-[1rem] px-2 py-2.5 text-center ${
+      className={`relative flex flex-col items-center gap-1 rounded-[1rem] px-2 py-2 text-center ${
         active
           ? 'bg-[var(--ink)] text-[var(--paper)] shadow-[var(--shadow-card)]'
           : 'text-[var(--muted)]'
@@ -181,19 +186,13 @@ function TabButton({ icon, label, active, onClick }: { icon: string; label: stri
       onClick={onClick}
     >
       <TabIcon name={icon} />
-      <span className="text-[0.65rem] font-bold uppercase tracking-[0.14em]">{label}</span>
+      <span className="text-[0.6rem] font-bold uppercase tracking-[0.14em]">{label}</span>
     </button>
   )
 }
 
 function TabIcon({ name }: { name: string }) {
   switch (name) {
-    case 'practice':
-      return (
-        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.7}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M4.26 10.147a60.438 60.438 0 0 0-.491 6.347A48.62 48.62 0 0 1 12 20.904a48.62 48.62 0 0 1 8.232-4.41 60.46 60.46 0 0 0-.491-6.347m-15.482 0A50.717 50.717 0 0 1 12 13.489a50.702 50.702 0 0 1 7.74-3.342M6.75 15a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z" />
-        </svg>
-      )
     case 'flashcards':
       return (
         <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.7}>
@@ -205,18 +204,6 @@ function TabIcon({ name }: { name: string }) {
       return (
         <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.7}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a6 6 0 0 0 6-6v-1.5m-6 7.5a6 6 0 0 1-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 0 1-3-3V4.5a3 3 0 1 1 6 0v8.25a3 3 0 0 1-3 3Z" />
-        </svg>
-      )
-    case 'translate':
-      return (
-        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.7}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="m10.5 21 5.25-11.25L21 21m-9-3h7.5M3 5.621a48.474 48.474 0 0 1 6-.371m0 0c1.12 0 2.233.038 3.334.114M9 5.25V3m3.334 2.364C11.176 10.658 7.69 15.08 3 17.502" />
-        </svg>
-      )
-    case 'conversation':
-      return (
-        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.7}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 9.75a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm3.75 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm3.75 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0ZM6.75 18 3 21V6.75A2.25 2.25 0 0 1 5.25 4.5h13.5A2.25 2.25 0 0 1 21 6.75v8.25a2.25 2.25 0 0 1-2.25 2.25H6.75Z" />
         </svg>
       )
     case 'preferences':
