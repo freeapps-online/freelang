@@ -33,20 +33,19 @@ export function useApplySettings(settings: Settings) {
         ? (media.matches ? 'dark' : 'light')
         : settings.theme
       root.dataset.theme = resolvedTheme
+      const meta = document.getElementById('theme-color') as HTMLMetaElement | null
+      if (meta) meta.content = resolvedTheme === 'dark' ? '#141416' : '#fdfcfa'
     }
 
     applyTheme()
     root.dataset.motion = settings.motion
     root.dataset.surface = settings.surface
 
-    const contentScale = {
-      small: '1',
-      medium: '1.1',
-      large: '1.25',
-      xlarge: '1.4',
-    } as const
+    const labelScale = { small: '14px', medium: '15px', large: '16px', xlarge: '17px' } as const
+    const contentScale = { small: '1', medium: '1.15', large: '1.35', xlarge: '1.55' } as const
 
-    root.style.setProperty('--content-scale', contentScale[settings.fontSize])
+    root.style.fontSize = labelScale[settings.labelSize]
+    root.style.setProperty('--content-scale', contentScale[settings.contentSize])
 
     media.addEventListener('change', applyTheme)
     return () => media.removeEventListener('change', applyTheme)

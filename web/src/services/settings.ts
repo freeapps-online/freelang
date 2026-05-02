@@ -1,4 +1,4 @@
-const STORAGE_KEY = 'lango-settings'
+const STORAGE_KEY = 'freelang-settings'
 
 export type ThemePreference = 'system' | 'light' | 'dark'
 export type FontSizePreference = 'small' | 'medium' | 'large' | 'xlarge'
@@ -9,7 +9,8 @@ export interface Settings {
   nativeLang: string
   targetLang: string
   theme: ThemePreference
-  fontSize: FontSizePreference
+  labelSize: FontSizePreference
+  contentSize: FontSizePreference
   motion: MotionPreference
   surface: SurfacePreference
   flashcardAudio: boolean
@@ -19,7 +20,8 @@ const defaults: Settings = {
   nativeLang: 'en',
   targetLang: 'es',
   theme: 'system',
-  fontSize: 'medium',
+  labelSize: 'medium',
+  contentSize: 'medium',
   motion: 'full',
   surface: 'soft',
   flashcardAudio: true,
@@ -28,7 +30,17 @@ const defaults: Settings = {
 export function loadSettings(): Settings {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) return { ...defaults, ...JSON.parse(raw) }
+      ?? localStorage.getItem('lango-settings') // migrate old key
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      // migrate old fontSize to new split
+      if (parsed.fontSize && !parsed.labelSize) {
+        parsed.labelSize = parsed.fontSize
+        parsed.contentSize = parsed.fontSize
+        delete parsed.fontSize
+      }
+      return { ...defaults, ...parsed }
+    }
   } catch { /* ignore */ }
   return defaults
 }

@@ -41,14 +41,27 @@ export function PreferencesTab({
               />
             </SettingsPanel>
 
-            <SettingsPanel title="Font size" description="Increase all rem-based typography across the app.">
+            <SettingsPanel title="Label size" description="Size of navigation, buttons, and UI labels.">
               <ChoiceGrid<FontSizePreference>
-                value={settings.fontSize}
-                onChange={(fontSize) => update({ fontSize })}
+                value={settings.labelSize}
+                onChange={(labelSize) => update({ labelSize })}
                 options={[
-                  { value: 'small', label: 'Small', detail: 'Tighter layout' },
-                  { value: 'medium', label: 'Medium', detail: 'Default balance' },
-                  { value: 'large', label: 'Large', detail: 'Easier reading' },
+                  { value: 'small', label: 'Small', detail: 'Compact UI' },
+                  { value: 'medium', label: 'Medium', detail: 'Default' },
+                  { value: 'large', label: 'Large', detail: 'Bigger labels' },
+                  { value: 'xlarge', label: 'XL', detail: 'Maximum' },
+                ]}
+              />
+            </SettingsPanel>
+
+            <SettingsPanel title="Content size" description="Size of words, answers, and card text.">
+              <ChoiceGrid<FontSizePreference>
+                value={settings.contentSize}
+                onChange={(contentSize) => update({ contentSize })}
+                options={[
+                  { value: 'small', label: 'Small', detail: 'More fits on screen' },
+                  { value: 'medium', label: 'Medium', detail: 'Default' },
+                  { value: 'large', label: 'Large', detail: 'Easier to read' },
                   { value: 'xlarge', label: 'XL', detail: 'Maximum comfort' },
                 ]}
               />
@@ -94,7 +107,8 @@ export function PreferencesTab({
         <div className="text-[0.72rem] font-bold uppercase tracking-[0.22em] text-[var(--muted)]">Live summary</div>
         <div className="mt-4 space-y-3">
           <PreferenceStat label="Theme" value={settings.theme} />
-          <PreferenceStat label="Font size" value={settings.fontSize} />
+          <PreferenceStat label="Labels" value={settings.labelSize} />
+          <PreferenceStat label="Content" value={settings.contentSize} />
           <PreferenceStat label="Motion" value={settings.motion} />
           <PreferenceStat label="Surface" value={settings.surface} />
           <PreferenceStat label="Card audio" value={settings.flashcardAudio ? 'on' : 'off'} />

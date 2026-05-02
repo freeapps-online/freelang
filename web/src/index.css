@@ -3,6 +3,7 @@
 @layer base {
 
 :root {
+  color-scheme: light;
   --paper: #fdfcfa;
   --paper-deep: #f5f3ef;
   --ink: #1a1a1e;
@@ -48,6 +49,7 @@
 }
 
 :root[data-theme='dark'] {
+  color-scheme: dark;
   --paper: #141416;
   --paper-deep: #1a1a1e;
   --ink: #f0f0f2;

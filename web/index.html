@@ -6,8 +6,20 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="theme-color" content="#f6efe1" />
+    <meta name="theme-color" content="#fdfcfa" id="theme-color" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <script>
+      // Apply theme before render to prevent flash
+      try {
+        var s = JSON.parse(localStorage.getItem('freelang-settings') || '{}');
+        var theme = s.theme || 'system';
+        if (theme === 'system') theme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        if (theme === 'dark') {
+          document.documentElement.dataset.theme = 'dark';
+          document.getElementById('theme-color').content = '#141416';
+        }
+      } catch(e) {}
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />

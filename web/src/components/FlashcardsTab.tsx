@@ -29,20 +29,28 @@ export function FlashcardsTab({
 
   const display = getCardDisplay(round.card, nativeLang)
 
+  const [lastCorrectAnswer, setLastCorrectAnswer] = useState('')
+
   const handleAnswer = useCallback((side: 'left' | 'right') => {
     if (transitioning) return
     const correct = side === round.correctSide
+    const correctAnswer = round.correctSide === 'left' ? round.leftOption : round.rightOption
     setResult(correct ? 'correct' : 'wrong')
+    setLastCorrectAnswer(correctAnswer)
     setScores((prev) => recordAnswer(prev, correct))
     setTransitioning(true)
     setDragX(side === 'left' ? -420 : 420)
 
     window.setTimeout(() => {
       setRound(getFlashCardRound(nativeLang, targetLang, round.card))
-      setResult(null)
       setDragX(0)
       setTransitioning(false)
     }, 400)
+
+    // Keep the result visible longer
+    window.setTimeout(() => {
+      setResult(null)
+    }, 2000)
   }, [round, nativeLang, targetLang, transitioning])
 
 
@@ -136,11 +144,11 @@ export function FlashcardsTab({
 
           <div className="flex items-center justify-between gap-3">
             <div className="rounded-[1.2rem] border border-[var(--line)] bg-[var(--glass)] px-4 py-3 text-center">
-              <div className="text-sm font-semibold text-[var(--ink)]">← {round.leftOption}</div>
+              <div className="font-semibold text-[var(--ink)]" style={{ fontSize: 'calc(0.875rem * var(--content-scale))' }}>← {round.leftOption}</div>
               {round.leftTranslit && <div className="mt-1 text-xs italic text-[var(--muted)]">{round.leftTranslit}</div>}
             </div>
             <div className="rounded-[1.2rem] border border-[var(--line)] bg-[var(--glass)] px-4 py-3 text-center">
-              <div className="text-sm font-semibold text-[var(--ink)]">{round.rightOption} →</div>
+              <div className="font-semibold text-[var(--ink)]" style={{ fontSize: 'calc(0.875rem * var(--content-scale))' }}>{round.rightOption} →</div>
               {round.rightTranslit && <div className="mt-1 text-xs italic text-[var(--muted)]">{round.rightTranslit}</div>}
             </div>
           </div>
@@ -178,10 +186,10 @@ export function FlashcardsTab({
             </div>
           </div>
 
-          <div className="min-h-7 text-center text-sm font-semibold">
+          <div className="min-h-7 text-center font-semibold" style={{ fontSize: 'calc(0.875rem * var(--content-scale))' }}>
             {result && (
               <span style={{ color: result === 'correct' ? 'var(--success)' : 'var(--error)' }}>
-                {result === 'correct' ? 'Correct choice.' : `Wrong lane — the answer was ${round.correctSide === 'left' ? round.leftOption : round.rightOption}.`}
+                {result === 'correct' ? 'Correct!' : `Wrong — it was "${lastCorrectAnswer}"`}
               </span>
             )}
           </div>
