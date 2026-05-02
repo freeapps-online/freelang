@@ -1,12 +1,12 @@
 {
-  "name": "lango",
+  "name": "freelanguageapp",
   "private": true,
   "version": "0.1.0",
   "packageManager": "pnpm@10.30.3",
   "scripts": {
-    "dev": "pnpm --filter @lango/web dev",
-    "build": "pnpm --filter @lango/web build",
-    "preview": "pnpm --filter @lango/web preview",
+    "dev": "pnpm --filter @freelanguageapp/web dev",
+    "build": "pnpm --filter @freelanguageapp/web build",
+    "preview": "pnpm --filter @freelanguageapp/web preview",
     "cf:deploy": "pnpm build && wrangler pages deploy web/dist",
     "cf:preview": "pnpm build && wrangler pages deploy web/dist --branch preview"
   },
