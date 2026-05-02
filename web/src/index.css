@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@layer base {
+
 :root {
   --paper: #f6efe1;
   --paper-deep: #efe3cf;
@@ -91,11 +93,6 @@
   --panel-quiet: color-mix(in srgb, var(--panel-quiet) 85%, var(--paper));
 }
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
 
 html {
   min-height: 100%;
@@ -217,3 +214,5 @@ a:focus-visible {
       linear-gradient(180deg, var(--bg-start) 0%, var(--bg-mid) 48%, var(--bg-end) 100%);
   }
 }
+
+} /* end @layer base */
