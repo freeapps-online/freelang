@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useApplySettings, useSettings } from './hooks.ts'
 import { PracticeTab } from './components/PracticeTab.tsx'
 import { FlashcardsTab } from './components/FlashcardsTab.tsx'
@@ -18,10 +18,42 @@ const MODE_LABELS: Record<Mode, string> = {
   preferences: 'Preferences',
 }
 
+const PATH_TO_MODE: Record<string, Mode> = {
+  '/': 'practice',
+  '/practice': 'practice',
+  '/cards': 'flashcards',
+  '/translate': 'translate',
+  '/conversation': 'conversation',
+  '/preferences': 'preferences',
+}
+
+const MODE_TO_PATH: Record<Mode, string> = {
+  practice: '/',
+  flashcards: '/cards',
+  translate: '/translate',
+  conversation: '/conversation',
+  preferences: '/preferences',
+}
+
+function getModeFromPath(): Mode {
+  return PATH_TO_MODE[window.location.pathname] ?? 'practice'
+}
+
 export default function App() {
-  const [mode, setMode] = useState<Mode>('practice')
+  const [mode, setMode] = useState<Mode>(getModeFromPath)
   const { settings, update } = useSettings()
   useApplySettings(settings)
+
+  const navigate = useCallback((m: Mode) => {
+    setMode(m)
+    window.history.pushState(null, '', MODE_TO_PATH[m])
+  }, [])
+
+  useEffect(() => {
+    const onPop = () => setMode(getModeFromPath())
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+  }, [])
 
   const native = LANGUAGES.find((lang) => lang.code === settings.nativeLang)
   const target = LANGUAGES.find((lang) => lang.code === settings.targetLang)
@@ -57,7 +89,7 @@ export default function App() {
                       ? 'border border-[var(--accent-soft)] bg-[var(--accent-gradient)] text-[var(--ink)] shadow-[var(--shadow-card)]'
                       : 'border border-transparent text-[var(--muted)] hover:bg-[var(--glass-hover)] hover:text-[var(--ink)]'
                   }`}
-                  onClick={() => setMode(item)}
+                  onClick={() => navigate(item)}
                 >
                   {MODE_LABELS[item]}
                 </button>
@@ -107,11 +139,11 @@ export default function App() {
       {/* Mobile dock */}
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--line)] bg-[var(--dock)]/92 px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-3 backdrop-blur-2xl lg:hidden">
         <div className="mx-auto grid max-w-xl grid-cols-5 gap-2 rounded-[1.4rem] border border-[var(--line-strong)] bg-[var(--glass)] p-1.5 shadow-[var(--shadow-soft)]">
-          <TabButton icon="practice" label="Practice" active={mode === 'practice'} onClick={() => setMode('practice')} />
-          <TabButton icon="flashcards" label="Cards" active={mode === 'flashcards'} onClick={() => setMode('flashcards')} />
-          <TabButton icon="translate" label="Translate" active={mode === 'translate'} onClick={() => setMode('translate')} />
-          <TabButton icon="conversation" label="Talk" active={mode === 'conversation'} onClick={() => setMode('conversation')} />
-          <TabButton icon="preferences" label="Prefs" active={mode === 'preferences'} onClick={() => setMode('preferences')} />
+          <TabButton icon="practice" label="Practice" active={mode === 'practice'} onClick={() => navigate('practice')} />
+          <TabButton icon="flashcards" label="Cards" active={mode === 'flashcards'} onClick={() => navigate('flashcards')} />
+          <TabButton icon="translate" label="Translate" active={mode === 'translate'} onClick={() => navigate('translate')} />
+          <TabButton icon="conversation" label="Talk" active={mode === 'conversation'} onClick={() => navigate('conversation')} />
+          <TabButton icon="preferences" label="Prefs" active={mode === 'preferences'} onClick={() => navigate('preferences')} />
         </div>
       </nav>
     </div>
