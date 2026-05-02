@@ -3,6 +3,7 @@ import { getFlashCardRound, getCardDisplay, loadLevel, getLoadedWords } from '..
 import { loadScores, recordAnswer, loadWordStats, recordWordAnswer, pickWeightedCard, type WordStatsMap } from '../services/scores.ts'
 import { speech } from '../services/speech.ts'
 import { useSpeech } from '../hooks.ts'
+import { reportCardScore } from '../services/cloud.ts'
 import type { FlashCard, FlashCardRound, FlashCardScore } from '../types.ts'
 
 type SwipeResult = 'correct' | 'wrong' | null
@@ -55,6 +56,7 @@ export function FlashcardsTab({
     setLastFeedback({ nativeWord: cardDisplay.text, correctAnswer })
     setScores((prev) => recordAnswer(prev, correct))
     setWordStats((prev) => recordWordAnswer(prev, round.card.word, correct))
+    void reportCardScore(round.card.word, correct)
     setTransitioning(true)
     setDragX(side === 'left' ? -420 : 420)
 

@@ -1,0 +1,13 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "freelang-api",
+  "main": "index.ts",
+  "compatibility_date": "2025-01-01",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "freelang-db",
+      "database_id": "632b15ff-9adb-4135-9e3c-aec90ca4ff28"
+    }
+  ]
+}

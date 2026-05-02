@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { speech } from '../services/speech.ts'
 import { useSpeech } from '../hooks.ts'
+import { reportSentenceScore } from '../services/cloud.ts'
 import type { Sentence } from '../types.ts'
 
 const sentenceModules: Record<number, () => Promise<{ default: Sentence[] }>> = {
@@ -128,6 +129,7 @@ export function SpeakTab({ nativeLang, targetLang, level: rawLevel, showStats: s
       setAttempt(result)
       if (sentence) {
         setSentenceStats(prev => recordSentenceAttempt(prev, sentence.id, result.score))
+        void reportSentenceScore(sentence.id, result.score)
       }
     })
   }, [targetLang, targetText, sentence])
@@ -166,9 +168,9 @@ export function SpeakTab({ nativeLang, targetLang, level: rawLevel, showStats: s
       const tag = (e.target as HTMLElement)?.tagName
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
       if (e.key === 'ArrowRight' || e.key === 'ArrowLeft' || e.key === 'Enter') { e.preventDefault(); goNext() }
-      if (e.key === ' ') { e.preventDefault(); startRecording() }
+      if (e.key === ' ' || e.key === 'ArrowDown') { e.preventDefault(); startRecording() }
     }
-    const onKeyUp = (e: KeyboardEvent) => { if (e.key === ' ') { e.preventDefault(); stopRecording() } }
+    const onKeyUp = (e: KeyboardEvent) => { if (e.key === ' ' || e.key === 'ArrowDown') { e.preventDefault(); stopRecording() } }
     window.addEventListener('keydown', onKeyDown)
     window.addEventListener('keyup', onKeyUp)
     return () => { window.removeEventListener('keydown', onKeyDown); window.removeEventListener('keyup', onKeyUp) }
