@@ -132,9 +132,9 @@ export default function App() {
           </header>
 
           {/* Content */}
-          <main className={`min-w-0 ${mode === 'flashcards' ? 'flex flex-1 flex-col' : ''}`}>
-            <section className={`rounded-[1.75rem] border border-[var(--line)] bg-[var(--panel)] p-3 shadow-[var(--shadow-soft)] backdrop-blur-xl sm:p-4 lg:rounded-[2rem] lg:p-5 ${mode === 'flashcards' ? 'flex flex-1 flex-col' : ''}`}>
-              <div className={`rounded-[1.35rem] bg-[var(--panel-quiet)] p-3 sm:p-4 lg:rounded-[1.6rem] lg:p-5 ${mode === 'flashcards' ? 'flex flex-1 flex-col' : 'min-h-[34rem] sm:min-h-[36rem] lg:min-h-0'}`}>
+          <main className={`min-w-0 ${mode === 'flashcards' ? 'flex flex-1 flex-col lg:block' : ''}`}>
+            <section className={`rounded-[1.75rem] border border-[var(--line)] bg-[var(--panel)] shadow-[var(--shadow-soft)] backdrop-blur-xl lg:rounded-[2rem] ${mode === 'flashcards' ? 'flex flex-1 flex-col p-2 sm:p-4 lg:p-5' : 'p-3 sm:p-4 lg:p-5'}`}>
+              <div className={`rounded-[1.35rem] bg-[var(--panel-quiet)] lg:rounded-[1.6rem] ${mode === 'flashcards' ? 'flex flex-1 flex-col p-2 sm:p-4 lg:p-5' : 'min-h-[34rem] p-3 sm:min-h-[36rem] sm:p-4 lg:min-h-0 lg:p-5'}`}>
                 {mode === 'practice' && <PracticeTab nativeLang={settings.nativeLang} targetLang={settings.targetLang} />}
                 {mode === 'flashcards' && (
                   <FlashcardsTab
