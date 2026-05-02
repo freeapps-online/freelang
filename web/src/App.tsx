@@ -146,7 +146,7 @@ export default function App() {
               </div>
             )}
 
-            {mode === 'flashcards' && (
+            {isFullscreen && (
               <button
                 className={`rounded-full px-2 py-1.5 text-xs font-semibold ${showStats ? 'bg-[var(--sky)] text-[var(--paper)]' : 'text-[var(--muted)]'}`}
                 onClick={() => setShowStats(!showStats)}
@@ -173,9 +173,9 @@ export default function App() {
           </header>
 
           {/* Content */}
-          <main className={`min-w-0 ${isFullscreen ? 'flex flex-1 flex-col lg:block' : ''}`}>
-            <section className={`rounded-[1.25rem] bg-[var(--panel-quiet)] backdrop-blur-xl lg:rounded-[2rem] lg:border lg:border-[var(--line)] lg:bg-[var(--panel)] lg:p-5 lg:shadow-[var(--shadow-soft)] ${isFullscreen ? 'flex flex-1 flex-col p-1 sm:p-3' : 'p-3 sm:p-4'}`}>
-              <div className={`lg:rounded-[1.6rem] lg:bg-[var(--panel-quiet)] lg:p-5 ${isFullscreen ? 'flex flex-1 flex-col' : 'min-h-[34rem] sm:min-h-[36rem] lg:min-h-0'}`}>
+          <main className={`min-w-0 ${isFullscreen ? 'flex min-h-0 flex-1 flex-col lg:block' : ''}`}>
+            <section className={`backdrop-blur-xl lg:rounded-[2rem] lg:border lg:border-[var(--line)] lg:bg-[var(--panel)] lg:p-5 lg:shadow-[var(--shadow-soft)] ${isFullscreen ? 'flex min-h-0 flex-1 flex-col' : 'rounded-[1.25rem] bg-[var(--panel-quiet)] p-3 sm:p-4'}`}>
+              <div className={`lg:rounded-[1.6rem] lg:bg-[var(--panel-quiet)] lg:p-5 ${isFullscreen ? 'flex min-h-0 flex-1 flex-col' : 'min-h-[34rem] sm:min-h-[36rem] lg:min-h-0'}`}>
                 {mode === 'flashcards' && (
                   <FlashcardsTab
                     nativeLang={settings.nativeLang}
@@ -185,7 +185,7 @@ export default function App() {
                     showStats={showStats}
                   />
                 )}
-                {mode === 'speak' && <SpeakTab nativeLang={settings.nativeLang} targetLang={settings.targetLang} />}
+                {mode === 'speak' && <SpeakTab nativeLang={settings.nativeLang} targetLang={settings.targetLang} level={settings.cardLevel} showStats={showStats} />}
                 {mode === 'preferences' && <PreferencesTab settings={settings} update={update} />}
               </div>
             </section>

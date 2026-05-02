@@ -11,7 +11,6 @@ const sentenceModules: Record<number, () => Promise<{ default: Sentence[] }>> = 
   5: () => import('../data/sentences5.ts'),
 }
 
-const LEVELS = [1, 2, 3, 4, 5]
 const loadedSentences: Map<number, Sentence[]> = new Map()
 const STATS_KEY = 'freelang-sentence-stats'
 
@@ -84,14 +83,13 @@ function scoreAttempt(expected: string, attempt: string): AttemptResult {
   return { score: expectedWords.length > 0 ? Math.round((correct / expectedWords.length) * 100) : 0, words, raw: attempt }
 }
 
-export function SpeakTab({ nativeLang, targetLang }: { nativeLang: string; targetLang: string }) {
+export function SpeakTab({ nativeLang, targetLang, level, showStats: showStatsExternal }: { nativeLang: string; targetLang: string; level: number; showStats: boolean }) {
   const sp = useSpeech()
-  const [level, setLevel] = useState(1)
   const [sentences, setSentences] = useState<Sentence[]>([])
   const [sentence, setSentence] = useState<Sentence | null>(null)
   const [attempt, setAttempt] = useState<AttemptResult | null>(null)
   const [sentenceStats, setSentenceStats] = useState<SentenceStatsMap>(loadSentenceStats)
-  const [showStats, setShowStats] = useState(false)
+  const showStats = showStatsExternal
   const [dragX, setDragX] = useState(0)
   const [transitioning, setTransitioning] = useState(false)
   const startXRef = useRef(0)
@@ -178,18 +176,11 @@ export function SpeakTab({ nativeLang, targetLang }: { nativeLang: string; targe
   if (!sentence) return <div className="flex flex-1 items-center justify-center text-[var(--muted)]">Loading...</div>
 
   if (showStats) {
-    return <SentenceStatsPanel sentences={sentences} stats={sentenceStats} targetLang={targetLang} nativeLang={nativeLang} onBack={() => setShowStats(false)} />
+    return <SentenceStatsPanel sentences={sentences} stats={sentenceStats} targetLang={targetLang} nativeLang={nativeLang} />
   }
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2">
-      {/* Level + stats */}
-      <div className="flex items-center gap-1">
-        {LEVELS.map((l) => (
-          <button key={l} className={`shrink-0 rounded-full px-2.5 py-1 text-[0.65rem] font-semibold transition ${l === level ? 'bg-[var(--accent)] text-[var(--paper)]' : 'text-[var(--muted)]'}`} onClick={() => setLevel(l)}>{l}</button>
-        ))}
-        <button className="ml-auto shrink-0 rounded-full px-2.5 py-1 text-[0.65rem] font-semibold text-[var(--muted)]" onClick={() => setShowStats(true)}>Stats</button>
-      </div>
 
       {/* Card */}
       <div className="flex min-h-0 flex-1 items-center justify-center">
@@ -256,8 +247,8 @@ export function SpeakTab({ nativeLang, targetLang }: { nativeLang: string; targe
   )
 }
 
-function SentenceStatsPanel({ sentences, stats, targetLang, nativeLang, onBack }: {
-  sentences: Sentence[]; stats: SentenceStatsMap; targetLang: string; nativeLang: string; onBack: () => void
+function SentenceStatsPanel({ sentences, stats, targetLang, nativeLang }: {
+  sentences: Sentence[]; stats: SentenceStatsMap; targetLang: string; nativeLang: string
 }) {
   const [sort, setSort] = useState<'worst' | 'best' | 'most' | 'unseen'>('worst')
 
@@ -282,8 +273,6 @@ function SentenceStatsPanel({ sentences, stats, targetLang, nativeLang, onBack }
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">
-      <button className="self-start text-xs font-semibold text-[var(--accent)]" onClick={onBack}>Back to practice</button>
-
       <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
         <MiniStat label="Avg score" value={`${overallAvg}%`} color={overallAvg >= 70 ? 'var(--success)' : 'var(--warning)'} detail={`${totalAttempts} attempts`} />
         <MiniStat label="Practiced" value={`${practiced.length}`} color="var(--success)" detail={`of ${rows.length}`} />
