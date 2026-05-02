@@ -77,7 +77,7 @@ export default function App() {
             <div className="space-y-3">
               <div className="inline-flex items-center gap-2 rounded-full border border-[var(--line-strong)] bg-[var(--glass)] px-3 py-1 text-[0.65rem] font-bold uppercase tracking-[0.22em] text-[var(--accent-deep)]">
                 <img src="/logo.svg" alt="" className="h-4 w-4 rounded-[0.35rem]" />
-                Lango
+                FreeLanguageApp.online
               </div>
               <div className="space-y-2">
                 <h1 className="display-font text-4xl leading-none text-[var(--ink)]">
@@ -125,7 +125,7 @@ export default function App() {
                     <div>
                       <div className="inline-flex items-center gap-2 rounded-full border border-[var(--line-strong)] bg-[var(--glass)] px-3 py-1 text-[0.65rem] font-bold uppercase tracking-[0.2em] text-[var(--accent-deep)]">
                         <img src="/logo.svg" alt="" className="h-4 w-4 rounded-[0.35rem]" />
-                        Lango
+                        FreeLanguageApp.online
                       </div>
                       <h1 className="display-font mt-3 text-3xl leading-[0.92] text-[var(--ink)]">
                         Voice-first language practice.
