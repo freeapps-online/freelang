@@ -6,6 +6,21 @@ const levelModules: Record<number, () => Promise<{ default: FlashCard[] }>> = {
   3: () => import('../data/level3.ts'),
   4: () => import('../data/level4.ts'),
   5: () => import('../data/level5.ts'),
+  6: () => import('../data/level6.ts'),
+  7: () => import('../data/level7.ts'),
+  8: () => import('../data/level8.ts'),
+  9: () => import('../data/level9.ts'),
+  10: () => import('../data/level10.ts'),
+  11: () => import('../data/level11.ts'),
+  12: () => import('../data/level12.ts'),
+  13: () => import('../data/level13.ts'),
+  14: () => import('../data/level14.ts'),
+  15: () => import('../data/level15.ts'),
+  16: () => import('../data/level16.ts'),
+  17: () => import('../data/level17.ts'),
+  18: () => import('../data/level18.ts'),
+  19: () => import('../data/level19.ts'),
+  20: () => import('../data/level20.ts'),
 }
 
 const loadedLevels: Map<number, FlashCard[]> = new Map()
@@ -59,6 +74,21 @@ export const LEVEL_LABELS: Record<number, string> = {
   3: 'Actions',
   4: 'Society',
   5: 'Nature',
+  6: 'Food',
+  7: 'Sports',
+  8: 'School',
+  9: 'Shopping',
+  10: 'Home',
+  11: 'Health',
+  12: 'City',
+  13: 'Environment',
+  14: 'Animals',
+  15: 'Feelings',
+  16: 'Work',
+  17: 'Media',
+  18: 'Time',
+  19: 'Relationships',
+  20: 'Abstract',
 }
 
-export const LEVELS = [1, 2, 3, 4, 5]
+export const LEVELS = Array.from({ length: 20 }, (_, i) => i + 1)

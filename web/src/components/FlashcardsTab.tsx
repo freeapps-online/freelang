@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { getFlashCardRound, getCardDisplay, loadLevel, getLoadedWords, LEVELS, LEVEL_LABELS } from '../services/vocabulary.ts'
+import { getFlashCardRound, getCardDisplay, loadLevel, getLoadedWords, LEVELS } from '../services/vocabulary.ts'
 import { loadScores, recordAnswer, loadWordStats, recordWordAnswer, pickWeightedCard, type WordStatsMap } from '../services/scores.ts'
 import { speech } from '../services/speech.ts'
 import { useSpeech } from '../hooks.ts'
@@ -126,7 +126,7 @@ export function FlashcardsTab({
   const pct = scores.total > 0 ? Math.round((scores.correct / scores.total) * 100) : 0
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-4 lg:grid lg:grid-cols-[17rem_minmax(0,1fr)]">
+    <div className="flex min-h-0 flex-1 flex-col gap-2 lg:grid lg:grid-cols-[17rem_minmax(0,1fr)] lg:gap-4">
       <aside className="hidden rounded-[1.5rem] border border-[var(--line)] bg-[var(--glass-strong)] p-4 shadow-[var(--shadow-card)] lg:block lg:order-1">
         <div className="text-[0.72rem] font-bold uppercase tracking-[0.22em] text-[var(--muted)]">Deck pace</div>
         <div className="mt-3 grid gap-3">
@@ -137,24 +137,24 @@ export function FlashcardsTab({
       </aside>
 
       <section
-        className="flex min-h-0 flex-1 flex-col rounded-[1.5rem] border border-[var(--line)] p-3 shadow-[var(--shadow-card)] sm:p-5 lg:order-2"
+        className="flex min-h-0 flex-1 flex-col p-2 sm:p-4 lg:order-2 lg:rounded-[1.5rem] lg:border lg:border-[var(--line)] lg:shadow-[var(--shadow-card)]"
         style={{ background: 'var(--warm-gradient)' }}
       >
-        <div className="flex min-h-0 flex-1 flex-col gap-3">
+        <div className="flex min-h-0 flex-1 flex-col gap-2 sm:gap-3">
           {/* Level selector + stats toggle */}
-          <div className="flex items-center gap-2">
-            <div className="flex flex-1 items-center gap-2 overflow-x-auto">
+          <div className="flex items-center gap-1">
+            <div className="flex flex-1 items-center gap-1 overflow-x-auto">
               {LEVELS.map((l) => (
                 <button
                   key={l}
-                  className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition ${
+                  className={`shrink-0 rounded-full px-2.5 py-1 text-[0.65rem] font-semibold transition ${
                     l === level
                       ? 'bg-[var(--accent)] text-[var(--paper)]'
-                      : 'border border-[var(--line)] bg-[var(--glass)] text-[var(--muted)] hover:text-[var(--ink)]'
+                      : 'text-[var(--muted)] hover:text-[var(--ink)]'
                   }`}
                   onClick={() => { onLevelChange(l); setShowStats(false) }}
                 >
-                  {l}. {LEVEL_LABELS[l]}
+                  {l}
                 </button>
               ))}
             </div>
@@ -174,11 +174,11 @@ export function FlashcardsTab({
             <WordStatsPanel words={words} wordStats={wordStats} targetLang={targetLang} nativeLang={nativeLang} />
           ) : (<>
           {/* Answer options */}
-          <div className="flex items-center justify-between gap-3">
-            <div className="rounded-[1.2rem] border border-[var(--line)] bg-[var(--glass)] px-4 py-3 text-center">
+          <div className="flex items-center justify-between gap-2">
+            <div className="rounded-full border border-[var(--line)] bg-[var(--glass)] px-3 py-2 text-center">
               <div className="font-semibold text-[var(--ink)]" style={{ fontSize: 'calc(0.875rem * var(--content-scale))' }}>← {round.leftOption}</div>
             </div>
-            <div className="rounded-[1.2rem] border border-[var(--line)] bg-[var(--glass)] px-4 py-3 text-center">
+            <div className="rounded-full border border-[var(--line)] bg-[var(--glass)] px-3 py-2 text-center">
               <div className="font-semibold text-[var(--ink)]" style={{ fontSize: 'calc(0.875rem * var(--content-scale))' }}>{round.rightOption} →</div>
             </div>
           </div>
@@ -186,7 +186,7 @@ export function FlashcardsTab({
           {/* Card */}
           <div className="flex min-h-0 flex-1 items-center justify-center">
             <div
-              className="relative flex w-full max-w-[24rem] cursor-grab flex-col items-center justify-center gap-4 rounded-[2rem] border border-[var(--line-strong)] px-6 py-10 text-center shadow-[var(--shadow-soft)] active:cursor-grabbing select-none touch-none"
+              className="relative flex w-full max-w-[24rem] cursor-grab flex-col items-center justify-center gap-3 rounded-[1.5rem] border border-[var(--line-strong)] px-5 py-8 text-center shadow-[var(--shadow-soft)] active:cursor-grabbing select-none touch-none sm:rounded-[2rem] sm:py-10"
               style={{
                 background: 'var(--card-gradient)',
                 transform: `translateX(${dragX}px) rotate(${dragX * 0.08}deg)`,

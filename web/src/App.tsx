@@ -66,7 +66,7 @@ export default function App() {
         <div className="absolute bottom-[-10%] left-[10%] h-80 w-80 rounded-full bg-[var(--mint-soft)]/25 blur-3xl lg:left-[45%] lg:h-[26rem] lg:w-[26rem]" />
       </div>
 
-      <div className={`relative mx-auto max-w-[1540px] px-3 pt-2 sm:px-4 lg:px-8 lg:py-8 ${mode === 'flashcards' ? 'flex min-h-[100dvh] flex-col pb-20' : 'min-h-[100dvh] pb-20'}`}>
+      <div className={`relative mx-auto max-w-[1540px] px-2 pt-2 sm:px-4 lg:px-8 lg:py-8 ${mode === 'flashcards' ? 'flex min-h-[100dvh] flex-col pb-16' : 'min-h-[100dvh] pb-16'}`}>
         <div className={`${mode === 'flashcards' ? 'flex flex-1 flex-col lg:grid lg:grid-cols-[17rem_minmax(0,1fr)] lg:gap-7' : 'lg:grid lg:grid-cols-[17rem_minmax(0,1fr)] lg:gap-7'}`}>
           {/* Desktop sidebar */}
           <aside className="hidden lg:flex lg:min-h-[calc(100dvh-4rem)] lg:flex-col lg:gap-5 lg:rounded-[2rem] lg:border lg:border-[var(--line)] lg:bg-[var(--glass-strong)] lg:p-6 lg:shadow-[var(--shadow-soft)] lg:backdrop-blur-xl">
@@ -151,8 +151,8 @@ export default function App() {
       </div>
 
       {/* Mobile dock */}
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--line)] bg-[var(--dock)]/92 px-4 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] pt-2 backdrop-blur-2xl lg:hidden">
-        <div className="mx-auto grid max-w-xl grid-cols-5 gap-1">
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--line)] bg-[var(--dock)]/92 px-2 pb-[calc(env(safe-area-inset-bottom)+0.25rem)] pt-1 backdrop-blur-2xl lg:hidden">
+        <div className="mx-auto grid max-w-xl grid-cols-5">
           <TabButton icon="practice" label="Practice" active={mode === 'practice'} onClick={() => navigate('practice')} />
           <TabButton icon="flashcards" label="Cards" active={mode === 'flashcards'} onClick={() => navigate('flashcards')} />
           <TabButton icon="translate" label="Translate" active={mode === 'translate'} onClick={() => navigate('translate')} />

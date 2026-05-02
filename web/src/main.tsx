@@ -12,5 +12,5 @@ createRoot(document.getElementById('root')!).render(
 
 // Preload all vocab levels in the background so they're cached for offline use
 setTimeout(() => {
-  for (let i = 1; i <= 5; i++) loadLevel(i)
+  for (let i = 1; i <= 20; i++) loadLevel(i)
 }, 2000)
