@@ -185,7 +185,7 @@ export function SpeakTab({ nativeLang, targetLang, level: rawLevel, showStats: s
   }
 
   return (
-    <div className="flex h-[calc(100dvh-5.5rem)] flex-col gap-2 lg:h-auto">
+    <div className="flex h-[calc(100dvh-90px)] flex-col gap-2 lg:h-auto">
 
       {/* Card */}
       <div className="flex flex-1 items-center justify-center overflow-hidden">
