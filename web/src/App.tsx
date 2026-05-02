@@ -102,8 +102,7 @@ export default function App() {
           </aside>
 
           {/* Mobile header */}
-          <header className="mb-2 flex items-center justify-between gap-3 lg:hidden">
-            <span className="text-sm font-semibold text-[var(--ink)]">{MODE_LABELS[mode]}</span>
+          <header className="mb-2 flex items-center justify-end gap-2 lg:hidden">
             <div className="flex items-center gap-2">
               {mode === 'flashcards' && (
                 <button
