@@ -23,6 +23,36 @@ export function useSettings() {
   return { settings, update }
 }
 
+export function useApplySettings(settings: Settings) {
+  useEffect(() => {
+    const root = document.documentElement
+    const media = window.matchMedia('(prefers-color-scheme: dark)')
+
+    const applyTheme = () => {
+      const resolvedTheme = settings.theme === 'system'
+        ? (media.matches ? 'dark' : 'light')
+        : settings.theme
+      root.dataset.theme = resolvedTheme
+    }
+
+    applyTheme()
+    root.dataset.motion = settings.motion
+    root.dataset.surface = settings.surface
+
+    const fontScale = {
+      small: '15px',
+      medium: '16px',
+      large: '17px',
+      xlarge: '18px',
+    } as const
+
+    root.style.fontSize = fontScale[settings.fontSize]
+
+    media.addEventListener('change', applyTheme)
+    return () => media.removeEventListener('change', applyTheme)
+  }, [settings])
+}
+
 export function useDebounce(value: string, ms = 300) {
   const [debounced, setDebounced] = useState(value)
   useEffect(() => {

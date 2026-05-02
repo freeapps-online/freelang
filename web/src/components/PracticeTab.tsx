@@ -5,10 +5,17 @@ import { MicButton } from './MicButton.tsx'
 import type { PracticeRound } from '../types.ts'
 
 const RATING_LABELS = {
-  good: { text: 'Great!', color: 'var(--success)' },
-  close: { text: 'Close, try again', color: 'var(--warning)' },
-  retry: { text: 'Not quite, listen again', color: 'var(--error)' },
+  good: { text: 'Great accent match', color: 'var(--success)' },
+  close: { text: 'Close enough to refine', color: 'var(--warning)' },
+  retry: { text: 'Listen once more and retry', color: 'var(--error)' },
 } as const
+
+const STEPS = [
+  { key: 'say-native', label: '1. Speak naturally' },
+  { key: 'listen-target', label: '2. Hear the translation' },
+  { key: 'repeat-target', label: '3. Repeat the target phrase' },
+  { key: 'rated', label: '4. Review the score' },
+] as const
 
 type Step = 'say-native' | 'listen-target' | 'repeat-target' | 'rated'
 
@@ -19,14 +26,11 @@ export function PracticeTab({ nativeLang, targetLang }: { nativeLang: string; ta
   const [history, setHistory] = useState<PracticeRound[]>([])
 
   const handleNativeSpeech = useCallback((text: string) => {
-    // For now, use a simple placeholder translation
-    // TODO: integrate real translation API
     const translated = `[${targetLang}] ${text}`
     const newRound: PracticeRound = { original: text, translated }
     setRound(newRound)
     setStep('listen-target')
 
-    // Speak the translation
     speech.speak(translated, targetLang).then(() => {
       setStep('repeat-target')
     })
@@ -35,29 +39,22 @@ export function PracticeTab({ nativeLang, targetLang }: { nativeLang: string; ta
   const handleRepeatAttempt = useCallback((attempt: string) => {
     if (!round) return
 
-    // Simple similarity check (placeholder — real app would use pronunciation scoring)
-    const normalize = (s: string) => s.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, '').replace(/\s+/g, ' ').trim()
+    const normalize = (value: string) => value.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, '').replace(/\s+/g, ' ').trim()
     const expected = normalize(round.translated)
     const actual = normalize(attempt)
-
-    // Compare words to compute overlap ratio
     const expectedWords = expected.split(' ')
     const actualWords = actual.split(' ')
-    const matches = actualWords.filter(w => expectedWords.includes(w)).length
+    const matches = actualWords.filter((word) => expectedWords.includes(word)).length
     const ratio = expectedWords.length > 0 ? matches / expectedWords.length : 0
 
     let rating: PracticeRound['rating']
-    if (ratio >= 0.8) {
-      rating = 'good'
-    } else if (ratio >= 0.4) {
-      rating = 'close'
-    } else {
-      rating = 'retry'
-    }
+    if (ratio >= 0.8) rating = 'good'
+    else if (ratio >= 0.4) rating = 'close'
+    else rating = 'retry'
 
     const rated = { ...round, userAttempt: attempt, rating }
     setRound(rated)
-    setHistory(prev => [rated, ...prev])
+    setHistory((prev) => [rated, ...prev])
     setStep('rated')
   }, [round])
 
@@ -67,106 +64,134 @@ export function PracticeTab({ nativeLang, targetLang }: { nativeLang: string; ta
   }, [])
 
   const retryListen = useCallback(() => {
-    if (round) {
-      setStep('listen-target')
-      speech.speak(round.translated, targetLang).then(() => {
-        setStep('repeat-target')
-      })
-    }
+    if (!round) return
+    setStep('listen-target')
+    speech.speak(round.translated, targetLang).then(() => {
+      setStep('repeat-target')
+    })
   }, [round, targetLang])
 
   return (
-    <div className="flex flex-col items-center px-4 pt-8 gap-6">
-      <h2 className="text-lg font-semibold">Practice Mode</h2>
-      <p className="text-sm text-[var(--text-muted)] text-center max-w-sm">
-        {step === 'say-native' && 'Say something in your language. Hold the mic to speak.'}
-        {step === 'listen-target' && 'Listen to the translation...'}
-        {step === 'repeat-target' && 'Now repeat what you heard. Hold the mic.'}
-        {step === 'rated' && 'See your result below.'}
-      </p>
+    <div className="grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_19rem]">
+      <section className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--glass-strong)] p-4 shadow-[var(--shadow-card)] sm:p-5">
+        <div className="flex flex-col gap-5">
+          <div className="flex flex-col gap-3">
+            <div className="text-[0.72rem] font-bold uppercase tracking-[0.22em] text-[var(--accent-deep)]">Practice flow</div>
+            <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+              {STEPS.map((item) => {
+                const active = item.key === step
+                return (
+                  <div
+                    key={item.key}
+                    className={`rounded-[1rem] border px-3 py-2.5 text-sm ${
+                      active
+                        ? 'border-[var(--accent-soft)] bg-[var(--accent-soft)]/45 text-[var(--ink)]'
+                        : 'border-[var(--line)] bg-[var(--panel-quiet)] text-[var(--muted)]'
+                    }`}
+                  >
+                    {item.label}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
 
-      {/* Current round display */}
-      {round && (
-        <div className="w-full max-w-sm space-y-3">
-          <div className="p-3 rounded-lg bg-[var(--surface)] border border-[var(--border)]">
-            <div className="text-xs text-[var(--text-muted)] mb-1">You said:</div>
-            <div className="text-sm">{round.original}</div>
+          <p className="max-w-xl text-sm leading-6 text-[var(--muted)]">
+            {step === 'say-native' && 'Start with your own phrase. Keep it natural and short.'}
+            {step === 'listen-target' && 'The app is speaking the translated phrase back to you.'}
+            {step === 'repeat-target' && 'Repeat what you just heard. Aim for rhythm and clarity first.'}
+            {step === 'rated' && 'You have a result. Review it, replay it, or move on fast.'}
+          </p>
+
+          <div className="grid gap-3">
+            <RoundCard title="You said" value={round?.original ?? 'Nothing captured yet. Hold the mic and say a phrase in your native language.'} />
+            <RoundCard title="Target phrase" value={round?.translated ?? 'The translated phrase will appear here after your first take.'} accent />
+            {round?.userAttempt && <RoundCard title="Your repeat" value={round.userAttempt} />}
           </div>
-          <div className="p-3 rounded-lg bg-[var(--surface)] border border-[var(--border)]">
-            <div className="text-xs text-[var(--text-muted)] mb-1">Translation:</div>
-            <div className="text-sm">{round.translated}</div>
+
+          <div className="rounded-[1.35rem] border border-[var(--line)] bg-[var(--warm-gradient)] px-4 py-5 text-center">
+            <div className="mb-4 flex justify-center">
+              <MicButton
+                listening={sp.isListening}
+                disabled={sp.isSpeaking || step === 'listen-target'}
+                onPress={() => {
+                  if (step === 'say-native') speech.startListening(nativeLang, handleNativeSpeech)
+                  if (step === 'repeat-target') speech.startListening(targetLang, handleRepeatAttempt)
+                }}
+                onRelease={() => speech.stopListening()}
+              />
+            </div>
+            <div className="text-sm font-semibold text-[var(--ink)]">
+              {step === 'say-native' ? 'Hold to record your phrase' : step === 'repeat-target' ? 'Hold to repeat the target phrase' : 'Listening mode is locked while audio plays'}
+            </div>
+            {sp.isListening && sp.transcript && (
+              <div className="mt-3 rounded-full bg-[var(--glass)] px-4 py-2 text-sm italic text-[var(--muted)]">
+                “{sp.transcript}”
+              </div>
+            )}
           </div>
-          {round.userAttempt && (
-            <div className="p-3 rounded-lg bg-[var(--surface)] border border-[var(--border)]">
-              <div className="text-xs text-[var(--text-muted)] mb-1">Your attempt:</div>
-              <div className="text-sm">{round.userAttempt}</div>
+
+          {step === 'rated' && round?.rating && (
+            <div className="rounded-[1.2rem] border border-[var(--line)] bg-[var(--glass)] px-4 py-3 text-sm font-semibold" style={{ color: RATING_LABELS[round.rating].color }}>
+              {RATING_LABELS[round.rating].text}
             </div>
           )}
-        </div>
-      )}
 
-      {/* Rating display */}
-      {step === 'rated' && round?.rating && (
-        <div className="text-lg font-semibold" style={{ color: RATING_LABELS[round.rating].color }}>
-          {RATING_LABELS[round.rating].text}
-        </div>
-      )}
-
-      {/* Mic button */}
-      <MicButton
-        listening={sp.isListening}
-        disabled={sp.isSpeaking || step === 'listen-target'}
-        onPress={() => {
-          if (step === 'say-native') {
-            speech.startListening(nativeLang, handleNativeSpeech)
-          } else if (step === 'repeat-target') {
-            speech.startListening(targetLang, handleRepeatAttempt)
-          }
-        }}
-        onRelease={() => speech.stopListening()}
-      />
-
-      {/* Live transcript */}
-      {sp.isListening && sp.transcript && (
-        <div className="text-sm text-[var(--text-muted)] italic">"{sp.transcript}"</div>
-      )}
-
-      {/* Action buttons */}
-      <div className="flex gap-3">
-        {step === 'rated' && round?.rating !== 'good' && (
-          <button
-            className="px-4 py-2 rounded-lg bg-[var(--surface)] hover:bg-[var(--surface-hover)] text-sm"
-            onClick={retryListen}
-          >
-            Listen again
-          </button>
-        )}
-        {(step === 'rated' || step === 'repeat-target') && (
-          <button
-            className="px-4 py-2 rounded-lg bg-[var(--accent)] text-white text-sm font-medium"
-            onClick={reset}
-          >
-            Next phrase
-          </button>
-        )}
-      </div>
-
-      {/* History */}
-      {history.length > 0 && (
-        <div className="w-full max-w-sm mt-4">
-          <h3 className="text-xs text-[var(--text-muted)] font-medium mb-2 uppercase tracking-wider">History</h3>
-          <div className="space-y-2">
-            {history.slice(0, 10).map((r, i) => (
-              <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-[var(--surface)] text-sm">
-                <span style={{ color: r.rating ? RATING_LABELS[r.rating].color : 'var(--text-muted)' }}>
-                  {r.rating === 'good' ? '\u2713' : r.rating === 'close' ? '\u223C' : '\u2717'}
-                </span>
-                <span className="truncate flex-1">{r.original}</span>
-              </div>
-            ))}
+          <div className="flex flex-wrap gap-3">
+            {step === 'rated' && round?.rating !== 'good' && (
+              <button
+                className="rounded-full border border-[var(--line)] bg-[var(--glass)] px-4 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--glass-hover)]"
+                onClick={retryListen}
+              >
+                Listen again
+              </button>
+            )}
+            {(step === 'rated' || step === 'repeat-target') && (
+              <button
+                className="rounded-full bg-[var(--ink)] px-4 py-2 text-sm font-semibold text-[var(--paper)] hover:-translate-y-0.5"
+                onClick={reset}
+              >
+                Next phrase
+              </button>
+            )}
           </div>
         </div>
-      )}
+      </section>
+
+      <aside className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--panel-quiet)] p-4 shadow-[var(--shadow-card)]">
+        <div className="text-[0.72rem] font-bold uppercase tracking-[0.22em] text-[var(--muted)]">Recent rounds</div>
+        <div className="mt-3 space-y-2">
+          {history.length === 0 && (
+            <div className="rounded-[1.1rem] border border-dashed border-[var(--line)] px-4 py-6 text-sm leading-6 text-[var(--muted)]">
+              Your latest speaking rounds will collect here.
+            </div>
+          )}
+          {history.slice(0, 8).map((item, index) => (
+            <div key={index} className="rounded-[1.1rem] border border-[var(--line)] bg-[var(--glass)] p-3">
+              <div className="flex items-center justify-between gap-3">
+                <div className="truncate text-sm font-semibold text-[var(--ink)]">{item.original}</div>
+                <div className="text-xs font-bold uppercase tracking-[0.14em]" style={{ color: item.rating ? RATING_LABELS[item.rating].color : 'var(--muted)' }}>
+                  {item.rating ?? 'saved'}
+                </div>
+              </div>
+              <div className="mt-2 text-xs leading-5 text-[var(--muted)]">{item.translated}</div>
+            </div>
+          ))}
+        </div>
+      </aside>
+    </div>
+  )
+}
+
+function RoundCard({ title, value, accent }: { title: string; value: string; accent?: boolean }) {
+  return (
+    <div className={`rounded-[1.25rem] border p-4 ${
+      accent
+        ? 'border-[var(--accent-soft)] bg-[var(--accent-gradient)]'
+        : 'border-[var(--line)] bg-[var(--panel-quiet)]'
+    }`}>
+      <div className="text-[0.68rem] font-bold uppercase tracking-[0.18em] text-[var(--muted)]">{title}</div>
+      <div className="mt-2 text-sm leading-6 text-[var(--ink)]">{value}</div>
     </div>
   )
 }

@@ -1,13 +1,28 @@
 const STORAGE_KEY = 'lango-settings'
 
+export type ThemePreference = 'system' | 'light' | 'dark'
+export type FontSizePreference = 'small' | 'medium' | 'large' | 'xlarge'
+export type MotionPreference = 'full' | 'reduced'
+export type SurfacePreference = 'soft' | 'bold'
+
 export interface Settings {
   nativeLang: string
   targetLang: string
+  theme: ThemePreference
+  fontSize: FontSizePreference
+  motion: MotionPreference
+  surface: SurfacePreference
+  flashcardAudio: boolean
 }
 
 const defaults: Settings = {
   nativeLang: 'en',
   targetLang: 'es',
+  theme: 'system',
+  fontSize: 'medium',
+  motion: 'full',
+  surface: 'soft',
+  flashcardAudio: true,
 }
 
 export function loadSettings(): Settings {

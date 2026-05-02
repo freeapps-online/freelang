@@ -1,24 +1,32 @@
 import { useState } from 'react'
 import { LANGUAGES, type Language } from '../types.ts'
 
-export function LanguagePicker({ value, onChange, label }: {
+export function LanguagePicker({
+  value,
+  onChange,
+  label,
+}: {
   value: string
   onChange: (code: string) => void
   label: string
 }) {
   const [open, setOpen] = useState(false)
-  const current = LANGUAGES.find(l => l.code === value)
+  const current = LANGUAGES.find((lang) => lang.code === value)
 
   return (
     <div className="relative">
       <button
-        className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--surface)] hover:bg-[var(--surface-hover)] text-sm"
+        className="flex w-full items-center justify-between gap-3 rounded-[1.25rem] border border-[var(--line)] bg-[var(--glass)] px-4 py-3 text-left shadow-[var(--shadow-card)] hover:border-[var(--line-strong)] hover:bg-[var(--glass-hover)]"
         onClick={() => setOpen(!open)}
       >
-        <span className="text-xs text-[var(--text-muted)]">{label}</span>
-        <span>{current?.flag}</span>
-        <span className="font-medium">{current?.name}</span>
-        <svg className="w-3 h-3 text-[var(--text-muted)]" fill="currentColor" viewBox="0 0 20 20">
+        <div className="min-w-0">
+          <div className="text-[0.68rem] font-bold uppercase tracking-[0.18em] text-[var(--muted)]">{label}</div>
+          <div className="mt-1 flex items-center gap-2 text-sm font-semibold text-[var(--ink)]">
+            <span className="text-base">{current?.flag}</span>
+            <span className="truncate">{current?.name}</span>
+          </div>
+        </div>
+        <svg className={`h-4 w-4 shrink-0 text-[var(--muted)] transition-transform ${open ? 'rotate-180' : ''}`} fill="currentColor" viewBox="0 0 20 20">
           <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
         </svg>
       </button>
@@ -26,19 +34,28 @@ export function LanguagePicker({ value, onChange, label }: {
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute top-full mt-1 left-0 z-50 bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-xl max-h-64 overflow-y-auto min-w-48">
-            {LANGUAGES.map((lang: Language) => (
-              <button
-                key={lang.code}
-                className={`w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-[var(--surface-hover)] ${
-                  lang.code === value ? 'text-[var(--accent)]' : ''
-                }`}
-                onClick={() => { onChange(lang.code); setOpen(false) }}
-              >
-                <span>{lang.flag}</span>
-                <span>{lang.name}</span>
-              </button>
-            ))}
+          <div className="absolute left-0 right-0 top-full z-50 mt-2 max-h-72 overflow-y-auto rounded-[1.25rem] border border-[var(--line-strong)] bg-[var(--panel-strong)] p-2 shadow-[var(--shadow-soft)] backdrop-blur-xl">
+            {LANGUAGES.map((lang: Language) => {
+              const active = lang.code === value
+              return (
+                <button
+                  key={lang.code}
+                  className={`flex w-full items-center gap-3 rounded-[1rem] px-3 py-3 text-sm ${
+                    active
+                      ? 'bg-[var(--accent-gradient)] text-[var(--ink)]'
+                      : 'text-[var(--muted)] hover:bg-[var(--glass-hover)] hover:text-[var(--ink)]'
+                  }`}
+                  onClick={() => {
+                    onChange(lang.code)
+                    setOpen(false)
+                  }}
+                >
+                  <span className="text-base">{lang.flag}</span>
+                  <span className="flex-1 text-left font-medium">{lang.name}</span>
+                  {active && <span className="text-[0.68rem] font-bold uppercase tracking-[0.18em] text-[var(--accent-deep)]">Active</span>}
+                </button>
+              )
+            })}
           </div>
         </>
       )}

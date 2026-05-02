@@ -1,11 +1,24 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { getFlashCardRound, getCardDisplay } from '../services/vocabulary.ts'
 import { loadScores, recordAnswer } from '../services/scores.ts'
+import { speech } from '../services/speech.ts'
+import { useSpeech } from '../hooks.ts'
 import type { FlashCardRound, FlashCardScore } from '../types.ts'
 
 type SwipeResult = 'correct' | 'wrong' | null
 
-export function FlashcardsTab({ nativeLang, targetLang }: { nativeLang: string; targetLang: string }) {
+export function FlashcardsTab({
+  nativeLang,
+  targetLang,
+  audioEnabled,
+  onToggleAudio,
+}: {
+  nativeLang: string
+  targetLang: string
+  audioEnabled: boolean
+  onToggleAudio: () => void
+}) {
+  const sp = useSpeech()
   const [round, setRound] = useState<FlashCardRound>(() => getFlashCardRound(nativeLang, targetLang))
   const [scores, setScores] = useState<FlashCardScore>(loadScores)
   const [result, setResult] = useState<SwipeResult>(null)
@@ -13,7 +26,6 @@ export function FlashcardsTab({ nativeLang, targetLang }: { nativeLang: string; 
   const [transitioning, setTransitioning] = useState(false)
   const startX = useRef(0)
   const dragging = useRef(false)
-  const cardRef = useRef<HTMLDivElement>(null)
 
   const display = getCardDisplay(round.card, nativeLang)
 
@@ -21,13 +33,11 @@ export function FlashcardsTab({ nativeLang, targetLang }: { nativeLang: string; 
     if (transitioning) return
     const correct = side === round.correctSide
     setResult(correct ? 'correct' : 'wrong')
-    setScores(prev => recordAnswer(prev, correct))
+    setScores((prev) => recordAnswer(prev, correct))
     setTransitioning(true)
+    setDragX(side === 'left' ? -420 : 420)
 
-    // Animate card off screen
-    setDragX(side === 'left' ? -400 : 400)
-
-    setTimeout(() => {
+    window.setTimeout(() => {
       setRound(getFlashCardRound(nativeLang, targetLang, round.card))
       setResult(null)
       setDragX(0)
@@ -35,127 +45,191 @@ export function FlashcardsTab({ nativeLang, targetLang }: { nativeLang: string; 
     }, 400)
   }, [round, nativeLang, targetLang, transitioning])
 
-  const onPointerDown = useCallback((e: React.PointerEvent) => {
+  const replayCardAudio = useCallback(() => {
+    if (!audioEnabled) return
+    void speech.speak(display.text, nativeLang)
+  }, [audioEnabled, display.text, nativeLang])
+
+  useEffect(() => {
+    if (!audioEnabled || transitioning) return
+    void speech.speak(display.text, nativeLang)
+  }, [audioEnabled, display.text, nativeLang, round.card.word, transitioning])
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (transitioning) return
+
+      const target = event.target as HTMLElement | null
+      const tag = target?.tagName
+      if (target?.isContentEditable || tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') {
+        return
+      }
+
+      if (event.key === 'ArrowLeft') {
+        event.preventDefault()
+        handleAnswer('left')
+      }
+
+      if (event.key === 'ArrowRight') {
+        event.preventDefault()
+        handleAnswer('right')
+      }
+    }
+
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [handleAnswer, transitioning])
+
+  useEffect(() => () => {
+    speech.stopSpeaking()
+  }, [])
+
+  const onPointerDown = useCallback((event: React.PointerEvent) => {
     if (transitioning) return
     dragging.current = true
-    startX.current = e.clientX
-    ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
+    startX.current = event.clientX
+    ;(event.target as HTMLElement).setPointerCapture(event.pointerId)
   }, [transitioning])
 
-  const onPointerMove = useCallback((e: React.PointerEvent) => {
+  const onPointerMove = useCallback((event: React.PointerEvent) => {
     if (!dragging.current) return
-    setDragX(e.clientX - startX.current)
+    setDragX(event.clientX - startX.current)
   }, [])
 
   const onPointerUp = useCallback(() => {
     if (!dragging.current) return
     dragging.current = false
 
-    const threshold = 80
-    if (dragX < -threshold) {
-      handleAnswer('left')
-    } else if (dragX > threshold) {
-      handleAnswer('right')
-    } else {
-      setDragX(0)
-    }
+    if (dragX < -80) handleAnswer('left')
+    else if (dragX > 80) handleAnswer('right')
+    else setDragX(0)
   }, [dragX, handleAnswer])
 
   const pct = scores.total > 0 ? Math.round((scores.correct / scores.total) * 100) : 0
 
   return (
-    <div className="flex flex-col items-center px-4 pt-6 gap-5 h-[calc(100dvh-7rem)]">
-      {/* Score bar */}
-      <div className="flex items-center gap-4 text-sm">
-        <div className="flex items-center gap-1.5">
-          <span className="text-[var(--text-muted)]">Score</span>
-          <span className="font-semibold">{scores.correct}/{scores.total}</span>
-          <span className="text-[var(--text-muted)]">({pct}%)</span>
+    <div className="grid gap-4 lg:grid-cols-[17rem_minmax(0,1fr)]">
+      <aside className="order-2 rounded-[1.5rem] border border-[var(--line)] bg-[var(--glass-strong)] p-4 shadow-[var(--shadow-card)] lg:order-1">
+        <div className="text-[0.72rem] font-bold uppercase tracking-[0.22em] text-[var(--muted)]">Deck pace</div>
+        <div className="mt-3 grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+          <MetricCard label="Accuracy" value={`${pct}%`} detail={`${scores.correct}/${scores.total} correct`} />
+          <MetricCard label="Current streak" value={`${scores.streak}`} detail="Keep the run alive" />
+          <MetricCard label="Best streak" value={`${scores.bestStreak}`} detail="Your strongest session" />
         </div>
-        <div className="w-px h-4 bg-[var(--border)]" />
-        <div className="flex items-center gap-1.5">
-          <span className="text-[var(--text-muted)]">Streak</span>
-          <span className="font-semibold" style={{ color: scores.streak >= 3 ? 'var(--success)' : 'var(--text)' }}>
-            {scores.streak}
-          </span>
-        </div>
-        <div className="w-px h-4 bg-[var(--border)]" />
-        <div className="flex items-center gap-1.5">
-          <span className="text-[var(--text-muted)]">Best</span>
-          <span className="font-semibold">{scores.bestStreak}</span>
-        </div>
-      </div>
+      </aside>
 
-      {/* Swipe hint */}
-      <div className="flex items-center gap-6 text-xs text-[var(--text-muted)]">
-        <span>&larr; {round.leftOption}</span>
-        <span>swipe</span>
-        <span>{round.rightOption} &rarr;</span>
-      </div>
-
-      {/* Card */}
-      <div className="flex-1 flex items-center justify-center w-full">
-        <div
-          ref={cardRef}
-          className="relative w-64 h-80 rounded-2xl bg-[var(--surface)] border border-[var(--border)] flex flex-col items-center justify-center gap-4 cursor-grab active:cursor-grabbing select-none touch-none"
-          style={{
-            transform: `translateX(${dragX}px) rotate(${dragX * 0.08}deg)`,
-            transition: transitioning ? 'transform 0.35s ease-out, opacity 0.35s ease-out' : 'none',
-            opacity: transitioning ? 0 : 1,
-          }}
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={onPointerUp}
-        >
-          {/* Direction indicator */}
-          {Math.abs(dragX) > 30 && !transitioning && (
-            <div
-              className="absolute top-4 px-3 py-1 rounded-full text-sm font-semibold"
-              style={{
-                left: dragX < 0 ? 12 : 'auto',
-                right: dragX > 0 ? 12 : 'auto',
-                background: dragX < 0
-                  ? (round.correctSide === 'left' ? 'var(--success)' : 'var(--error)')
-                  : (round.correctSide === 'right' ? 'var(--success)' : 'var(--error)'),
-                color: '#000',
-              }}
-            >
-              {dragX < 0 ? round.leftOption : round.rightOption}
+      <section className="order-1 rounded-[1.5rem] border border-[var(--line)] bg-[var(--warm-gradient)] p-4 shadow-[var(--shadow-card)] sm:p-5 lg:order-2">
+        <div className="flex h-full flex-col gap-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <div className="text-[0.72rem] font-bold uppercase tracking-[0.22em] text-[var(--accent-deep)]">Recall drill</div>
+              <h3 className="display-font mt-2 text-3xl leading-none text-[var(--ink)]">Listen, look, then choose fast.</h3>
             </div>
-          )}
+            <div className="flex flex-wrap gap-2 sm:justify-end">
+              <div className="rounded-full border border-[var(--line)] bg-[var(--glass)] px-4 py-2 text-sm font-semibold text-[var(--muted)]">
+                Swipe or use ← →
+              </div>
+              <button
+                className="rounded-full border border-[var(--line)] bg-[var(--glass)] px-4 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--glass-hover)]"
+                onClick={onToggleAudio}
+              >
+                {audioEnabled ? 'Mute' : 'Unmute'}
+              </button>
+              <button
+                className="rounded-full border border-[var(--line)] bg-[var(--glass)] px-4 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--glass-hover)]"
+                onClick={replayCardAudio}
+                disabled={!audioEnabled || sp.isSpeaking}
+              >
+                Replay sound
+              </button>
+            </div>
+          </div>
 
-          <span className="text-6xl">{display.emoji}</span>
-          <span className="text-xl font-semibold">{display.text}</span>
+          <div className="grid gap-4 lg:grid-cols-[1fr_auto_1fr] lg:items-center">
+            <div className="rounded-[1.2rem] border border-[var(--line)] bg-[var(--glass)] px-4 py-3 text-center text-sm font-semibold text-[var(--muted)]">
+              ← {round.leftOption}
+            </div>
+            <div className="hidden h-px w-12 bg-[var(--line-strong)] lg:block" />
+            <div className="rounded-[1.2rem] border border-[var(--line)] bg-[var(--glass)] px-4 py-3 text-center text-sm font-semibold text-[var(--muted)]">
+              {round.rightOption} →
+            </div>
+          </div>
+
+          <div className="flex min-h-[23rem] flex-1 items-center justify-center">
+            <div
+              className="relative flex h-[23rem] w-full max-w-[24rem] cursor-grab flex-col items-center justify-center gap-5 rounded-[2rem] border border-[var(--line-strong)] bg-[var(--card-gradient)] px-6 text-center shadow-[var(--shadow-soft)] active:cursor-grabbing select-none touch-none"
+              style={{
+                transform: `translateX(${dragX}px) rotate(${dragX * 0.08}deg)`,
+                transition: transitioning ? 'transform 0.35s ease-out, opacity 0.35s ease-out' : 'none',
+                opacity: transitioning ? 0 : 1,
+              }}
+              onPointerDown={onPointerDown}
+              onPointerMove={onPointerMove}
+              onPointerUp={onPointerUp}
+            >
+              {Math.abs(dragX) > 30 && !transitioning && (
+                <div
+                  className="absolute top-5 rounded-full px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-[var(--paper)]"
+                  style={{
+                    left: dragX < 0 ? 18 : 'auto',
+                    right: dragX > 0 ? 18 : 'auto',
+                    background: dragX < 0
+                      ? (round.correctSide === 'left' ? 'var(--success)' : 'var(--error)')
+                      : (round.correctSide === 'right' ? 'var(--success)' : 'var(--error)'),
+                  }}
+                >
+                  {dragX < 0 ? round.leftOption : round.rightOption}
+                </div>
+              )}
+
+              <div className="absolute right-5 top-5 rounded-full border border-[var(--line)] bg-[var(--glass)] px-3 py-1 text-[0.68rem] font-bold uppercase tracking-[0.16em] text-[var(--muted)]">
+                {audioEnabled ? (sp.isSpeaking ? 'Speaking' : 'Sound on') : 'Muted'}
+              </div>
+
+              <div className="text-7xl drop-shadow-sm">{display.emoji}</div>
+              <div className="display-font text-4xl leading-none text-[var(--ink)]">{display.text}</div>
+              <div className="max-w-xs text-sm leading-6 text-[var(--muted)]">
+                Treat it like simple dictation: hear the word immediately, then answer from instinct.
+              </div>
+            </div>
+          </div>
+
+          <div className="min-h-7 text-center text-sm font-semibold">
+            {result && (
+              <span style={{ color: result === 'correct' ? 'var(--success)' : 'var(--error)' }}>
+                {result === 'correct' ? 'Correct choice.' : `Wrong lane — the answer was ${round.correctSide === 'left' ? round.leftOption : round.rightOption}.`}
+              </span>
+            )}
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <button
+              className="rounded-[1.1rem] border border-[var(--line)] bg-[var(--glass)] px-5 py-3 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--glass-hover)]"
+              onClick={() => handleAnswer('left')}
+              disabled={transitioning}
+            >
+              Choose {round.leftOption}
+            </button>
+            <button
+              className="rounded-[1.1rem] border border-[var(--line)] bg-[var(--ink)] px-5 py-3 text-sm font-semibold text-[var(--paper)] hover:-translate-y-0.5"
+              onClick={() => handleAnswer('right')}
+              disabled={transitioning}
+            >
+              Choose {round.rightOption}
+            </button>
+          </div>
         </div>
-      </div>
+      </section>
+    </div>
+  )
+}
 
-      {/* Result flash */}
-      {result && (
-        <div
-          className="text-lg font-semibold mb-2"
-          style={{ color: result === 'correct' ? 'var(--success)' : 'var(--error)' }}
-        >
-          {result === 'correct' ? 'Correct!' : `Wrong — it was "${round.correctSide === 'left' ? round.leftOption : round.rightOption}"`}
-        </div>
-      )}
-
-      {/* Tap fallback buttons */}
-      <div className="flex gap-4 pb-2">
-        <button
-          className="px-6 py-3 rounded-xl bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-[var(--border)] text-sm font-medium min-w-24"
-          onClick={() => handleAnswer('left')}
-          disabled={transitioning}
-        >
-          &larr; {round.leftOption}
-        </button>
-        <button
-          className="px-6 py-3 rounded-xl bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-[var(--border)] text-sm font-medium min-w-24"
-          onClick={() => handleAnswer('right')}
-          disabled={transitioning}
-        >
-          {round.rightOption} &rarr;
-        </button>
-      </div>
+function MetricCard({ label, value, detail }: { label: string; value: string; detail: string }) {
+  return (
+    <div className="rounded-[1.2rem] border border-[var(--line)] bg-[var(--panel-quiet)] p-4">
+      <div className="text-[0.68rem] font-bold uppercase tracking-[0.18em] text-[var(--muted)]">{label}</div>
+      <div className="mt-2 text-2xl font-extrabold text-[var(--ink)]">{value}</div>
+      <div className="mt-1 text-sm text-[var(--muted)]">{detail}</div>
     </div>
   )
 }
