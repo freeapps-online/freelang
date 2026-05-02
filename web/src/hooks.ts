@@ -39,14 +39,14 @@ export function useApplySettings(settings: Settings) {
     root.dataset.motion = settings.motion
     root.dataset.surface = settings.surface
 
-    const fontScale = {
-      small: '15px',
-      medium: '16px',
-      large: '17px',
-      xlarge: '18px',
+    const contentScale = {
+      small: '1',
+      medium: '1.1',
+      large: '1.25',
+      xlarge: '1.4',
     } as const
 
-    root.style.fontSize = fontScale[settings.fontSize]
+    root.style.setProperty('--content-scale', contentScale[settings.fontSize])
 
     media.addEventListener('change', applyTheme)
     return () => media.removeEventListener('change', applyTheme)

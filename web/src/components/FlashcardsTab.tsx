@@ -182,8 +182,8 @@ export function FlashcardsTab({
                 {audioEnabled ? (sp.isSpeaking ? 'Speaking' : 'Sound on') : 'Muted'}
               </div>
 
-              <div className="text-7xl drop-shadow-sm">{display.emoji}</div>
-              <div className="display-font text-4xl leading-none text-[var(--ink)]">{display.text}</div>
+              <div className="drop-shadow-sm" style={{ fontSize: `calc(4.5rem * var(--content-scale))` }}>{display.emoji}</div>
+              <div className="display-font leading-none text-[var(--ink)]" style={{ fontSize: `calc(2.25rem * var(--content-scale))` }}>{display.text}</div>
             </div>
           </div>
 
