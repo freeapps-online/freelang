@@ -34,7 +34,7 @@ export function useApplySettings(settings: Settings) {
         : settings.theme
       root.dataset.theme = resolvedTheme
       const meta = document.getElementById('theme-color') as HTMLMetaElement | null
-      if (meta) meta.content = resolvedTheme === 'dark' ? '#141416' : '#fdfcfa'
+      if (meta) meta.content = resolvedTheme === 'dark' ? '#000000' : '#ffffff'
     }
 
     applyTheme()
