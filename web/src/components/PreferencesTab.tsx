@@ -103,16 +103,28 @@ export function PreferencesTab({
         </div>
       </section>
 
-      <aside className="rounded-[1.5rem] border border-[var(--line)] p-4 shadow-[var(--shadow-card)]" style={{ background: 'var(--panel-gradient)' }}>
-        <div className="text-[0.72rem] font-bold uppercase tracking-[0.22em] text-[var(--muted)]">Live summary</div>
-        <div className="mt-4 space-y-3">
-          <PreferenceStat label="Theme" value={settings.theme} />
-          <PreferenceStat label="Labels" value={settings.labelSize} />
-          <PreferenceStat label="Content" value={settings.contentSize} />
-          <PreferenceStat label="Motion" value={settings.motion} />
-          <PreferenceStat label="Surface" value={settings.surface} />
-          <PreferenceStat label="Card audio" value={settings.flashcardAudio ? 'on' : 'off'} />
+      <aside className="space-y-4">
+        <div className="rounded-[1.5rem] border border-[var(--line)] p-4 shadow-[var(--shadow-card)]" style={{ background: 'var(--panel-gradient)' }}>
+          <div className="text-[0.72rem] font-bold uppercase tracking-[0.22em] text-[var(--muted)]">Live summary</div>
+          <div className="mt-4 space-y-3">
+            <PreferenceStat label="Theme" value={settings.theme} />
+            <PreferenceStat label="Labels" value={settings.labelSize} />
+            <PreferenceStat label="Content" value={settings.contentSize} />
+            <PreferenceStat label="Card audio" value={settings.flashcardAudio ? 'on' : 'off'} />
+          </div>
         </div>
+
+        <a
+          href="https://prolanguageapp.pages.dev"
+          target="_blank"
+          rel="noopener"
+          className="block rounded-[1.5rem] border border-[var(--accent-soft)] p-4 shadow-[var(--shadow-card)]"
+          style={{ background: 'var(--accent-gradient)' }}
+        >
+          <div className="text-[0.72rem] font-bold uppercase tracking-[0.22em] text-[var(--accent-deep)]">Upgrade to Pro</div>
+          <div className="mt-2 text-sm font-semibold text-[var(--ink)]">AI Translation, Conversation & Kokoro TTS</div>
+          <div className="mt-1 text-xs text-[var(--muted)]">prolanguageapp.online</div>
+        </a>
       </aside>
     </div>
   )

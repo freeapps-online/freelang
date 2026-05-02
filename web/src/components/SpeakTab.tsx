@@ -83,8 +83,11 @@ function scoreAttempt(expected: string, attempt: string): AttemptResult {
   return { score: expectedWords.length > 0 ? Math.round((correct / expectedWords.length) * 100) : 0, words, raw: attempt }
 }
 
-export function SpeakTab({ nativeLang, targetLang, level, showStats: showStatsExternal }: { nativeLang: string; targetLang: string; level: number; showStats: boolean }) {
+const MAX_SENTENCE_LEVEL = 5
+
+export function SpeakTab({ nativeLang, targetLang, level: rawLevel, showStats: showStatsExternal }: { nativeLang: string; targetLang: string; level: number; showStats: boolean }) {
   const sp = useSpeech()
+  const level = Math.min(rawLevel, MAX_SENTENCE_LEVEL)
   const [sentences, setSentences] = useState<Sentence[]>([])
   const [sentence, setSentence] = useState<Sentence | null>(null)
   const [attempt, setAttempt] = useState<AttemptResult | null>(null)

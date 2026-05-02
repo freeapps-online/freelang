@@ -100,6 +100,7 @@ export default function App() {
               <div className="mt-auto space-y-1 rounded-[1rem] border border-[var(--line)] bg-[var(--glass-soft)] p-3 text-[0.7rem] text-[var(--muted)]">
                 <div className="font-bold uppercase tracking-[0.15em]">Keyboard</div>
                 <div className="flex justify-between"><span>← →</span><span>Choose answer</span></div>
+                <div className="flex justify-between"><span>↑ ↓</span><span>Hear options</span></div>
                 <div className="flex justify-between"><span>Space / Enter</span><span>Replay word</span></div>
               </div>
             )}
@@ -174,8 +175,8 @@ export default function App() {
 
           {/* Content */}
           <main className={`min-w-0 ${isFullscreen ? 'flex min-h-0 flex-1 flex-col lg:block' : ''}`}>
-            <section className={`backdrop-blur-xl lg:rounded-[2rem] lg:border lg:border-[var(--line)] lg:bg-[var(--panel)] lg:p-5 lg:shadow-[var(--shadow-soft)] ${isFullscreen ? 'flex min-h-0 flex-1 flex-col' : 'rounded-[1.25rem] bg-[var(--panel-quiet)] p-3 sm:p-4'}`}>
-              <div className={`lg:rounded-[1.6rem] lg:bg-[var(--panel-quiet)] lg:p-5 ${isFullscreen ? 'flex min-h-0 flex-1 flex-col' : 'min-h-[34rem] sm:min-h-[36rem] lg:min-h-0'}`}>
+            <section className={`backdrop-blur-xl lg:rounded-[1.5rem] lg:bg-[var(--panel-quiet)] lg:p-5 ${isFullscreen ? 'flex min-h-0 flex-1 flex-col' : 'rounded-[1.25rem] bg-[var(--panel-quiet)] p-3 sm:p-4'}`}>
+              <div className={`${isFullscreen ? 'flex min-h-0 flex-1 flex-col' : 'min-h-[34rem] sm:min-h-[36rem] lg:min-h-0'}`}>
                 {mode === 'flashcards' && (
                   <FlashcardsTab
                     nativeLang={settings.nativeLang}

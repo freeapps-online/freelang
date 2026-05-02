@@ -85,6 +85,8 @@ export function FlashcardsTab({
       if (target?.isContentEditable || tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
       if (event.key === 'ArrowLeft') { event.preventDefault(); handleAnswer('left') }
       if (event.key === 'ArrowRight') { event.preventDefault(); handleAnswer('right') }
+      if (event.key === 'ArrowUp' && round) { event.preventDefault(); void speech.speak(round.leftOption, nativeLang) }
+      if (event.key === 'ArrowDown' && round) { event.preventDefault(); void speech.speak(round.rightOption, nativeLang) }
       if ((event.key === 'Enter' || event.key === ' ') && display) { event.preventDefault(); void speech.speak(display.text, targetLang) }
     }
     window.addEventListener('keydown', onKeyDown)
