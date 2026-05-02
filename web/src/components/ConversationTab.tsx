@@ -49,7 +49,11 @@ export function ConversationTab({ targetLang }: { targetLang: string }) {
             </p>
           </div>
 
-          <div ref={scrollRef} className="min-h-[22rem] flex-1 space-y-3 overflow-y-auto rounded-[1.4rem] border border-[var(--line)] bg-[var(--cool-gradient)] p-4">
+          <div
+            ref={scrollRef}
+            className="min-h-[22rem] flex-1 space-y-3 overflow-y-auto rounded-[1.4rem] border border-[var(--line)] p-4"
+            style={{ background: 'var(--cool-gradient)' }}
+          >
             {messages.length === 0 && (
               <div className="rounded-[1.2rem] border border-dashed border-[var(--line)] bg-[var(--glass-soft)] px-4 py-10 text-center text-sm leading-6 text-[var(--muted)]">
                 Start speaking in your target language. Replies will stack here like a guided notebook conversation.
@@ -76,7 +80,7 @@ export function ConversationTab({ targetLang }: { targetLang: string }) {
         </div>
       </section>
 
-      <aside className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--cool-gradient)] p-4 shadow-[var(--shadow-card)]">
+      <aside className="rounded-[1.5rem] border border-[var(--line)] p-4 shadow-[var(--shadow-card)]" style={{ background: 'var(--cool-gradient)' }}>
         <div className="text-[0.72rem] font-bold uppercase tracking-[0.22em] text-[var(--muted)]">Speak cue</div>
         <div className="mt-3 rounded-[1.2rem] border border-[var(--line)] bg-[var(--glass)] p-4 text-sm leading-6 text-[var(--muted)]">
           Keep answers short. One sentence is enough to stay in flow and reduce hesitation.

@@ -118,7 +118,10 @@ export function FlashcardsTab({
         </div>
       </aside>
 
-      <section className="order-1 rounded-[1.5rem] border border-[var(--line)] bg-[var(--warm-gradient)] p-4 shadow-[var(--shadow-card)] sm:p-5 lg:order-2">
+      <section
+        className="order-1 rounded-[1.5rem] border border-[var(--line)] p-4 shadow-[var(--shadow-card)] sm:p-5 lg:order-2"
+        style={{ background: 'var(--warm-gradient)' }}
+      >
         <div className="flex h-full flex-col gap-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
@@ -157,8 +160,9 @@ export function FlashcardsTab({
 
           <div className="flex min-h-[23rem] flex-1 items-center justify-center">
             <div
-              className="relative flex h-[23rem] w-full max-w-[24rem] cursor-grab flex-col items-center justify-center gap-5 rounded-[2rem] border border-[var(--line-strong)] bg-[var(--card-gradient)] px-6 text-center shadow-[var(--shadow-soft)] active:cursor-grabbing select-none touch-none"
+              className="relative flex h-[23rem] w-full max-w-[24rem] cursor-grab flex-col items-center justify-center gap-5 rounded-[2rem] border border-[var(--line-strong)] px-6 text-center shadow-[var(--shadow-soft)] active:cursor-grabbing select-none touch-none"
               style={{
+                background: 'var(--card-gradient)',
                 transform: `translateX(${dragX}px) rotate(${dragX * 0.08}deg)`,
                 transition: transitioning ? 'transform 0.35s ease-out, opacity 0.35s ease-out' : 'none',
                 opacity: transitioning ? 0 : 1,

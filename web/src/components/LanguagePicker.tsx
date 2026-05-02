@@ -42,9 +42,10 @@ export function LanguagePicker({
                   key={lang.code}
                   className={`flex w-full items-center gap-3 rounded-[1rem] px-3 py-3 text-sm ${
                     active
-                      ? 'bg-[var(--accent-gradient)] text-[var(--ink)]'
+                      ? 'text-[var(--ink)]'
                       : 'text-[var(--muted)] hover:bg-[var(--glass-hover)] hover:text-[var(--ink)]'
                   }`}
+                  style={active ? { background: 'var(--accent-gradient)' } : undefined}
                   onClick={() => {
                     onChange(lang.code)
                     setOpen(false)

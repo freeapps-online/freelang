@@ -90,7 +90,7 @@ export function PreferencesTab({
         </div>
       </section>
 
-      <aside className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--panel-gradient)] p-4 shadow-[var(--shadow-card)]">
+      <aside className="rounded-[1.5rem] border border-[var(--line)] p-4 shadow-[var(--shadow-card)]" style={{ background: 'var(--panel-gradient)' }}>
         <div className="text-[0.72rem] font-bold uppercase tracking-[0.22em] text-[var(--muted)]">Live summary</div>
         <div className="mt-4 space-y-3">
           <PreferenceStat label="Theme" value={settings.theme} />
@@ -149,9 +149,10 @@ function ChoiceGrid<T extends string>({
             key={option.value}
             className={`rounded-[1.1rem] border px-4 py-3 text-left ${
               active
-                ? 'border-[var(--accent-soft)] bg-[var(--accent-gradient)] shadow-[var(--shadow-card)]'
+                ? 'border-[var(--accent-soft)] shadow-[var(--shadow-card)]'
                 : 'border-[var(--line)] bg-[var(--glass)] hover:bg-[var(--glass-hover)]'
             }`}
+            style={active ? { background: 'var(--accent-gradient)' } : undefined}
             onClick={() => onChange(option.value)}
           >
             <div className="text-sm font-semibold text-[var(--ink)]">{option.label}</div>

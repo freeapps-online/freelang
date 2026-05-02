@@ -242,9 +242,10 @@ function ModeRailButton({
     <button
       className={`group w-full rounded-[1.35rem] border p-4 text-left transition duration-200 ${
         active
-          ? 'border-[var(--accent-soft)] bg-[var(--accent-gradient)] shadow-[var(--shadow-card)]'
+          ? 'border-[var(--accent-soft)] shadow-[var(--shadow-card)]'
           : 'border-[var(--line)] bg-[var(--glass-soft)] hover:border-[var(--line-strong)] hover:bg-[var(--glass-hover)]'
       }`}
+      style={active ? { background: 'var(--accent-gradient)' } : undefined}
       onClick={onClick}
     >
       <div className="flex items-start justify-between gap-3">

@@ -102,7 +102,7 @@ export function TranslateTab({ nativeLang, targetLang }: { nativeLang: string; t
         </div>
       </section>
 
-      <aside className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--mint-gradient)] p-4 shadow-[var(--shadow-card)]">
+      <aside className="rounded-[1.5rem] border border-[var(--line)] p-4 shadow-[var(--shadow-card)]" style={{ background: 'var(--mint-gradient)' }}>
         <div className="text-[0.72rem] font-bold uppercase tracking-[0.22em] text-[var(--muted)]">Mic controls</div>
         <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
           <MicWell

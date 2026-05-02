@@ -109,7 +109,7 @@ export function PracticeTab({ nativeLang, targetLang }: { nativeLang: string; ta
             {round?.userAttempt && <RoundCard title="Your repeat" value={round.userAttempt} />}
           </div>
 
-          <div className="rounded-[1.35rem] border border-[var(--line)] bg-[var(--warm-gradient)] px-4 py-5 text-center">
+          <div className="rounded-[1.35rem] border border-[var(--line)] px-4 py-5 text-center" style={{ background: 'var(--warm-gradient)' }}>
             <div className="mb-4 flex justify-center">
               <MicButton
                 listening={sp.isListening}
@@ -185,11 +185,14 @@ export function PracticeTab({ nativeLang, targetLang }: { nativeLang: string; ta
 
 function RoundCard({ title, value, accent }: { title: string; value: string; accent?: boolean }) {
   return (
-    <div className={`rounded-[1.25rem] border p-4 ${
-      accent
-        ? 'border-[var(--accent-soft)] bg-[var(--accent-gradient)]'
-        : 'border-[var(--line)] bg-[var(--panel-quiet)]'
-    }`}>
+    <div
+      className={`rounded-[1.25rem] border p-4 ${
+        accent
+          ? 'border-[var(--accent-soft)]'
+          : 'border-[var(--line)] bg-[var(--panel-quiet)]'
+      }`}
+      style={accent ? { background: 'var(--accent-gradient)' } : undefined}
+    >
       <div className="text-[0.68rem] font-bold uppercase tracking-[0.18em] text-[var(--muted)]">{title}</div>
       <div className="mt-2 text-sm leading-6 text-[var(--ink)]">{value}</div>
     </div>
