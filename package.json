@@ -6,6 +6,11 @@
   "scripts": {
     "dev": "pnpm --filter @lango/web dev",
     "build": "pnpm --filter @lango/web build",
-    "preview": "pnpm --filter @lango/web preview"
+    "preview": "pnpm --filter @lango/web preview",
+    "cf:deploy": "pnpm build && wrangler pages deploy web/dist",
+    "cf:preview": "pnpm build && wrangler pages deploy web/dist --branch preview"
+  },
+  "devDependencies": {
+    "wrangler": "^4.87.0"
   }
 }
