@@ -10,6 +10,7 @@ export interface FlashCard {
   word: string
   emoji: string
   translations: Record<string, string>
+  transliterations?: Record<string, string>
 }
 
 export interface FlashCardRound {
@@ -17,6 +18,8 @@ export interface FlashCardRound {
   correctSide: 'left' | 'right'
   leftOption: string
   rightOption: string
+  leftTranslit?: string
+  rightTranslit?: string
 }
 
 export interface FlashCardScore {

@@ -18,7 +18,7 @@ export function FlashcardsTab({
   audioEnabled: boolean
   onToggleAudio: () => void
 }) {
-  const sp = useSpeech()
+  useSpeech() // keep subscription for reactivity
   const [round, setRound] = useState<FlashCardRound>(() => getFlashCardRound(nativeLang, targetLang))
   const [scores, setScores] = useState<FlashCardScore>(loadScores)
   const [result, setResult] = useState<SwipeResult>(null)
@@ -45,10 +45,6 @@ export function FlashcardsTab({
     }, 400)
   }, [round, nativeLang, targetLang, transitioning])
 
-  const replayCardAudio = useCallback(() => {
-    if (!audioEnabled) return
-    void speech.speak(display.text, nativeLang)
-  }, [audioEnabled, display.text, nativeLang])
 
   useEffect(() => {
     if (!audioEnabled || transitioning) return
@@ -96,14 +92,20 @@ export function FlashcardsTab({
     setDragX(event.clientX - startX.current)
   }, [])
 
-  const onPointerUp = useCallback(() => {
+  const onPointerUp = useCallback((event: React.PointerEvent) => {
     if (!dragging.current) return
     dragging.current = false
 
+    const moved = Math.abs(event.clientX - startX.current)
     if (dragX < -80) handleAnswer('left')
     else if (dragX > 80) handleAnswer('right')
-    else setDragX(0)
-  }, [dragX, handleAnswer])
+    else {
+      setDragX(0)
+      if (moved < 10 && audioEnabled) {
+        void speech.speak(display.text, nativeLang)
+      }
+    }
+  }, [dragX, handleAnswer, audioEnabled, display.text, nativeLang])
 
   const pct = scores.total > 0 ? Math.round((scores.correct / scores.total) * 100) : 0
 
@@ -123,30 +125,23 @@ export function FlashcardsTab({
         style={{ background: 'var(--warm-gradient)' }}
       >
         <div className="flex h-full flex-col gap-5">
-          <div className="flex items-center justify-end gap-2">
+          <div className="flex items-center justify-end">
             <button
               className="rounded-full border border-[var(--line)] bg-[var(--glass)] px-4 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--glass-hover)]"
               onClick={onToggleAudio}
             >
-              {audioEnabled ? 'Mute' : 'Unmute'}
+              {audioEnabled ? 'Sound on' : 'Sound off'}
             </button>
-            {audioEnabled && (
-              <button
-                className="rounded-full border border-[var(--line)] bg-[var(--glass)] px-4 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--glass-hover)]"
-                onClick={replayCardAudio}
-                disabled={sp.isSpeaking}
-              >
-                Replay
-              </button>
-            )}
           </div>
 
           <div className="flex items-center justify-between gap-3">
-            <div className="rounded-[1.2rem] border border-[var(--line)] bg-[var(--glass)] px-4 py-3 text-sm font-semibold text-[var(--muted)]">
-              ← {round.leftOption}
+            <div className="rounded-[1.2rem] border border-[var(--line)] bg-[var(--glass)] px-4 py-3 text-center">
+              <div className="text-sm font-semibold text-[var(--ink)]">← {round.leftOption}</div>
+              {round.leftTranslit && <div className="mt-1 text-xs italic text-[var(--muted)]">{round.leftTranslit}</div>}
             </div>
-            <div className="rounded-[1.2rem] border border-[var(--line)] bg-[var(--glass)] px-4 py-3 text-sm font-semibold text-[var(--muted)]">
-              {round.rightOption} →
+            <div className="rounded-[1.2rem] border border-[var(--line)] bg-[var(--glass)] px-4 py-3 text-center">
+              <div className="text-sm font-semibold text-[var(--ink)]">{round.rightOption} →</div>
+              {round.rightTranslit && <div className="mt-1 text-xs italic text-[var(--muted)]">{round.rightTranslit}</div>}
             </div>
           </div>
 
@@ -177,10 +172,6 @@ export function FlashcardsTab({
                   {dragX < 0 ? round.leftOption : round.rightOption}
                 </div>
               )}
-
-              <div className="absolute right-5 top-5 rounded-full border border-[var(--line)] bg-[var(--glass)] px-3 py-1 text-[0.68rem] font-bold uppercase tracking-[0.16em] text-[var(--muted)]">
-                {audioEnabled ? (sp.isSpeaking ? 'Speaking' : 'Sound on') : 'Muted'}
-              </div>
 
               <div className="drop-shadow-sm" style={{ fontSize: `calc(4.5rem * var(--content-scale))` }}>{display.emoji}</div>
               <div className="display-font leading-none text-[var(--ink)]" style={{ fontSize: `calc(2.25rem * var(--content-scale))` }}>{display.text}</div>
