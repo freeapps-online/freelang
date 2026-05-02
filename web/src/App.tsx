@@ -10,48 +10,12 @@ import { LANGUAGES, type Mode } from './types.ts'
 
 const MODES: Mode[] = ['practice', 'flashcards', 'translate', 'conversation', 'preferences']
 
-const MODE_META: Record<Mode, {
-  label: string
-  shortLabel: string
-  eyebrow: string
-  title: string
-  description: string
-}> = {
-  practice: {
-    label: 'Practice Studio',
-    shortLabel: 'Practice',
-    eyebrow: 'Voice Loop',
-    title: 'Say it, hear it, repeat it.',
-    description: 'A tight repetition loop for accent training and phrase memory.',
-  },
-  flashcards: {
-    label: 'Card Deck',
-    shortLabel: 'Cards',
-    eyebrow: 'Quick Recall',
-    title: 'Swipe through meaning at speed.',
-    description: 'Fast vocabulary reps with momentum, plus keyboard arrows and auto-pronounced cards.',
-  },
-  translate: {
-    label: 'Live Translate',
-    shortLabel: 'Translate',
-    eyebrow: 'Two-Way Mode',
-    title: 'Pass the phone and keep talking.',
-    description: 'Dual microphone controls designed for a real conversation across two languages.',
-  },
-  conversation: {
-    label: 'Conversation',
-    shortLabel: 'Converse',
-    eyebrow: 'Speaking Flow',
-    title: 'Stay in the target language longer.',
-    description: 'A lighter chat surface that nudges you to keep responding out loud.',
-  },
-  preferences: {
-    label: 'Preferences',
-    shortLabel: 'Prefs',
-    eyebrow: 'UI Control',
-    title: 'Adjust theme, type, motion, and defaults.',
-    description: 'A dedicated preferences surface for appearance, reading comfort, and language defaults.',
-  },
+const MODE_LABELS: Record<Mode, string> = {
+  practice: 'Practice',
+  flashcards: 'Cards',
+  translate: 'Translate',
+  conversation: 'Conversation',
+  preferences: 'Preferences',
 }
 
 export default function App() {
@@ -61,7 +25,6 @@ export default function App() {
 
   const native = LANGUAGES.find((lang) => lang.code === settings.nativeLang)
   const target = LANGUAGES.find((lang) => lang.code === settings.targetLang)
-  const current = MODE_META[mode]
 
   return (
     <div className="relative min-h-[100dvh] overflow-hidden">
@@ -72,103 +35,55 @@ export default function App() {
       </div>
 
       <div className="relative mx-auto min-h-[100dvh] max-w-[1540px] px-3 pb-24 pt-3 sm:px-4 lg:px-8 lg:py-8">
-        <div className="lg:grid lg:grid-cols-[20rem_minmax(0,1fr)] lg:gap-7">
+        <div className="lg:grid lg:grid-cols-[17rem_minmax(0,1fr)] lg:gap-7">
+          {/* Desktop sidebar */}
           <aside className="hidden lg:flex lg:min-h-[calc(100dvh-4rem)] lg:flex-col lg:gap-5 lg:rounded-[2rem] lg:border lg:border-[var(--line)] lg:bg-[var(--glass-strong)] lg:p-6 lg:shadow-[var(--shadow-soft)] lg:backdrop-blur-xl">
-            <div className="space-y-3">
-              <div className="inline-flex items-center gap-2 rounded-full border border-[var(--line-strong)] bg-[var(--glass)] px-3 py-1 text-[0.65rem] font-bold uppercase tracking-[0.22em] text-[var(--accent-deep)]">
-                <img src="/logo.svg" alt="" className="h-4 w-4 rounded-[0.35rem]" />
-                FreeLanguageApp.online
-              </div>
-              <div className="space-y-2">
-                <h1 className="display-font text-4xl leading-none text-[var(--ink)]">
-                  Learn like a voice notebook, not a form.
-                </h1>
-                <p className="max-w-xs text-sm leading-6 text-[var(--muted)]">
-                  Desktop stays studio-like with a persistent mode rail. Mobile stays thumb-first with a dock.
-                </p>
-              </div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-[var(--line-strong)] bg-[var(--glass)] px-3 py-1 text-[0.65rem] font-bold uppercase tracking-[0.22em] text-[var(--accent-deep)]">
+              <img src="/logo.svg" alt="" className="h-4 w-4 rounded-[0.35rem]" />
+              FreeLanguageApp.online
             </div>
 
             <div className="grid gap-3">
-              <LanguagePicker label="Native language" value={settings.nativeLang} onChange={(code) => update({ nativeLang: code })} />
-              <LanguagePicker label="Target language" value={settings.targetLang} onChange={(code) => update({ targetLang: code })} />
+              <LanguagePicker label="Native" value={settings.nativeLang} onChange={(code) => update({ nativeLang: code })} />
+              <LanguagePicker label="Target" value={settings.targetLang} onChange={(code) => update({ targetLang: code })} />
             </div>
 
-            <div className="space-y-2">
+            <nav className="space-y-1">
               {MODES.map((item) => (
-                <ModeRailButton
+                <button
                   key={item}
-                  mode={item}
-                  active={mode === item}
-                  meta={MODE_META[item]}
+                  className={`w-full rounded-[1rem] px-4 py-3 text-left text-sm font-semibold transition duration-200 ${
+                    mode === item
+                      ? 'border border-[var(--accent-soft)] bg-[var(--accent-gradient)] text-[var(--ink)] shadow-[var(--shadow-card)]'
+                      : 'border border-transparent text-[var(--muted)] hover:bg-[var(--glass-hover)] hover:text-[var(--ink)]'
+                  }`}
                   onClick={() => setMode(item)}
-                />
+                >
+                  {MODE_LABELS[item]}
+                </button>
               ))}
-            </div>
+            </nav>
 
-            <div className="mt-auto grid gap-3">
-              <HeroStat label="Current lane" value={current.shortLabel} tint="var(--accent)" />
-              <HeroStat
-                label="Language pair"
-                value={`${native?.flag ?? ''} ${native?.name ?? settings.nativeLang} → ${target?.flag ?? ''} ${target?.name ?? settings.targetLang}`}
-                tint="var(--sky)"
-              />
-              <HeroStat label="Theme" value={settings.theme === 'system' ? 'System' : settings.theme} tint="var(--mint)" />
+            <div className="mt-auto text-xs text-[var(--muted)]">
+              {native?.flag} {native?.name} → {target?.flag} {target?.name}
             </div>
           </aside>
 
-          <main className="min-w-0 space-y-4 lg:space-y-6">
-            <section className="rounded-[1.75rem] border border-[var(--line)] bg-[var(--glass-strong)] p-4 shadow-[var(--shadow-soft)] backdrop-blur-xl sm:p-5 lg:rounded-[2rem] lg:p-7">
-              <div className="flex flex-col gap-5 lg:grid lg:grid-cols-[minmax(0,1.45fr)_18rem] lg:items-start">
-                <div className="space-y-4">
-                  <div className="flex items-start justify-between gap-4 lg:hidden">
-                    <div>
-                      <div className="inline-flex items-center gap-2 rounded-full border border-[var(--line-strong)] bg-[var(--glass)] px-3 py-1 text-[0.65rem] font-bold uppercase tracking-[0.2em] text-[var(--accent-deep)]">
-                        <img src="/logo.svg" alt="" className="h-4 w-4 rounded-[0.35rem]" />
-                        FreeLanguageApp.online
-                      </div>
-                      <h1 className="display-font mt-3 text-3xl leading-[0.92] text-[var(--ink)]">
-                        Voice-first language practice.
-                      </h1>
-                    </div>
-                    <div className="rounded-[1.15rem] border border-[var(--line)] bg-[var(--glass)] px-3 py-2 text-right shadow-[var(--shadow-card)]">
-                      <div className="text-[0.65rem] font-bold uppercase tracking-[0.18em] text-[var(--muted)]">Now open</div>
-                      <div className="mt-1 text-sm font-semibold text-[var(--ink)]">{current.shortLabel}</div>
-                    </div>
-                  </div>
+          {/* Mobile header */}
+          <header className="mb-3 flex items-center justify-between gap-3 lg:hidden">
+            <div className="flex items-center gap-2">
+              <img src="/logo.svg" alt="" className="h-5 w-5 rounded-[0.35rem]" />
+              <span className="text-sm font-semibold text-[var(--ink)]">{MODE_LABELS[mode]}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <LanguagePicker label="" value={settings.nativeLang} onChange={(code) => update({ nativeLang: code })} />
+              <span className="text-xs text-[var(--muted)]">→</span>
+              <LanguagePicker label="" value={settings.targetLang} onChange={(code) => update({ targetLang: code })} />
+            </div>
+          </header>
 
-                  <div className="space-y-2">
-                    <div className="text-[0.72rem] font-bold uppercase tracking-[0.24em] text-[var(--accent-deep)]">
-                      {current.eyebrow}
-                    </div>
-                    <h2 className="display-font text-[2rem] leading-[0.95] text-[var(--ink)] sm:text-[2.4rem] lg:text-[3.35rem]">
-                      {current.title}
-                    </h2>
-                    <p className="max-w-2xl text-sm leading-6 text-[var(--muted)] sm:text-[0.95rem] lg:text-base">
-                      {current.description}
-                    </p>
-                  </div>
-
-                  <div className="grid gap-3 sm:grid-cols-2 lg:hidden">
-                    <LanguagePicker label="From" value={settings.nativeLang} onChange={(code) => update({ nativeLang: code })} />
-                    <LanguagePicker label="To" value={settings.targetLang} onChange={(code) => update({ targetLang: code })} />
-                  </div>
-
-                  <div className="flex flex-wrap gap-2.5">
-                    <QuickChip text="Hold-to-speak controls" tone="accent" />
-                    <QuickChip text="Arrow-key flashcards" tone="sky" />
-                    <QuickChip text="Theme + font preferences" tone="mint" />
-                  </div>
-                </div>
-
-                <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
-                  <HeroStat label="Native" value={`${native?.flag ?? ''} ${native?.name ?? 'Native'}`} tint="var(--accent)" />
-                  <HeroStat label="Target" value={`${target?.flag ?? ''} ${target?.name ?? 'Target'}`} tint="var(--mint)" />
-                  <HeroStat label="Font size" value={settings.fontSize.toUpperCase()} tint="var(--sky)" />
-                </div>
-              </div>
-            </section>
-
+          {/* Content */}
+          <main className="min-w-0">
             <section className="rounded-[1.75rem] border border-[var(--line)] bg-[var(--panel)] p-3 shadow-[var(--shadow-soft)] backdrop-blur-xl sm:p-4 lg:rounded-[2rem] lg:p-5">
               <div className="min-h-[34rem] rounded-[1.35rem] bg-[var(--panel-quiet)] p-3 sm:min-h-[36rem] sm:p-4 lg:min-h-0 lg:rounded-[1.6rem] lg:p-5">
                 {mode === 'practice' && <PracticeTab nativeLang={settings.nativeLang} targetLang={settings.targetLang} />}
@@ -189,6 +104,7 @@ export default function App() {
         </div>
       </div>
 
+      {/* Mobile dock */}
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--line)] bg-[var(--dock)]/92 px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-3 backdrop-blur-2xl lg:hidden">
         <div className="mx-auto grid max-w-xl grid-cols-5 gap-2 rounded-[1.4rem] border border-[var(--line-strong)] bg-[var(--glass)] p-1.5 shadow-[var(--shadow-soft)]">
           <TabButton icon="practice" label="Practice" active={mode === 'practice'} onClick={() => setMode('practice')} />
@@ -199,70 +115,6 @@ export default function App() {
         </div>
       </nav>
     </div>
-  )
-}
-
-function QuickChip({ text, tone }: { text: string; tone: 'accent' | 'mint' | 'sky' }) {
-  const toneMap = {
-    accent: 'border-[color:var(--accent-soft)] bg-[color:var(--accent-soft)]/55 text-[var(--accent-deep)]',
-    mint: 'border-[color:var(--mint-soft)] bg-[color:var(--mint-soft)]/55 text-[var(--mint-deep)]',
-    sky: 'border-[color:var(--sky-soft)] bg-[color:var(--sky-soft)]/55 text-[var(--sky-deep)]',
-  } as const
-
-  return (
-    <div className={`rounded-full border px-3 py-1.5 text-xs font-semibold tracking-[0.01em] ${toneMap[tone]}`}>
-      {text}
-    </div>
-  )
-}
-
-function HeroStat({ label, value, tint }: { label: string; value: string; tint: string }) {
-  return (
-    <div className="rounded-[1.25rem] border border-[var(--line)] bg-[var(--glass)] p-4 shadow-[var(--shadow-card)]">
-      <div className="text-[0.68rem] font-bold uppercase tracking-[0.2em]" style={{ color: tint }}>{label}</div>
-      <div className="mt-2 text-sm font-semibold leading-5 text-[var(--ink)]">
-        {value}
-      </div>
-    </div>
-  )
-}
-
-function ModeRailButton({
-  mode,
-  active,
-  meta,
-  onClick,
-}: {
-  mode: Mode
-  active: boolean
-  meta: (typeof MODE_META)[Mode]
-  onClick: () => void
-}) {
-  return (
-    <button
-      className={`group w-full rounded-[1.35rem] border p-4 text-left transition duration-200 ${
-        active
-          ? 'border-[var(--accent-soft)] shadow-[var(--shadow-card)]'
-          : 'border-[var(--line)] bg-[var(--glass-soft)] hover:border-[var(--line-strong)] hover:bg-[var(--glass-hover)]'
-      }`}
-      style={active ? { background: 'var(--accent-gradient)' } : undefined}
-      onClick={onClick}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <div className="text-[0.68rem] font-bold uppercase tracking-[0.2em] text-[var(--muted)]">
-            {meta.eyebrow}
-          </div>
-          <div className="mt-1 text-base font-semibold text-[var(--ink)]">{meta.label}</div>
-        </div>
-        <div className={`mt-1 rounded-full px-2 py-1 text-[0.65rem] font-bold uppercase tracking-[0.16em] ${
-          active ? 'bg-[var(--accent)] text-[var(--paper)]' : 'bg-[var(--panel-quiet)] text-[var(--muted)]'
-        }`}>
-          {mode === 'preferences' ? 'UI' : mode === 'conversation' ? 'AI' : 'Live'}
-        </div>
-      </div>
-      <p className="mt-2 text-sm leading-5 text-[var(--muted)]">{meta.description}</p>
-    </button>
   )
 }
 
