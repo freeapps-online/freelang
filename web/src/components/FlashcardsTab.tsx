@@ -126,7 +126,7 @@ export function FlashcardsTab({
   const pct = scores.total > 0 ? Math.round((scores.correct / scores.total) * 100) : 0
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-2 lg:grid lg:grid-cols-[17rem_minmax(0,1fr)] lg:gap-4">
+    <div className="h-[calc(100dvh-5.5rem)] lg:h-auto lg:grid lg:grid-cols-[17rem_minmax(0,1fr)] lg:gap-4">
       <aside className="hidden rounded-[1.5rem] border border-[var(--line)] bg-[var(--glass-strong)] p-4 shadow-[var(--shadow-card)] lg:block lg:order-1">
         <div className="text-[0.72rem] font-bold uppercase tracking-[0.22em] text-[var(--muted)]">Deck pace</div>
         <div className="mt-3 grid gap-3">
@@ -137,10 +137,10 @@ export function FlashcardsTab({
       </aside>
 
       <section
-        className="flex min-h-0 flex-1 flex-col p-2 sm:p-4 lg:order-2 lg:rounded-[1.5rem] lg:border lg:border-[var(--line)] lg:shadow-[var(--shadow-card)]"
+        className="flex h-full flex-col p-2 sm:p-4 lg:order-2 lg:rounded-[1.5rem] lg:border lg:border-[var(--line)] lg:shadow-[var(--shadow-card)]"
         style={{ background: 'var(--warm-gradient)' }}
       >
-        <div className="flex min-h-0 flex-1 flex-col gap-2 sm:gap-3">
+        <div className="flex h-full flex-col gap-2 sm:gap-3">
           {showStats ? (
             <WordStatsPanel words={words} wordStats={wordStats} targetLang={targetLang} nativeLang={nativeLang} />
           ) : (<>
@@ -155,7 +155,7 @@ export function FlashcardsTab({
           </div>
 
           {/* Card */}
-          <div className="flex min-h-0 flex-1 items-center justify-center">
+          <div className="flex flex-1 items-center justify-center overflow-hidden">
             <div
               className="relative flex w-full max-w-[24rem] cursor-grab flex-col items-center justify-center gap-3 rounded-[1.5rem] border border-[var(--line-strong)] px-5 py-8 text-center shadow-[var(--shadow-soft)] active:cursor-grabbing select-none touch-none sm:rounded-[2rem] sm:py-10"
               style={{

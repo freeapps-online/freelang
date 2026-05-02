@@ -180,10 +180,10 @@ export function SpeakTab({ nativeLang, targetLang, level, showStats: showStatsEx
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-2">
+    <div className="flex h-[calc(100dvh-5.5rem)] flex-col gap-2 lg:h-auto">
 
       {/* Card */}
-      <div className="flex min-h-0 flex-1 items-center justify-center">
+      <div className="flex flex-1 items-center justify-center overflow-hidden">
         <div
           className="relative flex w-full max-w-md cursor-grab flex-col items-center gap-3 rounded-[1.5rem] border border-[var(--line-strong)] p-5 text-center shadow-[var(--shadow-soft)] active:cursor-grabbing select-none touch-none sm:rounded-[2rem] sm:p-8"
           style={{
