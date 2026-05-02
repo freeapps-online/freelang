@@ -31,6 +31,7 @@ export default function App() {
   const { settings, update } = useSettings()
   useApplySettings(settings)
   const [levelOpen, setLevelOpen] = useState(false)
+  const [showStats, setShowStats] = useState(false)
 
   const navigate = useCallback((m: Mode) => {
     setMode(m)
@@ -127,6 +128,14 @@ export default function App() {
 
             {mode === 'flashcards' && (
               <button
+                className={`rounded-full px-2 py-1.5 text-xs font-semibold ${showStats ? 'bg-[var(--sky)] text-[var(--paper)]' : 'text-[var(--muted)]'}`}
+                onClick={() => setShowStats(!showStats)}
+              >
+                {showStats ? 'Play' : 'Stats'}
+              </button>
+            )}
+            {mode === 'flashcards' && (
+              <button
                 className={`flex h-8 w-8 items-center justify-center rounded-full border border-[var(--line)] ${settings.flashcardAudio ? 'bg-[var(--accent)]/25 text-[var(--accent)]' : 'bg-[var(--glass)] text-[var(--muted)]'}`}
                 onClick={() => update({ flashcardAudio: !settings.flashcardAudio })}
               >
@@ -153,6 +162,7 @@ export default function App() {
                     targetLang={settings.targetLang}
                     audioEnabled={settings.flashcardAudio}
                     level={settings.cardLevel}
+                    showStats={showStats}
                   />
                 )}
                 {mode === 'speak' && <SpeakTab nativeLang={settings.nativeLang} targetLang={settings.targetLang} />}

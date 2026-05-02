@@ -103,10 +103,14 @@
 
 html {
   min-height: 100%;
+  -webkit-text-size-adjust: 100%;
+  touch-action: manipulation;
 }
 
 body {
   min-height: 100dvh;
+  -webkit-user-select: none;
+  user-select: none;
   background:
     radial-gradient(circle at top left, var(--bg-blob-1), transparent 32%),
     radial-gradient(circle at top right, var(--bg-blob-2), transparent 30%),
@@ -151,6 +155,11 @@ body::after {
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
   isolation: isolate;
+}
+
+input, textarea, [contenteditable] {
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 .display-font {

@@ -12,18 +12,19 @@ export function FlashcardsTab({
   targetLang,
   audioEnabled,
   level,
+  showStats,
 }: {
   nativeLang: string
   targetLang: string
   audioEnabled: boolean
   level: number
+  showStats: boolean
 }) {
   useSpeech()
   const [words, setWords] = useState<FlashCard[]>(getLoadedWords(level))
   const [round, setRound] = useState<FlashCardRound | null>(null)
   const [scores, setScores] = useState<FlashCardScore>(loadScores)
   const [wordStats, setWordStats] = useState<WordStatsMap>(loadWordStats)
-  const [showStats, setShowStats] = useState(false)
   const [result, setResult] = useState<SwipeResult>(null)
   const [dragX, setDragX] = useState(0)
   const [transitioning, setTransitioning] = useState(false)
@@ -139,20 +140,6 @@ export function FlashcardsTab({
         style={{ background: 'var(--warm-gradient)' }}
       >
         <div className="flex min-h-0 flex-1 flex-col gap-2 sm:gap-3">
-          {/* Stats toggle */}
-          <div className="flex justify-end">
-            <button
-              className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition ${
-                showStats
-                  ? 'bg-[var(--sky)] text-[var(--paper)]'
-                  : 'text-[var(--muted)]'
-              }`}
-              onClick={() => setShowStats(!showStats)}
-            >
-              {showStats ? 'Play' : 'Stats'}
-            </button>
-          </div>
-
           {showStats ? (
             <WordStatsPanel words={words} wordStats={wordStats} targetLang={targetLang} nativeLang={nativeLang} />
           ) : (<>
@@ -202,7 +189,7 @@ export function FlashcardsTab({
           </div>
 
           {/* Feedback */}
-          <div className="min-h-7 text-center font-semibold" style={{ fontSize: 'calc(0.875rem * var(--content-scale))' }}>
+          <div className="pb-2 text-center font-semibold" style={{ fontSize: 'calc(0.875rem * var(--content-scale))' }}>
             {result && lastFeedback && (
               <span style={{ color: result === 'correct' ? 'var(--success)' : 'var(--error)' }}>
                 {lastFeedback.nativeWord} = {lastFeedback.correctAnswer}
