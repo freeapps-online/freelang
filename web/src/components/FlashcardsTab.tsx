@@ -11,12 +11,10 @@ export function FlashcardsTab({
   nativeLang,
   targetLang,
   audioEnabled,
-  onToggleAudio,
 }: {
   nativeLang: string
   targetLang: string
   audioEnabled: boolean
-  onToggleAudio: () => void
 }) {
   useSpeech() // keep subscription for reactivity
   const [round, setRound] = useState<FlashCardRound>(() => getFlashCardRound(nativeLang, targetLang))
@@ -120,10 +118,10 @@ export function FlashcardsTab({
   const pct = scores.total > 0 ? Math.round((scores.correct / scores.total) * 100) : 0
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[17rem_minmax(0,1fr)]">
-      <aside className="order-2 rounded-[1.5rem] border border-[var(--line)] bg-[var(--glass-strong)] p-4 shadow-[var(--shadow-card)] lg:order-1">
+    <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[17rem_minmax(0,1fr)]">
+      <aside className="hidden rounded-[1.5rem] border border-[var(--line)] bg-[var(--glass-strong)] p-4 shadow-[var(--shadow-card)] lg:block lg:order-1">
         <div className="text-[0.72rem] font-bold uppercase tracking-[0.22em] text-[var(--muted)]">Deck pace</div>
-        <div className="mt-3 grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+        <div className="mt-3 grid gap-3">
           <MetricCard label="Accuracy" value={`${pct}%`} detail={`${scores.correct}/${scores.total} correct`} />
           <MetricCard label="Current streak" value={`${scores.streak}`} detail="Keep the run alive" />
           <MetricCard label="Best streak" value={`${scores.bestStreak}`} detail="Your strongest session" />
@@ -131,19 +129,10 @@ export function FlashcardsTab({
       </aside>
 
       <section
-        className="order-1 rounded-[1.5rem] border border-[var(--line)] p-4 shadow-[var(--shadow-card)] sm:p-5 lg:order-2"
+        className="flex-1 rounded-[1.5rem] border border-[var(--line)] p-3 shadow-[var(--shadow-card)] sm:p-5 lg:order-2"
         style={{ background: 'var(--warm-gradient)' }}
       >
-        <div className="flex h-full flex-col gap-5">
-          <div className="flex items-center justify-end">
-            <button
-              className="rounded-full border border-[var(--line)] bg-[var(--glass)] px-4 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--glass-hover)]"
-              onClick={onToggleAudio}
-            >
-              {audioEnabled ? 'Sound on' : 'Sound off'}
-            </button>
-          </div>
-
+        <div className="flex h-full flex-col gap-3 sm:gap-5">
           <div className="flex items-center justify-between gap-3">
             <div className="rounded-[1.2rem] border border-[var(--line)] bg-[var(--glass)] px-4 py-3 text-center">
               <div className="font-semibold text-[var(--ink)]" style={{ fontSize: 'calc(0.875rem * var(--content-scale))' }}>← {round.leftOption}</div>
@@ -155,9 +144,9 @@ export function FlashcardsTab({
             </div>
           </div>
 
-          <div className="flex min-h-[23rem] flex-1 items-center justify-center">
+          <div className="flex flex-1 items-center justify-center">
             <div
-              className="relative flex h-[23rem] w-full max-w-[24rem] cursor-grab flex-col items-center justify-center gap-5 rounded-[2rem] border border-[var(--line-strong)] px-6 text-center shadow-[var(--shadow-soft)] active:cursor-grabbing select-none touch-none"
+              className="relative flex w-full max-w-[24rem] cursor-grab flex-col items-center justify-center gap-4 rounded-[2rem] border border-[var(--line-strong)] px-6 py-10 text-center shadow-[var(--shadow-soft)] active:cursor-grabbing select-none touch-none"
               style={{
                 background: 'var(--card-gradient)',
                 transform: `translateX(${dragX}px) rotate(${dragX * 0.08}deg)`,

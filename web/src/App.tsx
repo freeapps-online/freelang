@@ -66,8 +66,8 @@ export default function App() {
         <div className="absolute bottom-[-10%] left-[10%] h-80 w-80 rounded-full bg-[var(--mint-soft)]/25 blur-3xl lg:left-[45%] lg:h-[26rem] lg:w-[26rem]" />
       </div>
 
-      <div className="relative mx-auto min-h-[100dvh] max-w-[1540px] px-3 pb-24 pt-3 sm:px-4 lg:px-8 lg:py-8">
-        <div className="lg:grid lg:grid-cols-[17rem_minmax(0,1fr)] lg:gap-7">
+      <div className={`relative mx-auto max-w-[1540px] px-3 pt-3 sm:px-4 lg:px-8 lg:py-8 ${mode === 'flashcards' ? 'flex min-h-[100dvh] flex-col pb-24' : 'min-h-[100dvh] pb-24'}`}>
+        <div className={`${mode === 'flashcards' ? 'flex flex-1 flex-col lg:grid lg:grid-cols-[17rem_minmax(0,1fr)] lg:gap-7' : 'lg:grid lg:grid-cols-[17rem_minmax(0,1fr)] lg:gap-7'}`}>
           {/* Desktop sidebar */}
           <aside className="hidden lg:flex lg:min-h-[calc(100dvh-4rem)] lg:flex-col lg:gap-5 lg:rounded-[2rem] lg:border lg:border-[var(--line)] lg:bg-[var(--glass-strong)] lg:p-6 lg:shadow-[var(--shadow-soft)] lg:backdrop-blur-xl">
             <div className="inline-flex items-center gap-2 rounded-full border border-[var(--line-strong)] bg-[var(--glass)] px-3 py-1 text-[0.65rem] font-bold uppercase tracking-[0.22em] text-[var(--accent-deep)]">
@@ -108,6 +108,23 @@ export default function App() {
               <span className="text-sm font-semibold text-[var(--ink)]">{MODE_LABELS[mode]}</span>
             </div>
             <div className="flex items-center gap-2">
+              {mode === 'flashcards' && (
+                <button
+                  className={`flex h-8 w-8 items-center justify-center rounded-full border border-[var(--line)] ${settings.flashcardAudio ? 'bg-[var(--accent)]/25 text-[var(--accent)]' : 'bg-[var(--glass)] text-[var(--muted)]'}`}
+                  onClick={() => update({ flashcardAudio: !settings.flashcardAudio })}
+                  aria-label={settings.flashcardAudio ? 'Mute' : 'Unmute'}
+                >
+                  {settings.flashcardAudio ? (
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19.114 5.636a9 9 0 0 1 0 12.728M16.463 8.288a5.25 5.25 0 0 1 0 7.424M6.75 8.25l4.72-4.72a.75.75 0 0 1 1.28.53v15.88a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.009 9.009 0 0 1 2.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75Z" />
+                    </svg>
+                  ) : (
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 9.75 19.5 12m0 0 2.25 2.25M19.5 12l2.25-2.25M19.5 12l-2.25 2.25m-10.5-6 4.72-4.72a.75.75 0 0 1 1.28.531V19.94a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.009 9.009 0 0 1 2.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75Z" />
+                    </svg>
+                  )}
+                </button>
+              )}
               <LanguagePicker label="" value={settings.nativeLang} onChange={(code) => update({ nativeLang: code })} />
               <span className="text-xs text-[var(--muted)]">→</span>
               <LanguagePicker label="" value={settings.targetLang} onChange={(code) => update({ targetLang: code })} />
@@ -115,16 +132,15 @@ export default function App() {
           </header>
 
           {/* Content */}
-          <main className="min-w-0">
-            <section className="rounded-[1.75rem] border border-[var(--line)] bg-[var(--panel)] p-3 shadow-[var(--shadow-soft)] backdrop-blur-xl sm:p-4 lg:rounded-[2rem] lg:p-5">
-              <div className="min-h-[34rem] rounded-[1.35rem] bg-[var(--panel-quiet)] p-3 sm:min-h-[36rem] sm:p-4 lg:min-h-0 lg:rounded-[1.6rem] lg:p-5">
+          <main className={`min-w-0 ${mode === 'flashcards' ? 'flex flex-1 flex-col' : ''}`}>
+            <section className={`rounded-[1.75rem] border border-[var(--line)] bg-[var(--panel)] p-3 shadow-[var(--shadow-soft)] backdrop-blur-xl sm:p-4 lg:rounded-[2rem] lg:p-5 ${mode === 'flashcards' ? 'flex flex-1 flex-col' : ''}`}>
+              <div className={`rounded-[1.35rem] bg-[var(--panel-quiet)] p-3 sm:p-4 lg:rounded-[1.6rem] lg:p-5 ${mode === 'flashcards' ? 'flex flex-1 flex-col' : 'min-h-[34rem] sm:min-h-[36rem] lg:min-h-0'}`}>
                 {mode === 'practice' && <PracticeTab nativeLang={settings.nativeLang} targetLang={settings.targetLang} />}
                 {mode === 'flashcards' && (
                   <FlashcardsTab
                     nativeLang={settings.nativeLang}
                     targetLang={settings.targetLang}
                     audioEnabled={settings.flashcardAudio}
-                    onToggleAudio={() => update({ flashcardAudio: !settings.flashcardAudio })}
                   />
                 )}
                 {mode === 'translate' && <TranslateTab nativeLang={settings.nativeLang} targetLang={settings.targetLang} />}
