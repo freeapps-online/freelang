@@ -41,7 +41,7 @@ export function useApplySettings(settings: Settings) {
     root.dataset.motion = settings.motion
     root.dataset.surface = settings.surface
 
-    const labelScale = { small: '14px', medium: '15px', large: '16px', xlarge: '17px' } as const
+    const labelScale = { small: '13px', medium: '16px', large: '19px', xlarge: '22px' } as const
     const contentScale = { small: '1', medium: '1.15', large: '1.35', xlarge: '1.55' } as const
 
     root.style.fontSize = labelScale[settings.labelSize]
