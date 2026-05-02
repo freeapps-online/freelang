@@ -14,6 +14,7 @@ export interface Settings {
   motion: MotionPreference
   surface: SurfacePreference
   flashcardAudio: boolean
+  cardLevel: number
 }
 
 const defaults: Settings = {
@@ -25,6 +26,7 @@ const defaults: Settings = {
   motion: 'full',
   surface: 'soft',
   flashcardAudio: true,
+  cardLevel: 1,
 }
 
 export function loadSettings(): Settings {

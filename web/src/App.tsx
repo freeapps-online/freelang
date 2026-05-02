@@ -141,6 +141,8 @@ export default function App() {
                     nativeLang={settings.nativeLang}
                     targetLang={settings.targetLang}
                     audioEnabled={settings.flashcardAudio}
+                    level={settings.cardLevel}
+                    onLevelChange={(cardLevel) => update({ cardLevel })}
                   />
                 )}
                 {mode === 'translate' && <TranslateTab nativeLang={settings.nativeLang} targetLang={settings.targetLang} />}
