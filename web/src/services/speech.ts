@@ -97,11 +97,9 @@ class SpeechService {
 
   stopListening() {
     if (this.recognition) {
-      this.recognition.abort()
-      this.recognition = null
+      this.recognition.stop() // stop() delivers final result, abort() discards it
+      // recognition will be cleaned up in onend handler
     }
-    this.state.isListening = false
-    this.notify()
   }
 
   speak(text: string, lang: string): Promise<void> {
