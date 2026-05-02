@@ -36,20 +36,16 @@ function shuffle<T>(arr: T[]): T[] {
   return a
 }
 
-export function getFlashCardRound(_nativeLang: string, targetLang: string, exclude?: FlashCard): FlashCardRound {
+export function getFlashCardRound(nativeLang: string, _targetLang: string, exclude?: FlashCard): FlashCardRound {
   // Pick a random card (different from the last one)
   const pool = exclude ? VOCAB.filter(c => c.word !== exclude.word) : VOCAB
   const card = pool[Math.floor(Math.random() * pool.length)]
 
-  // Get the correct translation
-  const correct = card.translations[targetLang] ?? card.translations.en
-  const correctTranslit = card.transliterations?.[targetLang]
-
-  // Pick a wrong answer from a different card
+  // Answers are in the NATIVE language (user recognizes meaning)
+  const correct = card.translations[nativeLang] ?? card.word
   const others = VOCAB.filter(c => c.word !== card.word)
   const wrongCard = others[Math.floor(Math.random() * others.length)]
-  const wrong = wrongCard.translations[targetLang] ?? wrongCard.translations.en
-  const wrongTranslit = wrongCard.transliterations?.[targetLang]
+  const wrong = wrongCard.translations[nativeLang] ?? wrongCard.word
 
   // Randomly assign left/right
   const correctSide = Math.random() < 0.5 ? 'left' : 'right' as const
@@ -58,15 +54,14 @@ export function getFlashCardRound(_nativeLang: string, targetLang: string, exclu
     correctSide,
     leftOption: correctSide === 'left' ? correct : wrong,
     rightOption: correctSide === 'right' ? correct : wrong,
-    leftTranslit: correctSide === 'left' ? correctTranslit : wrongTranslit,
-    rightTranslit: correctSide === 'right' ? correctTranslit : wrongTranslit,
   }
 }
 
-export function getCardDisplay(card: FlashCard, nativeLang: string): { text: string; emoji: string } {
+export function getCardDisplay(card: FlashCard, targetLang: string): { text: string; emoji: string; translit?: string } {
   return {
-    text: card.translations[nativeLang] ?? card.word,
+    text: card.translations[targetLang] ?? card.word,
     emoji: card.emoji,
+    translit: card.transliterations?.[targetLang],
   }
 }
 

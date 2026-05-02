@@ -25,7 +25,7 @@ export function FlashcardsTab({
   const startX = useRef(0)
   const dragging = useRef(false)
 
-  const display = getCardDisplay(round.card, nativeLang)
+  const display = getCardDisplay(round.card, targetLang)
 
   const [lastFeedback, setLastFeedback] = useState<{ nativeWord: string; correctAnswer: string } | null>(null)
   const feedbackTimer = useRef<number>(0)
@@ -56,7 +56,7 @@ export function FlashcardsTab({
 
   useEffect(() => {
     if (!audioEnabled || transitioning) return
-    void speech.speak(display.text, nativeLang)
+    void speech.speak(display.text, targetLang)
   }, [audioEnabled, display.text, nativeLang, round.card.word, transitioning])
 
   useEffect(() => {
@@ -110,7 +110,7 @@ export function FlashcardsTab({
     else {
       setDragX(0)
       if (moved < 10 && audioEnabled) {
-        void speech.speak(display.text, nativeLang)
+        void speech.speak(display.text, targetLang)
       }
     }
   }, [dragX, handleAnswer, audioEnabled, display.text, nativeLang])
@@ -136,11 +136,9 @@ export function FlashcardsTab({
           <div className="flex items-center justify-between gap-3">
             <div className="rounded-[1.2rem] border border-[var(--line)] bg-[var(--glass)] px-4 py-3 text-center">
               <div className="font-semibold text-[var(--ink)]" style={{ fontSize: 'calc(0.875rem * var(--content-scale))' }}>← {round.leftOption}</div>
-              {round.leftTranslit && <div className="mt-1 italic text-[var(--muted)]" style={{ fontSize: 'calc(0.875rem * var(--content-scale))' }}>{round.leftTranslit}</div>}
             </div>
             <div className="rounded-[1.2rem] border border-[var(--line)] bg-[var(--glass)] px-4 py-3 text-center">
               <div className="font-semibold text-[var(--ink)]" style={{ fontSize: 'calc(0.875rem * var(--content-scale))' }}>{round.rightOption} →</div>
-              {round.rightTranslit && <div className="mt-1 italic text-[var(--muted)]" style={{ fontSize: 'calc(0.875rem * var(--content-scale))' }}>{round.rightTranslit}</div>}
             </div>
           </div>
 
@@ -174,6 +172,7 @@ export function FlashcardsTab({
 
               <div className="drop-shadow-sm" style={{ fontSize: `calc(4.5rem * var(--content-scale))` }}>{display.emoji}</div>
               <div className="display-font leading-none text-[var(--ink)]" style={{ fontSize: `calc(2.25rem * var(--content-scale))` }}>{display.text}</div>
+              {display.translit && <div className="italic text-[var(--muted)]" style={{ fontSize: `calc(1.5rem * var(--content-scale))` }}>{display.translit}</div>}
             </div>
           </div>
 

@@ -18,8 +18,6 @@ export interface FlashCardRound {
   correctSide: 'left' | 'right'
   leftOption: string
   rightOption: string
-  leftTranslit?: string
-  rightTranslit?: string
 }
 
 export interface FlashCardScore {
