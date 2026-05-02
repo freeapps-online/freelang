@@ -139,10 +139,15 @@ export function FlashcardsTab({
           {showStats ? (
             <WordStatsPanel words={words} wordStats={wordStats} targetLang={targetLang} nativeLang={nativeLang} />
           ) : (<>
-          {/* Answer options */}
+          {/* Answer options + live score */}
           <div className="flex items-center justify-between gap-2">
             <div className="rounded-full border border-[var(--line)] bg-[var(--glass)] px-3 py-2 text-center">
               <div className="font-semibold text-[var(--ink)]" style={{ fontSize: 'calc(0.875rem * var(--content-scale))' }}>← {round.leftOption}</div>
+            </div>
+            <div className="flex items-center gap-2 text-xs font-bold">
+              <span className="text-[var(--success)]">{scores.correct}</span>
+              <span className="text-[var(--muted)]">/</span>
+              <span className="text-[var(--error)]">{scores.total - scores.correct}</span>
             </div>
             <div className="rounded-full border border-[var(--line)] bg-[var(--glass)] px-3 py-2 text-center">
               <div className="font-semibold text-[var(--ink)]" style={{ fontSize: 'calc(0.875rem * var(--content-scale))' }}>{round.rightOption} →</div>

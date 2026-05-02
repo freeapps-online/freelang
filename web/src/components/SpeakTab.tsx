@@ -5,13 +5,14 @@ import { reportSentenceScore } from '../services/cloud.ts'
 import { getTranslit } from '../services/translit.ts'
 import type { Sentence } from '../types.ts'
 
-const sentenceModules: Record<number, () => Promise<{ default: Sentence[] }>> = {
-  1: () => import('../data/sentences1.ts'),
-  2: () => import('../data/sentences2.ts'),
-  3: () => import('../data/sentences3.ts'),
-  4: () => import('../data/sentences4.ts'),
-  5: () => import('../data/sentences5.ts'),
+// Auto-discover all sentence files at build time
+const sentenceGlob = import.meta.glob('../data/sentences*.ts') as Record<string, () => Promise<{ default: Sentence[] }>>
+const sentenceModules: Record<number, () => Promise<{ default: Sentence[] }>> = {}
+for (const [path, loader] of Object.entries(sentenceGlob)) {
+  const m = path.match(/sentences(\d+)\.ts$/)
+  if (m) sentenceModules[parseInt(m[1])] = loader
 }
+const MAX_SENTENCE_LEVEL = Math.max(...Object.keys(sentenceModules).map(Number), 1)
 
 const loadedSentences: Map<number, Sentence[]> = new Map()
 const STATS_KEY = 'freelang-sentence-stats'
@@ -84,8 +85,6 @@ function scoreAttempt(expected: string, attempt: string): AttemptResult {
   const correct = words.filter(r => r.ok).length
   return { score: expectedWords.length > 0 ? Math.round((correct / expectedWords.length) * 100) : 0, words, raw: attempt }
 }
-
-const MAX_SENTENCE_LEVEL = 5
 
 export function SpeakTab({ nativeLang, targetLang, level: rawLevel, showStats: showStatsExternal }: { nativeLang: string; targetLang: string; level: number; showStats: boolean }) {
   const sp = useSpeech()
