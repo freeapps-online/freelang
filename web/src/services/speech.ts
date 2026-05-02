@@ -1,0 +1,156 @@
+export type SpeechState = {
+  isListening: boolean
+  transcript: string
+  isSpeaking: boolean
+  error: string | null
+}
+
+type Listener = () => void
+
+class SpeechService {
+  private listeners: Listener[] = []
+  private recognition: SpeechRecognition | null = null
+  private synthesis = window.speechSynthesis
+  private voicesLoaded = false
+
+  state: SpeechState = {
+    isListening: false,
+    transcript: '',
+    isSpeaking: false,
+    error: null,
+  }
+
+  constructor() {
+    // Voices load asynchronously on most browsers
+    if (this.synthesis.getVoices().length > 0) {
+      this.voicesLoaded = true
+    } else {
+      this.synthesis.addEventListener('voiceschanged', () => {
+        this.voicesLoaded = true
+      }, { once: true })
+    }
+  }
+
+  subscribe(fn: Listener) {
+    this.listeners.push(fn)
+    return () => { this.listeners = this.listeners.filter(l => l !== fn) }
+  }
+
+  private notify() {
+    this.state = { ...this.state }
+    this.listeners.forEach(fn => fn())
+  }
+
+  startListening(lang: string, onResult: (text: string) => void) {
+    this.stopListening()
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+    if (!SpeechRecognition) {
+      this.state.error = 'Speech recognition not supported'
+      this.notify()
+      return
+    }
+
+    this.recognition = new SpeechRecognition()
+    this.recognition.lang = lang
+    this.recognition.interimResults = true
+    this.recognition.continuous = false
+
+    this.recognition.onstart = () => {
+      this.state.isListening = true
+      this.state.transcript = ''
+      this.state.error = null
+      this.notify()
+    }
+
+    this.recognition.onresult = (e) => {
+      let final = ''
+      let interim = ''
+      for (let i = 0; i < e.results.length; i++) {
+        const result = e.results[i]
+        if (result.isFinal) {
+          final += result[0].transcript
+        } else {
+          interim += result[0].transcript
+        }
+      }
+      this.state.transcript = final || interim
+      this.notify()
+      if (final) onResult(final)
+    }
+
+    this.recognition.onerror = (e) => {
+      if (e.error !== 'aborted') {
+        this.state.error = e.error
+      }
+      this.state.isListening = false
+      this.notify()
+    }
+
+    this.recognition.onend = () => {
+      this.state.isListening = false
+      this.notify()
+    }
+
+    this.recognition.start()
+  }
+
+  stopListening() {
+    if (this.recognition) {
+      this.recognition.abort()
+      this.recognition = null
+    }
+    this.state.isListening = false
+    this.notify()
+  }
+
+  speak(text: string, lang: string): Promise<void> {
+    const doSpeak = () => new Promise<void>((resolve) => {
+      this.synthesis.cancel()
+      const utterance = new SpeechSynthesisUtterance(text)
+      utterance.lang = lang
+      utterance.rate = 0.9
+
+      // Pick the best voice matching the language
+      const voices = this.synthesis.getVoices()
+      const match = voices.find(v => v.lang.startsWith(lang))
+      if (match) utterance.voice = match
+
+      utterance.onstart = () => {
+        this.state.isSpeaking = true
+        this.notify()
+      }
+      utterance.onend = () => {
+        this.state.isSpeaking = false
+        this.notify()
+        resolve()
+      }
+      utterance.onerror = () => {
+        this.state.isSpeaking = false
+        this.notify()
+        resolve()
+      }
+
+      this.synthesis.speak(utterance)
+    })
+
+    // If voices aren't loaded yet, wait for them
+    if (!this.voicesLoaded) {
+      return new Promise<void>((resolve) => {
+        this.synthesis.addEventListener('voiceschanged', () => {
+          this.voicesLoaded = true
+          doSpeak().then(resolve)
+        }, { once: true })
+      })
+    }
+    return doSpeak()
+  }
+
+  stopSpeaking() {
+    this.synthesis.cancel()
+    this.state.isSpeaking = false
+    this.notify()
+  }
+}
+
+export const speech = new SpeechService()

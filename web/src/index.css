@@ -1,0 +1,48 @@
+@import "tailwindcss";
+
+:root {
+  --accent: #6C8EEF;
+  --accent-glow: #6C8EEF40;
+  --bg: #0a0a0b;
+  --surface: #151517;
+  --surface-hover: #1c1c1f;
+  --border: #232326;
+  --text: #f0f0f2;
+  --text-muted: #78787e;
+  --success: #4ADE80;
+  --warning: #FBBF24;
+  --error: #F87171;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overscroll-behavior: none;
+  user-select: none;
+  -webkit-user-select: none;
+  letter-spacing: -0.01em;
+}
+
+#root {
+  min-height: 100dvh;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+::-webkit-scrollbar { display: none; }
+
+button, a { transition: all 0.15s ease; }
+button:active { transform: scale(0.97); }
+
+.glow { box-shadow: 0 0 20px var(--accent-glow); }
+
+@keyframes pulse-ring {
+  0% { transform: scale(1); opacity: 0.6; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
+.pulse-ring { animation: pulse-ring 1.5s ease-out infinite; }
