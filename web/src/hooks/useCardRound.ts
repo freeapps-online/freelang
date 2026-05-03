@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 import { getFlashCardRound, getCardDisplay, loadLevel, getLoadedWords } from '../services/vocabulary.ts'
 import { loadScores, recordAnswer, loadWordStats, recordWordAnswer, pickWeightedCard, type WordStatsMap } from '../services/scores.ts'
 import { reportCardScore } from '../services/cloud.ts'
-import type { FlashCard, FlashCardRound, FlashCardScore } from '../types.ts'
+import type { FlashCard, FlashCardRound } from '../types.ts'
 
 export type AnswerResult = 'correct' | 'wrong' | null
 export interface Feedback { nativeWord: string; correctAnswer: string; correct: boolean }
@@ -17,7 +17,7 @@ interface UseCardRoundOptions {
 export function useCardRound({ level, nativeLang, targetLang, onTransitionStart }: UseCardRoundOptions) {
   const [words, setWords] = useState<FlashCard[]>(getLoadedWords(level))
   const [round, setRound] = useState<FlashCardRound | null>(null)
-  const [, setScores] = useState<FlashCardScore>(loadScores)
+  const scoresRef = useRef(loadScores())
   const [wordStats, setWordStats] = useState<WordStatsMap>(loadWordStats)
   const [result, setResult] = useState<AnswerResult>(null)
   const [transitioning, setTransitioning] = useState(false)
@@ -58,7 +58,7 @@ export function useCardRound({ level, nativeLang, targetLang, onTransitionStart 
 
     setResult(correct ? 'correct' : 'wrong')
     setFeedback({ nativeWord: cardDisplay.text, correctAnswer, correct })
-    setScores((prev) => recordAnswer(prev, correct))
+    scoresRef.current = recordAnswer(scoresRef.current, correct)
     setWordStats((prev) => {
       nextWordStats = recordWordAnswer(prev, round.card.word, correct)
       return nextWordStats

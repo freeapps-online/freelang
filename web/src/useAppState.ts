@@ -67,12 +67,12 @@ export function useAppState() {
     try { return localStorage.getItem('freelang-listen-only') === '1' } catch { return false }
   })
 
-  const getScoreScope = () => mode === 'spelling' ? 'spelling' as const : 'flashcards' as const
-  const [liveScores, setLiveScores] = useState(() => loadScores(getScoreScope()))
+  const scoreScope = mode === 'spelling' ? 'spelling' as const : 'flashcards' as const
+  const [liveScores, setLiveScores] = useState(() => loadScores(scoreScope))
   useEffect(() => {
-    const t = setInterval(() => setLiveScores(loadScores(getScoreScope())), 500)
+    const t = setInterval(() => setLiveScores(loadScores(scoreScope)), 500)
     return () => clearInterval(t)
-  })
+  }, [scoreScope])
 
   const toggleListenOnly = useCallback(() => {
     setListenOnly(prev => {

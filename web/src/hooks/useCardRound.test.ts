@@ -14,7 +14,7 @@ vi.mock('../services/vocabulary.ts', () => ({
     emoji: card.emoji,
     translit: null,
   }),
-  getFlashCardRound: (native: string, target: string, words: any[], _exclude: any, card: any) => ({
+  getFlashCardRound: (native: string, _target: string, _words: any[], _exclude: any, card: any) => ({
     card,
     correctSide: 'left' as const,
     leftOption: card.translations[native] ?? card.word,
