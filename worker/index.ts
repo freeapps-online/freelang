@@ -145,6 +145,34 @@ export default {
         return json({ user, wordStats, sentenceStats })
       }
 
+      // Dictionary proxy (avoids CORS issues with external APIs)
+      if (path === '/api/dictionary' && request.method === 'GET') {
+        const target = url.searchParams.get('url')
+        if (!target) return json({ error: 'url param required' }, 400)
+
+        // Only allow proxying to known dictionary APIs
+        const allowed = ['https://api.wiktapi.dev/', 'https://freedictionaryapi.com/']
+        if (!allowed.some((prefix) => target.startsWith(prefix))) {
+          return json({ error: 'url not allowed' }, 403)
+        }
+
+        const upstream = await fetch(target, {
+          headers: { 'User-Agent': 'FreeLanguageApp/1.0' },
+        })
+
+        if (!upstream.ok) {
+          return new Response(upstream.body, {
+            status: upstream.status,
+            headers: { ...corsHeaders, 'Content-Type': upstream.headers.get('Content-Type') || 'application/json' },
+          })
+        }
+
+        return new Response(upstream.body, {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': upstream.headers.get('Content-Type') || 'application/json' },
+        })
+      }
+
       return json({ error: 'not found' }, 404)
     } catch (e) {
       return json({ error: String(e) }, 500)

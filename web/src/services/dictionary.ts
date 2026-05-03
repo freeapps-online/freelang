@@ -1,5 +1,6 @@
 import { LANGUAGES } from '../types.ts'
 
+const WORKER_API = 'https://freelang-api.serge-the-dev.workers.dev'
 const FREE_DICTIONARY_API = 'https://freedictionaryapi.com/api/v1/entries'
 const WIKTAPI_API = 'https://api.wiktapi.dev/v1'
 const WIKTAPI_EDITIONS = new Set([
@@ -250,7 +251,8 @@ function normalizeWiktapiEntries(payload: WiktapiResponse): DictionaryEntry[] {
 }
 
 async function fetchJson<T>(url: string) {
-  const response = await fetch(url)
+  const proxied = `${WORKER_API}/api/dictionary?url=${encodeURIComponent(url)}`
+  const response = await fetch(proxied)
   if (response.status === 404) return null
   if (!response.ok) {
     throw new Error(`Dictionary lookup failed: ${response.status}`)
