@@ -7,7 +7,7 @@ import { useSpeech } from '../useSpeech.ts'
 import { reportCardScore } from '../services/cloud.ts'
 import { isSpeechMatch } from '../services/flashcardsVoice.ts'
 
-import { WordStatsPanel } from './FlashcardsTab.tsx'
+import { WordStatsPanel } from './practice/WordStatsPanel.tsx'
 import { t } from '../services/i18n.ts'
 import type { PracticeInputMode } from '../services/settings.ts'
 import type { FlashCard, FlashCardScore } from '../types.ts'
