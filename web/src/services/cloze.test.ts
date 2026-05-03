@@ -9,7 +9,7 @@ const sentences: Sentence[] = [
 ]
 
 describe('cloze rounds', () => {
-  it('creates a masked sentence with a valid missing word option', () => {
+  it('creates a masked sentence with a distractor from outside the active sentence', () => {
     const randomSpy = vi.spyOn(Math, 'random')
     randomSpy
       .mockReturnValueOnce(0)
@@ -27,6 +27,8 @@ describe('cloze rounds', () => {
     expect(round.maskedText).toContain('▢▢▢')
     expect([round.leftOption, round.rightOption]).toContain(round.missingWord)
     expect(round.maskedText.includes(round.missingWord)).toBe(false)
+    const distractor = round.leftOption === round.missingWord ? round.rightOption : round.leftOption
+    expect(['Yo', 'como', 'una', 'manzana']).not.toContain(distractor)
 
     randomSpy.mockRestore()
   })

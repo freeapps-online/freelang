@@ -30,7 +30,7 @@ function segmentWords(text: string): WordSegment[] {
 function uniqueWords(words: string[]) {
   const seen = new Set<string>()
   return words.filter((word) => {
-    const key = word.trim()
+    const key = word.trim().toLocaleLowerCase()
     if (!key || seen.has(key)) return false
     seen.add(key)
     return true
@@ -82,16 +82,19 @@ function pickDistractor({
   poolWords: string[]
   missingWord: string
 }) {
-  const sameSentence = uniqueWords(targetWords.filter((word) => word !== missingWord))
-  if (sameSentence.length > 0) {
-    return sameSentence[Math.floor(Math.random() * sameSentence.length)]
-  }
-
   const bucket = getScriptBucket(missingWord)
+  const targetWordSet = new Set(targetWords.map((word) => word.trim().toLocaleLowerCase()))
   const uniquePool = uniqueWords(poolWords.filter((word) => word !== missingWord))
-  const sameBucket = uniquePool.filter((word) => getScriptBucket(word) === bucket)
+  const externalPool = uniquePool.filter((word) => !targetWordSet.has(word.trim().toLocaleLowerCase()))
+  const sameBucket = externalPool.filter((word) => getScriptBucket(word) === bucket)
   const similarLength = sameBucket.filter((word) => Math.abs(word.length - missingWord.length) <= 2)
-  const candidates = similarLength.length > 0 ? similarLength : sameBucket.length > 0 ? sameBucket : uniquePool
+  const candidates = similarLength.length > 0
+    ? similarLength
+    : sameBucket.length > 0
+      ? sameBucket
+      : externalPool.length > 0
+        ? externalPool
+        : uniquePool
   return candidates[Math.floor(Math.random() * candidates.length)] ?? '?'
 }
 
