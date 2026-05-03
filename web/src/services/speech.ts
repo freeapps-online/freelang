@@ -142,7 +142,9 @@ class SpeechService {
         resolve()
       }
 
-      this.synthesis.speak(utterance)
+      // Small delay after cancel() — iOS Safari/Chrome silently drop speak()
+      // if called immediately after cancel() in the same microtask
+      setTimeout(() => this.synthesis.speak(utterance), 50)
     })
 
     // If voices aren't loaded yet, wait for them

@@ -157,6 +157,12 @@ export function FlashcardsTab({
       setRound(getFlashCardRound(nativeLang, targetLang, words, round.card, nextCard))
       setDragX(0)
       setTransitioning(false)
+      // Speak new word directly — useEffect-based speech fails on mobile
+      // because speechSynthesis requires proximity to user gesture
+      if (audioEnabled) {
+        const nextDisplay = getCardDisplay(nextCard, targetLang)
+        if (nextDisplay.text) void speech.speak(nextDisplay.text, targetLang)
+      }
     }, 800)
 
     window.clearTimeout(feedbackTimer.current)
