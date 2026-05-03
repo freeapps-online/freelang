@@ -17,11 +17,14 @@ export function PreferencesTab({
     <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_18rem]">
       <section className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--glass-strong)] p-4 shadow-[var(--shadow-card)] sm:p-5">
         <div className="space-y-5">
+          {/* Interface language — first so non-English speakers can find it immediately */}
           <div className="flex items-center justify-between">
+            <InterfaceLanguagePicker value={settings.interfaceLang} onChange={(interfaceLang) => update({ interfaceLang })} />
             <div className="text-[0.6rem] font-bold uppercase tracking-[0.15em] text-[var(--muted)]">
               v{__BUILD_TIME__} ({__BUILD_HASH__})
             </div>
           </div>
+
           <div>
             <div className="text-[0.72rem] font-bold uppercase tracking-[0.22em] text-[var(--accent-deep)]">{tt('preferences')}</div>
             <h3 className="display-font mt-2 text-3xl leading-none text-[var(--ink)]">{tt('preferencesHeading')}</h3>
@@ -35,10 +38,6 @@ export function PreferencesTab({
               <div className="grid gap-3">
                 <LanguagePicker label={tt('nativeLanguage')} value={settings.nativeLang} onChange={(code) => update({ nativeLang: code })} />
                 <LanguagePicker label={tt('targetLanguage')} value={settings.targetLang} onChange={(code) => update({ targetLang: code })} />
-                <div className="flex items-center justify-between pt-1">
-                  <span className="text-xs font-medium text-[var(--muted)]">{tt('interfaceLanguage')}</span>
-                  <InterfaceLanguagePicker value={settings.interfaceLang} onChange={(interfaceLang) => update({ interfaceLang })} />
-                </div>
               </div>
             </SettingsPanel>
 

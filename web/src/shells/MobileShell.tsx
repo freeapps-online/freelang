@@ -167,6 +167,13 @@ export function MobileShell({ state }: { state: AppState }) {
             <span className="text-[var(--error)]">{liveScores.total - liveScores.correct}</span>
           </button>
         )}
+
+        <button
+          className={`flex h-7 w-7 items-center justify-center rounded-full ${mode === 'preferences' ? 'text-[var(--accent)]' : 'text-[var(--muted)]'}`}
+          onClick={() => { navigate('preferences'); setShowStats(false) }}
+        >
+          <Settings2 className="h-4 w-4" strokeWidth={2} />
+        </button>
       </header>
 
       {/* Content — fills space between header and dock */}
@@ -176,10 +183,10 @@ export function MobileShell({ state }: { state: AppState }) {
         </Suspense>
       </main>
 
-      {/* Bottom dock */}
+      {/* Bottom dock — practice modes only */}
       <nav className="relative z-10 shrink-0 border-t border-[var(--line)] bg-[var(--dock)]/92 px-2 pb-[calc(env(safe-area-inset-bottom)+0.25rem)] pt-1 backdrop-blur-2xl">
-        <div className="mx-auto grid max-w-md grid-cols-5">
-          {(['flashcards', 'spelling', 'cloze', 'sentences', 'preferences'] as Mode[]).map((m) => (
+        <div className="mx-auto grid max-w-md grid-cols-4">
+          {(['flashcards', 'spelling', 'cloze', 'sentences'] as Mode[]).map((m) => (
             <button
               key={m}
               className={`relative flex flex-col items-center gap-1 rounded-[1rem] px-2 py-2 text-center ${
