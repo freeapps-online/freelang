@@ -7,7 +7,7 @@ import { useSpeech } from '../useSpeech.ts'
 import { reportCardScore } from '../services/cloud.ts'
 import { isSpeechMatch } from '../services/flashcardsVoice.ts'
 
-import { PracticeLayout, CardShell, SwipeHint, FeedbackToast, WordStatsPanel } from './practice/index.ts'
+import { WordStatsPanel } from './FlashcardsTab.tsx'
 import { t } from '../services/i18n.ts'
 import type { PracticeInputMode } from '../services/settings.ts'
 import type { FlashCard, FlashCardScore } from '../types.ts'
@@ -60,17 +60,17 @@ export function MissingLetterTab({
   showStats: boolean
   onShowStatsChange: (show: boolean) => void
 }) {
-  useSpeech()
+  const sp = useSpeech()
   const [words, setWords] = useState<FlashCard[]>(getLoadedWords(level))
   const [round, setRound] = useState<MissingLetterRound | null>(null)
-  const [, setScores] = useState<FlashCardScore>(() => loadScores('spelling'))
+  const [scores, setScores] = useState<FlashCardScore>(() => loadScores('spelling'))
   const [wordStats, setWordStats] = useState<WordStatsMap>(loadWordStats)
   const [result, setResult] = useState<SwipeResult>(null)
   const [dragX, setDragX] = useState(0)
   const [transitioning, setTransitioning] = useState(false)
   const [lastFeedback, setLastFeedback] = useState<{ maskedWord: string; correctWord: string; missingLetter: string } | null>(null)
-  const [, setVoiceAttempt] = useState('')
-  const [, setSpeakStatus] = useState<SpeakStatus>('idle')
+  const [voiceAttempt, setVoiceAttempt] = useState('')
+  const [speakStatus, setSpeakStatus] = useState<SpeakStatus>('idle')
   const startX = useRef(0)
   const dragging = useRef(false)
   const feedbackTimer = useRef<number>(0)
@@ -282,48 +282,137 @@ export function MissingLetterTab({
     return <div className="flex flex-1 items-center justify-center text-[var(--muted)]">{t(uiLang, 'loading')}</div>
   }
 
+  const pct = scores.total > 0 ? Math.round((scores.correct / scores.total) * 100) : 0
   const meaning = round.card.translations[nativeLang] ?? round.card.word
 
   return (
-    <PracticeLayout>
-      {showStats ? (
-        <WordStatsPanel words={words} wordStats={wordStats} targetLang={targetLang} nativeLang={nativeLang} onPracticeWord={focusCard} level={level} levelLabel={levelLabel} />
-      ) : (
-        <>
-          <div className="flex flex-1 items-center justify-center overflow-hidden">
-            <CardShell
-              dragX={inputMode === 'keyboard' ? dragX : 0}
-              transitioning={transitioning}
-              swipeable={inputMode === 'keyboard'}
-              onPointerDown={onPointerDown}
-              onPointerMove={onPointerMove}
-              onPointerUp={onPointerUp}
-              onClick={inputMode === 'speak' || audioEnabled ? () => { void speech.speak(round.displayText, targetLang) } : undefined}
-            >
-              {inputMode === 'keyboard' && (
-                <SwipeHint dragX={dragX} transitioning={transitioning} leftOption={round.leftOption} rightOption={round.rightOption} correctSide={round.correctSide} />
-              )}
+    <div className="flex h-[calc(100dvh-80px)] flex-col lg:h-auto">
+      <section className="flex flex-1 flex-col p-2 sm:p-3 lg:p-4" style={{ background: 'var(--warm-gradient)' }}>
+        <div className="flex h-full flex-col gap-2">
+          {showStats ? (
+            <WordStatsPanel
+              words={words}
+              wordStats={wordStats}
+              targetLang={targetLang}
+              nativeLang={nativeLang}
+              onPracticeWord={focusCard}
+              level={level}
+              levelLabel={levelLabel}
+            />
+          ) : (
+            <>
+              <div className="flex flex-1 items-center justify-center overflow-hidden">
+                <div
+                  className={`relative flex w-full max-w-[26rem] flex-col items-center justify-center gap-2 rounded-[1.25rem] border border-[var(--line-strong)] px-3 py-4 text-center shadow-[var(--shadow-soft)] select-none touch-none sm:gap-3 sm:rounded-[2rem] sm:px-5 sm:py-8 ${
+                    inputMode === 'keyboard' ? 'cursor-grab active:cursor-grabbing' : ''
+                  }`}
+                  style={{
+                    background: 'var(--card-gradient)',
+                    transform: inputMode === 'keyboard' ? `translateX(${dragX}px) rotate(${dragX * 0.08}deg)` : 'none',
+                    transition: transitioning ? 'transform 0.35s ease-out, opacity 0.35s ease-out' : 'none',
+                    opacity: transitioning ? 0 : 1,
+                  }}
+                  onPointerDown={inputMode === 'keyboard' ? onPointerDown : undefined}
+                  onPointerMove={inputMode === 'keyboard' ? onPointerMove : undefined}
+                  onPointerUp={inputMode === 'keyboard' ? onPointerUp : undefined}
+                  onClick={inputMode === 'speak' || audioEnabled ? () => { void speech.speak(round.displayText, targetLang) } : undefined}
+                >
+                  {inputMode === 'keyboard' && Math.abs(dragX) > 30 && !transitioning && (
+                    <div
+                      className="absolute top-4 rounded-full px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-[var(--paper)] sm:top-5"
+                      style={{
+                        left: dragX < 0 ? 18 : 'auto',
+                        right: dragX > 0 ? 18 : 'auto',
+                        background: dragX < 0
+                          ? (round.correctSide === 'left' ? 'var(--success)' : 'var(--error)')
+                          : (round.correctSide === 'right' ? 'var(--success)' : 'var(--error)'),
+                      }}
+                    >
+                      {dragX < 0 ? round.leftOption : round.rightOption}
+                    </div>
+                  )}
 
-              <div className="drop-shadow-sm" style={{ fontSize: 'calc(4.5rem * var(--content-scale))' }}>{round.card.emoji}</div>
-              <div className="text-sm font-semibold uppercase tracking-[0.14em] text-[var(--muted)]">{meaning}</div>
-              <div className="display-font leading-none text-[var(--ink)]" style={{ fontSize: 'calc(2.4rem * var(--content-scale))' }}>{round.maskedText}</div>
+                  <div className="drop-shadow-sm" style={{ fontSize: `calc(4.5rem * var(--content-scale))` }}>{round.card.emoji}</div>
+                  <div className="text-sm font-semibold uppercase tracking-[0.14em] text-[var(--muted)]">{meaning}</div>
+                  <div className="display-font leading-none text-[var(--ink)]" style={{ fontSize: `calc(2.4rem * var(--content-scale))` }}>
+                    {round.maskedText}
+                  </div>
+                  {inputMode === 'keyboard' ? (
+                    <div className="mt-1 grid w-full grid-cols-2 gap-2">
+                      <button
+                        className="rounded-full border border-[var(--line)] bg-[var(--glass)] px-3 py-2 text-center transition hover:border-[var(--line-strong)] hover:bg-[var(--glass-hover)]"
+                        onClick={() => handleAnswer('left')}
+                        disabled={transitioning}
+                      >
+                        <div className="font-semibold text-[var(--ink)]" style={{ fontSize: 'calc(0.875rem * var(--content-scale))' }}>← {round.leftOption}</div>
+                      </button>
+                      <button
+                        className="rounded-full border border-[var(--line)] bg-[var(--glass)] px-3 py-2 text-center transition hover:border-[var(--line-strong)] hover:bg-[var(--glass-hover)]"
+                        onClick={() => handleAnswer('right')}
+                        disabled={transitioning}
+                      >
+                        <div className="font-semibold text-[var(--ink)]" style={{ fontSize: 'calc(0.875rem * var(--content-scale))' }}>{round.rightOption} →</div>
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="text-sm text-[var(--muted)]">
+                      {t(uiLang, 'sayMissingLetterHelp')}
+                    </div>
+                  )}
+                  {result && lastFeedback && (
+                    <div className="mt-1 w-full rounded-[1rem] border border-[var(--line)] bg-[var(--glass)] px-3 py-2">
+                      <div className="text-sm font-semibold" style={{ color: result === 'correct' ? 'var(--success)' : 'var(--error)' }}>
+                        {lastFeedback.maskedWord} → {lastFeedback.correctWord}
+                      </div>
+                      {voiceAttempt && result === 'wrong' && (
+                        <div className="mt-1 text-xs text-[var(--muted)]">
+                          {t(uiLang, 'answer')}: <span className="text-[var(--error)]">{voiceAttempt}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
 
-              {inputMode === 'keyboard' && (
-                <div className="mt-1 grid w-full grid-cols-2 gap-2">
-                  <button className="rounded-full border border-[var(--line)] bg-[var(--glass)] px-3 py-2 text-center transition hover:border-[var(--line-strong)] hover:bg-[var(--glass-hover)]" onClick={() => handleAnswer('left')} disabled={transitioning}>
-                    <div className="font-semibold text-[var(--ink)]" style={{ fontSize: 'calc(0.875rem * var(--content-scale))' }}>← {round.leftOption}</div>
-                  </button>
-                  <button className="rounded-full border border-[var(--line)] bg-[var(--glass)] px-3 py-2 text-center transition hover:border-[var(--line-strong)] hover:bg-[var(--glass-hover)]" onClick={() => handleAnswer('right')} disabled={transitioning}>
-                    <div className="font-semibold text-[var(--ink)]" style={{ fontSize: 'calc(0.875rem * var(--content-scale))' }}>{round.rightOption} →</div>
+              {inputMode === 'speak' && (
+                <div className="space-y-2">
+                  <div className="rounded-[0.9rem] border border-[var(--line)] bg-[var(--glass)] px-3 py-2 text-xs text-[var(--muted)]">
+                    {sp.isListening
+                      ? `Listening: ${sp.transcript || 'speak now...'}`
+                      : {
+                          prompting: t(uiLang, 'playingWordPrompt'),
+                          'listening-answer': t(uiLang, 'sayFullWordOrLetter'),
+                          blocked: 'Microphone permission is blocked in this browser.',
+                          unsupported: 'Speech recognition is not supported in this browser.',
+                          idle: t(uiLang, 'preparingWordPrompt'),
+                        }[speakStatus]}
+                  </div>
+                  <button
+                    className="w-full rounded-[1.1rem] border border-[var(--line)] bg-[var(--glass)] px-4 py-3 text-sm font-semibold text-[var(--ink)]"
+                    onClick={() => focusCard(round.card)}
+                  >
+                    {t(uiLang, 'restartSpelling')}
                   </button>
                 </div>
               )}
-            </CardShell>
-          </div>
+            </>
+          )}
+        </div>
+      </section>
 
-          <FeedbackToast result={result} targetWord={lastFeedback?.maskedWord ?? ''} correctAnswer={lastFeedback?.correctWord ?? ''} />
-        </>
+      {!showStats && (
+        <div className="hidden border-t border-[var(--line)] bg-[var(--glass)] px-4 py-2 lg:flex lg:items-center lg:gap-6">
+          <span className="text-xs font-semibold text-[var(--muted)]">
+            Accuracy: <span className="text-[var(--ink)]">{pct}%</span> ({scores.correct}/{scores.total})
+          </span>
+          <span className="text-xs font-semibold text-[var(--muted)]">
+            Streak: <span className="text-[var(--ink)]">{scores.streak}</span>
+          </span>
+          <span className="text-xs font-semibold text-[var(--muted)]">
+            Best: <span className="text-[var(--ink)]">{scores.bestStreak}</span>
+          </span>
+        </div>
       )}
-    </PracticeLayout>
+    </div>
   )
 }
