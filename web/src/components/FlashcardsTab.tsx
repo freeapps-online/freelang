@@ -2,20 +2,17 @@ import { WordStatsPanel } from './practice/WordStatsPanel.tsx'
 import { DictionarySheet } from './practice/DictionarySheet.tsx'
 import { useState, useCallback, useRef, useEffect } from 'react'
 
-import { getFlashCardRound, getCardDisplay, loadLevel, getLoadedWords } from '../services/vocabulary.ts'
-import { loadScores, recordAnswer, loadWordStats, recordWordAnswer, pickWeightedCard, type WordStatsMap } from '../services/scores.ts'
 import { speech } from '../services/speech.ts'
 import { useSpeech } from '../useSpeech.ts'
-import { reportCardScore } from '../services/cloud.ts'
 import { evaluateVoiceAttempt } from '../services/flashcardsVoice.ts'
 import { t } from '../services/i18n.ts'
+import { useCardAudio } from '../hooks/useCardAudio.ts'
+import { useSwipeGesture } from '../hooks/useSwipeGesture.ts'
+import { useCardRound } from '../hooks/useCardRound.ts'
+import { useVoiceCycle } from '../hooks/useVoiceCycle.ts'
 import type { PracticeInputMode, DictionaryViewPreference } from '../services/settings.ts'
 import type { DictionaryLookupResult } from '../services/dictionary.ts'
-import type { FlashCard, FlashCardRound, FlashCardScore } from '../types.ts'
 
-type SwipeResult = 'correct' | 'wrong' | null
-type VoiceStep = 'repeat' | 'answer'
-type SpeakStatus = 'idle' | 'prompting' | 'listening-repeat' | 'listening-answer' | 'blocked' | 'unsupported'
 type DictionaryStatus = 'idle' | 'loading' | 'ready' | 'error'
 
 export function FlashcardsTab({
@@ -46,78 +43,100 @@ export function FlashcardsTab({
   onShowStatsChange: (show: boolean) => void
 }) {
   useSpeech()
-  const [words, setWords] = useState<FlashCard[]>(getLoadedWords(level))
-  const [round, setRound] = useState<FlashCardRound | null>(null)
-  const [, setScores] = useState<FlashCardScore>(loadScores)
-  const [wordStats, setWordStats] = useState<WordStatsMap>(loadWordStats)
-  const [result, setResult] = useState<SwipeResult>(null)
-  const [dragX, setDragX] = useState(0)
-  const [transitioning, setTransitioning] = useState(false)
-  const startX = useRef(0)
-  const dragging = useRef(false)
-  const [lastFeedback, setLastFeedback] = useState<{ nativeWord: string; correctAnswer: string; correct: boolean } | null>(null)
-  const [, setVoiceStep] = useState<VoiceStep>('repeat')
-  const [, setVoiceAttempt] = useState<{ heardTarget: string; heardAnswer: string; repeatMatched: boolean } | null>(null)
-  const [, setSpeakStatus] = useState<SpeakStatus>('idle')
+
+  // --- Card round lifecycle ---
+  const {
+    words, round, result, transitioning, feedback, wordStats, display, correctAnswer, answer, focusCard,
+  } = useCardRound({
+    level,
+    nativeLang,
+    targetLang,
+    onTransitionStart: (correct, side) => {
+      if (correct) swipe.flyOff(side)
+      else swipe.resetDrag()
+    },
+  })
+
+  const displayText = display?.text ?? ''
+
+  // --- Audio: speak word on new card ---
+  useCardAudio(displayText, targetLang, audioEnabled, transitioning)
+
+  // --- Swipe gesture ---
+  const swipe = useSwipeGesture({
+    disabled: !!result || transitioning || inputMode !== 'keyboard',
+    onSwipe: answer,
+    onTap: () => { if (audioEnabled && displayText) void speech.speak(displayText, targetLang) },
+  })
+
+  // --- Voice recognition cycle (speak mode) ---
+  const handleVoiceAnswer = useCallback((heardTarget: string, heardAnswer: string) => {
+    if (transitioning || !round) return
+    const evaluation = evaluateVoiceAttempt(displayText, heardTarget, correctAnswer, heardAnswer)
+    // Voice answers always use left/right based on correctness for scoring
+    answer(evaluation.answerMatched ? round.correctSide : (round.correctSide === 'left' ? 'right' : 'left'))
+  }, [answer, correctAnswer, displayText, round, transitioning])
+
+  useVoiceCycle({
+    round,
+    targetLang,
+    nativeLang,
+    audioEnabled,
+    active: inputMode === 'speak' && !showStats,
+    transitioning,
+    onAnswer: handleVoiceAnswer,
+  })
+
+  // --- Keyboard shortcuts ---
+  useEffect(() => {
+    if (inputMode !== 'keyboard') return
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (transitioning || result) return
+      const tag = (event.target as HTMLElement)?.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+      if (event.key === 'ArrowLeft') { event.preventDefault(); answer('left') }
+      if (event.key === 'ArrowRight') { event.preventDefault(); answer('right') }
+      if (event.key === 'ArrowUp' && round) { event.preventDefault(); void speech.speak(round.leftOption, nativeLang) }
+      if (event.key === 'ArrowDown' && round) { event.preventDefault(); void speech.speak(round.rightOption, nativeLang) }
+      if ((event.key === 'Enter' || event.key === ' ') && displayText) { event.preventDefault(); void speech.speak(displayText, targetLang) }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [answer, displayText, inputMode, nativeLang, result, round, targetLang, transitioning])
+
+  // --- Cleanup ---
+  useEffect(() => () => { speech.stopSpeaking(); speech.stopListening() }, [])
+
+  // --- Dictionary ---
   const [dictionaryOpen, setDictionaryOpen] = useState(false)
   const [dictionaryStatus, setDictionaryStatus] = useState<DictionaryStatus>('idle')
   const [dictionaryData, setDictionaryData] = useState<DictionaryLookupResult | null>(null)
   const [dictionaryError, setDictionaryError] = useState<string | null>(null)
-  const feedbackTimer = useRef<number>(0)
-  const speakTimer = useRef<number>(0)
-  const speakRunId = useRef(0)
-  const heardTargetRef = useRef('')
-  const wordStatsRef = useRef(wordStats)
   const dictionaryModuleRef = useRef<Promise<typeof import('../services/dictionary.ts')> | null>(null)
 
+  // Reset dictionary on card change
   useEffect(() => {
-    wordStatsRef.current = wordStats
-  }, [wordStats])
-
-  const resetDictionary = useCallback(() => {
     setDictionaryOpen(false)
     setDictionaryStatus('idle')
     setDictionaryData(null)
     setDictionaryError(null)
-  }, [])
-
-  useEffect(() => {
-    let cancelled = false
-    loadLevel(level).then((w) => {
-      if (cancelled) return
-      setWords(w)
-      const card = pickWeightedCard(w, wordStatsRef.current)
-      resetDictionary()
-      setVoiceStep('repeat')
-      setVoiceAttempt(null)
-      heardTargetRef.current = ''
-      setSpeakStatus('idle')
-      setRound(getFlashCardRound(nativeLang, targetLang, w, undefined, card))
-    })
-    return () => { cancelled = true }
-  }, [level, nativeLang, resetDictionary, targetLang])
-
-  const display = round ? getCardDisplay(round.card, targetLang) : null
-  const displayText = display?.text ?? ''
-  const correctAnswer = round ? (round.card.translations[nativeLang] ?? round.card.word) : ''
+  }, [round?.card.word])
 
   const openDictionary = useCallback(async () => {
     if (!round || !displayText) return
     setDictionaryOpen(true)
     if (dictionaryStatus === 'ready' || dictionaryStatus === 'loading') return
-
     setDictionaryStatus('loading')
     setDictionaryError(null)
-
     try {
       dictionaryModuleRef.current ??= import('../services/dictionary.ts')
       const { lookupCardDictionary } = await dictionaryModuleRef.current
-      const result = await lookupCardDictionary({
+      const data = await lookupCardDictionary({
         englishWord: round.card.word,
         targetWord: displayText,
         targetLang,
       })
-      setDictionaryData(result)
+      setDictionaryData(data)
       setDictionaryStatus('ready')
     } catch (error) {
       setDictionaryStatus('error')
@@ -125,246 +144,15 @@ export function FlashcardsTab({
     }
   }, [dictionaryStatus, displayText, round, targetLang])
 
-  const handleAnswer = useCallback((side: 'left' | 'right') => {
-    if (result || transitioning || !round || words.length === 0) return
-    const correct = side === round.correctSide
-    const correctAnswer = round.correctSide === 'left' ? round.leftOption : round.rightOption
-    const cardDisplay = getCardDisplay(round.card, targetLang)
-    let nextWordStats = wordStatsRef.current
-    setResult(correct ? 'correct' : 'wrong')
-    setLastFeedback({ nativeWord: cardDisplay.text, correctAnswer, correct })
-    setScores((prev) => recordAnswer(prev, correct))
-    setWordStats((prev) => {
-      nextWordStats = recordWordAnswer(prev, round.card.word, correct)
-      return nextWordStats
-    })
-    void reportCardScore(round.card.word, correct)
-
-    if (correct) {
-      // Correct: card flies away immediately
-      setTransitioning(true)
-      setDragX(side === 'left' ? -420 : 420)
-      window.setTimeout(() => {
-        const nextCard = pickWeightedCard(words, nextWordStats, round.card)
-        resetDictionary()
-        setVoiceStep('repeat')
-        setVoiceAttempt(null)
-        heardTargetRef.current = ''
-        setSpeakStatus('idle')
-        setResult(null)
-        setRound(getFlashCardRound(nativeLang, targetLang, words, round.card, nextCard))
-        setDragX(0)
-        setTransitioning(false)
-      }, 400)
-    } else {
-      // Wrong: card stays, shows red, then fades to next
-      setDragX(0)
-      window.setTimeout(() => {
-        setTransitioning(true)
-      }, 800)
-      window.setTimeout(() => {
-        const nextCard = pickWeightedCard(words, nextWordStats, round.card)
-        resetDictionary()
-        setVoiceStep('repeat')
-        setVoiceAttempt(null)
-        heardTargetRef.current = ''
-        setSpeakStatus('idle')
-        setResult(null)
-        setRound(getFlashCardRound(nativeLang, targetLang, words, round.card, nextCard))
-        setDragX(0)
-        setTransitioning(false)
-      }, 1100)
-    }
-
-    window.clearTimeout(feedbackTimer.current)
-    feedbackTimer.current = window.setTimeout(() => {
-      setLastFeedback(null)
-    }, 3500)
-  }, [audioEnabled, resetDictionary, result, round, nativeLang, targetLang, transitioning, words])
-
-  const handleVoiceAnswer = useCallback((heardTarget: string, heardAnswer: string) => {
-    if (transitioning || !round || words.length === 0) return
-
-    const evaluation = evaluateVoiceAttempt(displayText, heardTarget, correctAnswer, heardAnswer)
-    let nextWordStats = wordStatsRef.current
-    setVoiceAttempt({ heardTarget, heardAnswer, repeatMatched: evaluation.repeatMatched })
-    setVoiceStep('repeat')
-    setResult(evaluation.answerMatched ? 'correct' : 'wrong')
-    setLastFeedback({ nativeWord: displayText, correctAnswer, correct: evaluation.answerMatched })
-    setScores((prev) => recordAnswer(prev, evaluation.answerMatched))
-    setWordStats((prev) => {
-      nextWordStats = recordWordAnswer(prev, round.card.word, evaluation.answerMatched)
-      return nextWordStats
-    })
-    void reportCardScore(round.card.word, evaluation.answerMatched)
-    setTransitioning(true)
-
-    window.setTimeout(() => {
-      const nextCard = pickWeightedCard(words, nextWordStats, round.card)
-      resetDictionary()
-      setVoiceStep('repeat')
-      setVoiceAttempt(null)
-      heardTargetRef.current = ''
-      setSpeakStatus('idle')
-      setResult(null)
-      setRound(getFlashCardRound(nativeLang, targetLang, words, round.card, nextCard))
-      setTransitioning(false)
-    }, 700)
-
-    window.clearTimeout(feedbackTimer.current)
-    feedbackTimer.current = window.setTimeout(() => {
-      setResult(null)
-      setLastFeedback(null)
-      setVoiceAttempt(null)
-    }, 4500)
-  }, [correctAnswer, displayText, nativeLang, resetDictionary, round, targetLang, transitioning, words])
-
-  useEffect(() => {
-    if (!audioEnabled || transitioning || !displayText) return
-    void speech.speak(displayText, targetLang)
-  }, [audioEnabled, displayText, targetLang, round?.card.word, transitioning])
-
-  useEffect(() => {
-    if (inputMode !== 'keyboard') return
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (transitioning) return
-      const target = event.target as HTMLElement | null
-      const tag = target?.tagName
-      if (target?.isContentEditable || tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
-      if (event.key === 'ArrowLeft') { event.preventDefault(); handleAnswer('left') }
-      if (event.key === 'ArrowRight') { event.preventDefault(); handleAnswer('right') }
-      if (event.key === 'ArrowUp' && round) { event.preventDefault(); void speech.speak(round.leftOption, nativeLang) }
-      if (event.key === 'ArrowDown' && round) { event.preventDefault(); void speech.speak(round.rightOption, nativeLang) }
-      if ((event.key === 'Enter' || event.key === ' ') && displayText) { event.preventDefault(); void speech.speak(displayText, targetLang) }
-    }
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [displayText, handleAnswer, inputMode, nativeLang, round, targetLang, transitioning])
-
-  useEffect(() => () => { speech.stopSpeaking(); speech.stopListening() }, [])
-
-  const onPointerDown = useCallback((event: React.PointerEvent) => {
-    if (transitioning || inputMode !== 'keyboard') return
-    dragging.current = true
-    startX.current = event.clientX
-    ;(event.target as HTMLElement).setPointerCapture(event.pointerId)
-  }, [inputMode, transitioning])
-
-  const onPointerMove = useCallback((event: React.PointerEvent) => {
-    if (!dragging.current) return
-    setDragX(event.clientX - startX.current)
-  }, [])
-
-  const onPointerUp = useCallback((event: React.PointerEvent) => {
-    if (!dragging.current) return
-    dragging.current = false
-    const moved = Math.abs(event.clientX - startX.current)
-    if (dragX < -80) handleAnswer('left')
-    else if (dragX > 80) handleAnswer('right')
-    else {
-      setDragX(0)
-      if (moved < 10 && audioEnabled && display) {
-        void speech.speak(display.text, targetLang)
-      }
-    }
-  }, [dragX, handleAnswer, audioEnabled, display, targetLang])
-
-
-  const focusCard = useCallback((card: FlashCard) => {
+  // --- Focus card from stats ---
+  const handleFocusCard = useCallback((card: typeof words[0]) => {
     speech.stopListening()
     speech.stopSpeaking()
-    window.clearTimeout(feedbackTimer.current)
-    resetDictionary()
-    setResult(null)
-    setLastFeedback(null)
-    setVoiceStep('repeat')
-    setVoiceAttempt(null)
-    heardTargetRef.current = ''
-    setSpeakStatus('idle')
-    setDragX(0)
-    setTransitioning(false)
-    setRound(getFlashCardRound(nativeLang, targetLang, words, undefined, card))
+    focusCard(card)
     onShowStatsChange(false)
-  }, [nativeLang, onShowStatsChange, resetDictionary, targetLang, words])
+  }, [focusCard, onShowStatsChange])
 
-  useEffect(() => {
-    if (inputMode !== 'speak' || showStats || !round || transitioning) return
-
-    const runId = ++speakRunId.current
-    const displayText = getCardDisplay(round.card, targetLang).text
-    const answerText = round.card.translations[nativeLang] ?? round.card.word
-
-    const handleRecognitionError = (error: string, step: VoiceStep) => {
-      if (runId !== speakRunId.current) return
-      if (error === 'not-allowed' || error === 'service-not-allowed') {
-        setSpeakStatus('blocked')
-        return
-      }
-      if (error === 'Speech recognition not supported') {
-        setSpeakStatus('unsupported')
-        return
-      }
-      if (error === 'no-speech') {
-        speakTimer.current = window.setTimeout(() => {
-          if (runId !== speakRunId.current) return
-          if (step === 'repeat') {
-            startRepeatListening()
-          } else {
-            startAnswerListening(heardTargetRef.current)
-          }
-        }, 250)
-      }
-    }
-
-    const startAnswerListening = (heardTarget: string) => {
-      if (runId !== speakRunId.current) return
-      setVoiceStep('answer')
-      setSpeakStatus('listening-answer')
-      speech.startListening(nativeLang, (heardAnswer) => {
-        if (runId !== speakRunId.current) return
-        handleVoiceAnswer(heardTarget, heardAnswer)
-      }, {
-        onError: (error) => handleRecognitionError(error, 'answer'),
-      })
-    }
-
-    const startRepeatListening = () => {
-      if (runId !== speakRunId.current) return
-      setVoiceStep('repeat')
-      setSpeakStatus('listening-repeat')
-      speech.startListening(targetLang, (heardTarget) => {
-        if (runId !== speakRunId.current) return
-        heardTargetRef.current = heardTarget
-        const repeatMatched = evaluateVoiceAttempt(displayText, heardTarget, answerText, answerText).repeatMatched
-        setVoiceAttempt({ heardTarget, heardAnswer: '', repeatMatched })
-        speakTimer.current = window.setTimeout(() => {
-          startAnswerListening(heardTarget)
-        }, 160)
-      }, {
-        onError: (error) => handleRecognitionError(error, 'repeat'),
-      })
-    }
-
-    const runSpeakCycle = async () => {
-      setVoiceStep('repeat')
-      setVoiceAttempt(null)
-      if (audioEnabled) {
-        setSpeakStatus('prompting')
-        await speech.speak(displayText, targetLang)
-        if (runId !== speakRunId.current) return
-      }
-      startRepeatListening()
-    }
-
-    void runSpeakCycle()
-
-    return () => {
-      window.clearTimeout(speakTimer.current)
-      speech.stopListening()
-      speech.stopSpeaking()
-    }
-  }, [audioEnabled, handleVoiceAnswer, inputMode, nativeLang, round, showStats, targetLang, transitioning])
-
+  // --- Render ---
   if (!round || !display) {
     return <div className="flex flex-1 items-center justify-center text-[var(--muted)]">{t(uiLang, 'loading')}</div>
   }
@@ -384,7 +172,7 @@ export function FlashcardsTab({
               wordStats={wordStats}
               targetLang={targetLang}
               nativeLang={nativeLang}
-              onPracticeWord={focusCard}
+              onPracticeWord={handleFocusCard}
               level={level}
               levelLabel={levelLabel}
             />
@@ -402,13 +190,13 @@ export function FlashcardsTab({
                   } ${inputMode === 'keyboard' && !result ? 'cursor-grab active:cursor-grabbing' : ''}`}
                   style={{
                     background: result ? undefined : 'var(--card-gradient)',
-                    transform: inputMode === 'keyboard' ? `translateX(${dragX}px) rotate(${dragX * 0.08}deg)` : 'none',
+                    transform: inputMode === 'keyboard' ? `translateX(${swipe.dragX}px) rotate(${swipe.dragX * 0.08}deg)` : 'none',
                     transition: transitioning ? 'transform 0.35s ease-out, opacity 0.35s ease-out' : 'none',
                     opacity: transitioning ? 0 : 1,
                   }}
-                  onPointerDown={inputMode === 'keyboard' && !result && !transitioning ? onPointerDown : undefined}
-                  onPointerMove={inputMode === 'keyboard' && !result && !transitioning ? onPointerMove : undefined}
-                  onPointerUp={inputMode === 'keyboard' && !result && !transitioning ? onPointerUp : undefined}
+                  onPointerDown={inputMode === 'keyboard' && !result && !transitioning ? swipe.handlers.onPointerDown : undefined}
+                  onPointerMove={inputMode === 'keyboard' && !result && !transitioning ? swipe.handlers.onPointerMove : undefined}
+                  onPointerUp={inputMode === 'keyboard' && !result && !transitioning ? swipe.handlers.onPointerUp : undefined}
                   onClick={inputMode === 'speak' && audioEnabled ? () => { void speech.speak(display.text, targetLang) } : undefined}
                 >
                   <button className="drop-shadow-sm" style={{ fontSize: `calc(4.5rem * var(--content-scale))` }} onClick={(e) => { e.stopPropagation(); void openDictionary() }}>{display.emoji}</button>
@@ -448,7 +236,7 @@ export function FlashcardsTab({
                             : 'border-[var(--line)] bg-[var(--glass)] text-[var(--muted)]'
                         : 'border-[var(--line-strong)] bg-[var(--glass)] text-[var(--ink)] hover:bg-[var(--glass-hover)]'
                     }`}
-                    onClick={() => handleAnswer('left')}
+                    onClick={() => answer('left')}
                     disabled={!!result || transitioning}
                   >
                     <span className="text-[0.6rem] font-bold uppercase tracking-[0.16em] opacity-80">{'\u2190'}</span>
@@ -464,7 +252,7 @@ export function FlashcardsTab({
                             : 'border-[var(--line)] bg-[var(--glass)] text-[var(--muted)]'
                         : 'border-[var(--line-strong)] bg-[var(--glass)] text-[var(--ink)] hover:bg-[var(--glass-hover)]'
                     }`}
-                    onClick={() => handleAnswer('right')}
+                    onClick={() => answer('right')}
                     disabled={!!result || transitioning}
                   >
                     <span className="text-[0.6rem] font-bold uppercase tracking-[0.16em] opacity-80">{'\u2192'}</span>
@@ -475,9 +263,9 @@ export function FlashcardsTab({
 
               {/* Feedback below card */}
               <div className="shrink-0 text-center text-sm font-semibold" style={{ minHeight: '1.5em' }}>
-                {lastFeedback && (
-                  <span style={{ color: lastFeedback.correct ? 'var(--success)' : 'var(--error)' }}>
-                    {lastFeedback.nativeWord} = {lastFeedback.correctAnswer}
+                {feedback && (
+                  <span style={{ color: feedback.correct ? 'var(--success)' : 'var(--error)' }}>
+                    {feedback.nativeWord} = {feedback.correctAnswer}
                   </span>
                 )}
               </div>
@@ -501,9 +289,6 @@ export function FlashcardsTab({
           onClose={() => setDictionaryOpen(false)}
         />
       )}
-
     </div>
   )
 }
-
-
