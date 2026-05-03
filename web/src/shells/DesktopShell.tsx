@@ -1,4 +1,5 @@
 import { Suspense, lazy } from 'react'
+import { Settings2 } from 'lucide-react'
 import { FlashcardModeSwitch } from '../components/FlashcardModeSwitch.tsx'
 import { LanguagePicker } from '../components/LanguagePicker.tsx'
 import { t } from '../services/i18n.ts'
@@ -7,7 +8,7 @@ import { preloadMode, loadFlashcardsTab, loadMissingLetterTab, loadClozeTab, loa
 import type { useAppState } from '../useAppState.ts'
 import type { Mode } from '../types.ts'
 
-const MODES: Mode[] = ['flashcards', 'spelling', 'cloze', 'sentences', 'preferences']
+const PRACTICE_MODES: Mode[] = ['flashcards', 'spelling', 'cloze', 'sentences']
 
 const FlashcardsTab = lazy(async () => ({ default: (await loadFlashcardsTab()).FlashcardsTab }))
 const MissingLetterTab = lazy(async () => ({ default: (await loadMissingLetterTab()).MissingLetterTab }))
@@ -108,7 +109,7 @@ export function DesktopShell({ state }: { state: AppState }) {
             </div>
 
             <nav className="space-y-1">
-              {MODES.map((item) => (
+              {PRACTICE_MODES.map((item) => (
                 <button
                   key={item}
                   className={`w-full rounded-[1rem] px-4 py-3 text-left text-sm font-semibold transition duration-200 ${
@@ -120,7 +121,7 @@ export function DesktopShell({ state }: { state: AppState }) {
                   onMouseEnter={() => preloadMode(item)}
                   onFocus={() => preloadMode(item)}
                 >
-                  {{ flashcards: tt('cards'), spelling: tt('spelling'), cloze: tt('cloze'), sentences: tt('sentences'), preferences: tt('preferences') }[item]}
+                  {{ flashcards: tt('cards'), spelling: tt('spelling'), cloze: tt('cloze'), sentences: tt('sentences') }[item as 'flashcards' | 'spelling' | 'cloze' | 'sentences']}
                 </button>
               ))}
               {isPracticeMode && (
@@ -137,8 +138,24 @@ export function DesktopShell({ state }: { state: AppState }) {
               )}
             </nav>
 
+            {/* Settings button — always at bottom */}
+            <div className={isPracticeMode ? '' : 'mt-auto'}>
+              <button
+                className={`flex w-full items-center gap-2 rounded-[1rem] px-4 py-3 text-sm font-semibold transition duration-200 ${
+                  mode === 'preferences'
+                    ? 'border border-[var(--line-strong)] bg-[var(--glass-hover)] text-[var(--ink)]'
+                    : 'border border-transparent text-[var(--muted)] hover:bg-[var(--glass-hover)] hover:text-[var(--ink)]'
+                }`}
+                onClick={() => { navigate('preferences'); setShowStats(false) }}
+                onMouseEnter={() => preloadMode('preferences')}
+              >
+                <Settings2 className="h-4 w-4" strokeWidth={1.7} />
+                {tt('preferences')}
+              </button>
+            </div>
+
             {isPracticeMode && (
-              <div className="mt-auto space-y-3">
+              <div className="space-y-3">
                 <div className="rounded-[1rem] border border-[var(--line)] bg-[var(--glass-soft)] p-3">
                   <div className="mb-2 text-[0.6rem] font-bold uppercase tracking-[0.15em] text-[var(--muted)]">Level</div>
                   <div className="rounded-[0.9rem] border border-[var(--line)] bg-[var(--glass)] px-3 py-2">
