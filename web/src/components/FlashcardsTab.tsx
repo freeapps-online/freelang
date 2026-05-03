@@ -440,14 +440,15 @@ export function FlashcardsTab({
                 </div>
               </div>
 
+              {/* Feedback below card */}
+              <div className="shrink-0 text-center text-sm font-semibold" style={{ minHeight: '1.5em' }}>
+                {result && lastFeedback && (
+                  <span style={{ color: result === 'correct' ? 'var(--success)' : 'var(--error)' }}>
+                    {lastFeedback.nativeWord} = {lastFeedback.correctAnswer}
+                  </span>
+                )}
+              </div>
             </>
-          )}
-
-          {/* Feedback below card */}
-          {result && lastFeedback && (
-            <div className="text-center text-sm font-semibold" style={{ color: result === 'correct' ? 'var(--success)' : 'var(--error)' }}>
-              {lastFeedback.nativeWord} = {lastFeedback.correctAnswer}
-            </div>
           )}
         </div>
       </section>
