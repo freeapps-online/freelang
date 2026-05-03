@@ -1,19 +1,20 @@
-const CACHE = 'freelang-v3'
+const CACHE = 'freelang-v4'
 
 self.addEventListener('install', (e) => {
+  // Skip waiting immediately — don't let old SW serve stale content
+  self.skipWaiting()
   e.waitUntil(
     caches.open(CACHE).then((cache) => cache.addAll(['/']))
   )
-  self.skipWaiting()
 })
 
 self.addEventListener('activate', (e) => {
+  // Delete ALL old caches, then claim all clients
   e.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))
-    )
+    caches.keys()
+      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+      .then(() => self.clients.claim())
   )
-  self.clients.claim()
 })
 
 self.addEventListener('fetch', (e) => {
