@@ -1,4 +1,4 @@
-import { Settings2 } from 'lucide-react'
+import { BarChart3, Settings2 } from 'lucide-react'
 import { FlashcardModeSwitch } from '../components/FlashcardModeSwitch.tsx'
 import { TabContent } from '../components/TabContent.tsx'
 import { LanguagePicker } from '../components/LanguagePicker.tsx'
@@ -21,8 +21,6 @@ export function DesktopShell({ state }: { state: AppState }) {
 
   const tt = (key: Parameters<typeof t>[1]) => t(settings.interfaceLang, key)
   const currentLevelLabel = LEVEL_LABELS[currentLevel] ?? `Level ${currentLevel}`
-  const statsTitle = isWordPracticeMode ? tt('wordStats') : mode === 'cloze' ? tt('clozeStats') : tt('sentenceStats')
-  const statsReturnLabel = mode === 'flashcards' ? tt('backToCards') : mode === 'spelling' ? tt('backToSpelling') : mode === 'cloze' ? tt('backToCloze') : tt('backToSentences')
   const inputTitle = mode === 'flashcards' ? tt('cardInput') : mode === 'spelling' ? tt('spellingInput') : mode === 'cloze' ? tt('clozeInput') : tt('sentenceInput')
 
 
@@ -49,12 +47,13 @@ export function DesktopShell({ state }: { state: AppState }) {
               <LanguagePicker label={tt('target')} value={settings.targetLang} onChange={(code) => update({ targetLang: code })} />
             </div>
 
+            {/* Practice modes */}
             <nav className="space-y-1">
               {PRACTICE_MODES.map((item) => (
                 <button
                   key={item}
                   className={`w-full rounded-[1rem] px-4 py-3 text-left text-sm font-semibold transition duration-200 ${
-                    mode === item
+                    mode === item && !showStats
                       ? 'border border-[var(--accent-soft)] bg-[var(--accent-gradient)] text-[var(--ink)] shadow-[var(--shadow-card)]'
                       : 'border border-transparent text-[var(--muted)] hover:bg-[var(--glass-hover)] hover:text-[var(--ink)]'
                   }`}
@@ -65,22 +64,21 @@ export function DesktopShell({ state }: { state: AppState }) {
                   {{ flashcards: tt('cards'), spelling: tt('spelling'), cloze: tt('cloze'), sentences: tt('sentences') }[item as 'flashcards' | 'spelling' | 'cloze' | 'sentences']}
                 </button>
               ))}
-              {isPracticeMode && (
-                <button
-                  className={`w-full rounded-[1rem] px-4 py-3 text-left text-sm font-semibold transition duration-200 ${
-                    showStats
-                      ? 'border border-[var(--sky-soft)] bg-[var(--cool-gradient)] text-[var(--ink)] shadow-[var(--shadow-card)]'
-                      : 'border border-transparent text-[var(--muted)] hover:bg-[var(--glass-hover)] hover:text-[var(--ink)]'
-                  }`}
-                  onClick={() => setShowStats(!showStats)}
-                >
-                  {showStats ? statsReturnLabel : statsTitle}
-                </button>
-              )}
             </nav>
 
-            {/* Settings button — always at bottom */}
-            <div className={isPracticeMode ? '' : 'mt-auto'}>
+            {/* Stats & Settings — visually separated */}
+            <div className="mt-auto space-y-1 border-t border-[var(--line)] pt-3">
+              <button
+                className={`flex w-full items-center gap-2 rounded-[1rem] px-4 py-3 text-sm font-semibold transition duration-200 ${
+                  showStats
+                    ? 'border border-[var(--sky-soft)] bg-[var(--cool-gradient)] text-[var(--ink)] shadow-[var(--shadow-card)]'
+                    : 'border border-transparent text-[var(--muted)] hover:bg-[var(--glass-hover)] hover:text-[var(--ink)]'
+                }`}
+                onClick={() => setShowStats(!showStats)}
+              >
+                <BarChart3 className="h-4 w-4" strokeWidth={1.7} />
+                {tt('stats')}
+              </button>
               <button
                 className={`flex w-full items-center gap-2 rounded-[1rem] px-4 py-3 text-sm font-semibold transition duration-200 ${
                   mode === 'preferences'
