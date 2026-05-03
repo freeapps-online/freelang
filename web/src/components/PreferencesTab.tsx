@@ -16,6 +16,11 @@ export function PreferencesTab({
     <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_18rem]">
       <section className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--glass-strong)] p-4 shadow-[var(--shadow-card)] sm:p-5">
         <div className="space-y-5">
+          <div className="flex items-center justify-between">
+            <div className="text-[0.6rem] font-bold uppercase tracking-[0.15em] text-[var(--muted)]">
+              v{__BUILD_TIME__} ({__BUILD_HASH__})
+            </div>
+          </div>
           <div>
             <div className="text-[0.72rem] font-bold uppercase tracking-[0.22em] text-[var(--accent-deep)]">{tt('preferences')}</div>
             <h3 className="display-font mt-2 text-3xl leading-none text-[var(--ink)]">{tt('preferencesHeading')}</h3>

@@ -41,22 +41,26 @@ class SpeechService {
     }
 
     // Chrome desktop blocks speechSynthesis until first user gesture.
-    // Unlock and replay the last blocked word on first interaction.
-    const unlock = () => {
-      if (this.unlocked) return
+    // Mobile browsers are more permissive — detect and skip the gate.
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+    if (isMobile) {
       this.unlocked = true
-      console.log('[speech] unlocked by user gesture')
-      // Replay the pending word that was blocked before unlock
-      if (this.pendingText) {
-        const { text, lang } = this.pendingText
-        this.pendingText = null
-        void this.speak(text, lang)
+    } else {
+      const unlock = () => {
+        if (this.unlocked) return
+        this.unlocked = true
+        console.log('[speech] unlocked by user gesture')
+        if (this.pendingText) {
+          const { text, lang } = this.pendingText
+          this.pendingText = null
+          void this.speak(text, lang)
+        }
+        window.removeEventListener('pointerdown', unlock)
+        window.removeEventListener('keydown', unlock)
       }
-      window.removeEventListener('pointerdown', unlock)
-      window.removeEventListener('keydown', unlock)
+      window.addEventListener('pointerdown', unlock)
+      window.addEventListener('keydown', unlock)
     }
-    window.addEventListener('pointerdown', unlock)
-    window.addEventListener('keydown', unlock)
   }
 
   subscribe(fn: Listener) {
