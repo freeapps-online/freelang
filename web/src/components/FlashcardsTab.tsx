@@ -126,21 +126,25 @@ export function FlashcardsTab({
   }, [dictionaryStatus, displayText, round, targetLang])
 
   const handleAnswer = useCallback((side: 'left' | 'right') => {
-    if (transitioning || !round || words.length === 0) return
+    if (result || transitioning || !round || words.length === 0) return
     const correct = side === round.correctSide
     const correctAnswer = round.correctSide === 'left' ? round.leftOption : round.rightOption
     const cardDisplay = getCardDisplay(round.card, targetLang)
     let nextWordStats = wordStatsRef.current
     setResult(correct ? 'correct' : 'wrong')
     setLastFeedback({ nativeWord: cardDisplay.text, correctAnswer, correct })
+    setDragX(0)
     setScores((prev) => recordAnswer(prev, correct))
     setWordStats((prev) => {
       nextWordStats = recordWordAnswer(prev, round.card.word, correct)
       return nextWordStats
     })
     void reportCardScore(round.card.word, correct)
-    setTransitioning(true)
-    setDragX(side === 'left' ? -420 : 420)
+
+    // Show color feedback, then fade out and load next card
+    window.setTimeout(() => {
+      setTransitioning(true)
+    }, 500)
 
     window.setTimeout(() => {
       const nextCard = pickWeightedCard(words, nextWordStats, round.card)
@@ -153,14 +157,13 @@ export function FlashcardsTab({
       setRound(getFlashCardRound(nativeLang, targetLang, words, round.card, nextCard))
       setDragX(0)
       setTransitioning(false)
-    }, 400)
+    }, 800)
 
     window.clearTimeout(feedbackTimer.current)
     feedbackTimer.current = window.setTimeout(() => {
-      setResult(null)
       setLastFeedback(null)
     }, 3500)
-  }, [resetDictionary, round, nativeLang, targetLang, transitioning, words])
+  }, [resetDictionary, result, round, nativeLang, targetLang, transitioning, words])
 
   const handleVoiceAnswer = useCallback((heardTarget: string, heardAnswer: string) => {
     if (transitioning || !round || words.length === 0) return
@@ -373,35 +376,24 @@ export function FlashcardsTab({
               {/* Card */}
               <div className="flex flex-1 items-center justify-center overflow-hidden">
                 <div
-                  className={`relative flex w-full max-w-[24rem] flex-col items-center justify-center gap-2 rounded-[1.25rem] border border-[var(--line-strong)] px-3 py-4 text-center shadow-[var(--shadow-soft)] select-none touch-none sm:gap-3 sm:rounded-[2rem] sm:px-5 sm:py-8 ${
-                    inputMode === 'keyboard' ? 'cursor-grab active:cursor-grabbing' : ''
-                  }`}
+                  className={`relative flex w-full max-w-[24rem] flex-col items-center justify-center gap-2 rounded-[1.25rem] border px-3 py-4 text-center shadow-[var(--shadow-soft)] select-none touch-none transition-colors duration-200 sm:gap-3 sm:rounded-[2rem] sm:px-5 sm:py-8 ${
+                    result === 'correct'
+                      ? 'border-[var(--success)] bg-[var(--mint-soft)]'
+                      : result === 'wrong'
+                        ? 'border-[var(--error)] bg-[var(--error)]/10'
+                        : 'border-[var(--line-strong)]'
+                  } ${inputMode === 'keyboard' && !result ? 'cursor-grab active:cursor-grabbing' : ''}`}
                   style={{
-                    background: 'var(--card-gradient)',
-                    transform: inputMode === 'keyboard' ? `translateX(${dragX}px) rotate(${dragX * 0.08}deg)` : 'none',
-                    transition: transitioning ? 'transform 0.35s ease-out, opacity 0.35s ease-out' : 'none',
+                    background: result ? undefined : 'var(--card-gradient)',
+                    transform: inputMode === 'keyboard' && !result ? `translateX(${dragX}px) rotate(${dragX * 0.08}deg)` : 'none',
+                    transition: transitioning ? 'transform 0.35s ease-out, opacity 0.35s ease-out' : result ? undefined : 'none',
                     opacity: transitioning ? 0 : 1,
                   }}
-                  onPointerDown={inputMode === 'keyboard' ? onPointerDown : undefined}
-                  onPointerMove={inputMode === 'keyboard' ? onPointerMove : undefined}
-                  onPointerUp={inputMode === 'keyboard' ? onPointerUp : undefined}
+                  onPointerDown={inputMode === 'keyboard' && !result ? onPointerDown : undefined}
+                  onPointerMove={inputMode === 'keyboard' && !result ? onPointerMove : undefined}
+                  onPointerUp={inputMode === 'keyboard' && !result ? onPointerUp : undefined}
                   onClick={inputMode === 'speak' && audioEnabled ? () => { void speech.speak(display.text, targetLang) } : undefined}
                 >
-                  {inputMode === 'keyboard' && Math.abs(dragX) > 30 && !transitioning && (
-                    <div
-                      className="absolute top-4 rounded-full px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-[var(--paper)] sm:top-5"
-                      style={{
-                        left: dragX < 0 ? 18 : 'auto',
-                        right: dragX > 0 ? 18 : 'auto',
-                        background: dragX < 0
-                          ? (round.correctSide === 'left' ? 'var(--success)' : 'var(--error)')
-                          : (round.correctSide === 'right' ? 'var(--success)' : 'var(--error)'),
-                      }}
-                    >
-                      {dragX < 0 ? round.leftOption : round.rightOption}
-                    </div>
-                  )}
-
                   <button className="drop-shadow-sm" style={{ fontSize: `calc(4.5rem * var(--content-scale))` }} onClick={(e) => { e.stopPropagation(); void openDictionary() }}>{display.emoji}</button>
                   {promptVisible ? (
                     <>
@@ -416,24 +408,6 @@ export function FlashcardsTab({
                       <div className="text-sm text-[var(--muted)]">{t(uiLang, 'hiddenUntilAnswer')}</div>
                     </div>
                   )}
-                  {inputMode === 'keyboard' && (
-                    <div className="mt-1 grid w-full grid-cols-2 gap-2">
-                      <button
-                        className="rounded-full border border-[var(--line)] bg-[var(--glass)] px-3 py-2 text-center transition hover:border-[var(--line-strong)] hover:bg-[var(--glass-hover)]"
-                        onClick={() => handleAnswer('left')}
-                        disabled={transitioning}
-                      >
-                        <div className="font-semibold text-[var(--ink)]" style={{ fontSize: 'calc(0.875rem * var(--content-scale))' }}>← {round.leftOption}</div>
-                      </button>
-                      <button
-                        className="rounded-full border border-[var(--line)] bg-[var(--glass)] px-3 py-2 text-center transition hover:border-[var(--line-strong)] hover:bg-[var(--glass-hover)]"
-                        onClick={() => handleAnswer('right')}
-                        disabled={transitioning}
-                      >
-                        <div className="font-semibold text-[var(--ink)]" style={{ fontSize: 'calc(0.875rem * var(--content-scale))' }}>{round.rightOption} →</div>
-                      </button>
-                    </div>
-                  )}
                   {inputMode === 'speak' && (
                     <div className="mt-2 text-xs text-[var(--muted)]">
                       {listenOnly
@@ -443,6 +417,44 @@ export function FlashcardsTab({
                   )}
                 </div>
               </div>
+
+              {/* Answer buttons — outside card */}
+              {inputMode === 'keyboard' && (
+                <div className="mx-auto flex w-full max-w-[24rem] shrink-0 gap-3">
+                  <button
+                    className={`flex flex-1 flex-col items-center justify-center rounded-[1.5rem] border py-3 transition-all duration-200 ${
+                      result
+                        ? round.correctSide === 'left'
+                          ? 'border-[var(--success)] bg-[var(--success)]/15 text-[var(--success)]'
+                          : result === 'wrong'
+                            ? 'border-[var(--error)] bg-[var(--error)]/10 text-[var(--error)]'
+                            : 'border-[var(--line)] bg-[var(--glass)] text-[var(--muted)]'
+                        : 'border-[var(--line-strong)] bg-[var(--glass)] text-[var(--ink)] hover:bg-[var(--glass-hover)]'
+                    }`}
+                    onClick={() => handleAnswer('left')}
+                    disabled={!!result || transitioning}
+                  >
+                    <span className="text-[0.6rem] font-bold uppercase tracking-[0.16em] opacity-80">{'\u2190'}</span>
+                    <span className="px-2 font-semibold" style={{ fontSize: 'calc(0.875rem * var(--content-scale))' }}>{round.leftOption}</span>
+                  </button>
+                  <button
+                    className={`flex flex-1 flex-col items-center justify-center rounded-[1.5rem] border py-3 transition-all duration-200 ${
+                      result
+                        ? round.correctSide === 'right'
+                          ? 'border-[var(--success)] bg-[var(--success)]/15 text-[var(--success)]'
+                          : result === 'wrong'
+                            ? 'border-[var(--error)] bg-[var(--error)]/10 text-[var(--error)]'
+                            : 'border-[var(--line)] bg-[var(--glass)] text-[var(--muted)]'
+                        : 'border-[var(--line-strong)] bg-[var(--glass)] text-[var(--ink)] hover:bg-[var(--glass-hover)]'
+                    }`}
+                    onClick={() => handleAnswer('right')}
+                    disabled={!!result || transitioning}
+                  >
+                    <span className="text-[0.6rem] font-bold uppercase tracking-[0.16em] opacity-80">{'\u2192'}</span>
+                    <span className="px-2 font-semibold" style={{ fontSize: 'calc(0.875rem * var(--content-scale))' }}>{round.rightOption}</span>
+                  </button>
+                </div>
+              )}
 
               {/* Feedback below card */}
               <div className="shrink-0 text-center text-sm font-semibold" style={{ minHeight: '1.5em' }}>
