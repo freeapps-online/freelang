@@ -604,8 +604,15 @@ function DictionarySheet({
 }) {
   const [view, setView] = useState<DictionaryViewPreference>(defaultView)
 
-  const thesaurusItems = data?.entries.flatMap((entry) => entry.senses.flatMap((sense) => sense.synonyms)) ?? []
+  const thesaurusItems = data?.entries.flatMap((entry) => [
+    ...entry.synonyms,
+    ...entry.senses.flatMap((sense) => sense.synonyms),
+  ]) ?? []
   const uniqueSynonyms = [...new Set(thesaurusItems)].filter(Boolean).slice(0, 18)
+  const formItems = data?.entries.flatMap((entry) => entry.forms) ?? []
+  const uniqueForms = [...new Map(
+    formItems.map((form) => [`${form.word}:${form.tags.join(',')}`, form]),
+  ).values()]
   const translationItems = data?.entries.flatMap((entry) =>
     entry.senses.flatMap((sense) =>
       sense.translations.filter((translation) =>
@@ -675,6 +682,13 @@ function DictionarySheet({
             </div>
           )}
 
+          {status === 'ready' && data && data.definitionLanguageCode !== targetLang && (
+            <div className="rounded-[1rem] border border-[var(--line)] bg-[var(--panel-quiet)] px-4 py-3 text-sm text-[var(--muted)]">
+              <span className="font-semibold text-[var(--ink)]">{t(uiLang, 'definitionLanguage')}:</span>{' '}
+              {data.definitionLanguageName}
+            </div>
+          )}
+
           {view === 'dictionary' && data?.entries.map((entry, index) => (
             <div key={`${entry.languageCode}-${entry.partOfSpeech}-${index}`} className="rounded-[1.1rem] border border-[var(--line)] bg-[var(--glass)] p-4">
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -690,6 +704,19 @@ function DictionarySheet({
                   </span>
                 )}
               </div>
+
+              {entry.forms.length > 0 && (
+                <div className="mt-3">
+                  <div className="mb-2 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-[var(--muted)]">{t(uiLang, 'wordForms')}</div>
+                  <div className="flex flex-wrap gap-2">
+                    {entry.forms.map((form) => (
+                      <span key={`${form.word}-${form.tags.join('-')}`} className="rounded-full border border-[var(--line)] bg-[var(--panel-quiet)] px-3 py-1.5 text-sm text-[var(--ink)]">
+                        {form.word}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div className="mt-3 space-y-3">
                 {entry.senses.map((sense, senseIndex) => (
@@ -717,16 +744,33 @@ function DictionarySheet({
           )}
 
           {view === 'thesaurus' && (
-            uniqueSynonyms.length > 0 ? (
+            uniqueSynonyms.length > 0 || uniqueForms.length > 0 ? (
               <div className="rounded-[1.1rem] border border-[var(--line)] bg-[var(--glass)] p-4">
-                <div className="mb-3 text-sm font-bold uppercase tracking-[0.14em] text-[var(--accent-deep)]">{t(uiLang, 'synonyms')}</div>
-                <div className="flex flex-wrap gap-2">
-                  {uniqueSynonyms.map((synonym) => (
-                    <span key={synonym} className="rounded-full border border-[var(--line)] bg-[var(--panel-quiet)] px-3 py-1.5 text-sm text-[var(--ink)]">
-                      {synonym}
-                    </span>
-                  ))}
-                </div>
+                {uniqueSynonyms.length > 0 && (
+                  <>
+                    <div className="mb-3 text-sm font-bold uppercase tracking-[0.14em] text-[var(--accent-deep)]">{t(uiLang, 'synonyms')}</div>
+                    <div className="flex flex-wrap gap-2">
+                      {uniqueSynonyms.map((synonym) => (
+                        <span key={synonym} className="rounded-full border border-[var(--line)] bg-[var(--panel-quiet)] px-3 py-1.5 text-sm text-[var(--ink)]">
+                          {synonym}
+                        </span>
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                {uniqueForms.length > 0 && (
+                  <div className={uniqueSynonyms.length > 0 ? 'mt-4' : ''}>
+                    <div className="mb-3 text-sm font-bold uppercase tracking-[0.14em] text-[var(--accent-deep)]">{t(uiLang, 'wordForms')}</div>
+                    <div className="flex flex-wrap gap-2">
+                      {uniqueForms.map((form) => (
+                        <span key={`${form.word}-${form.tags.join('-')}`} className="rounded-full border border-[var(--line)] bg-[var(--panel-quiet)] px-3 py-1.5 text-sm text-[var(--ink)]">
+                          {form.word}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             ) : status === 'ready' && (
               <div className="rounded-[1rem] border border-[var(--line)] bg-[var(--glass)] px-4 py-3 text-sm text-[var(--muted)]">
@@ -746,7 +790,7 @@ function DictionarySheet({
               </div>
               {uniqueTranslations.length > 0 ? (
                 <div className="rounded-[1.1rem] border border-[var(--line)] bg-[var(--glass)] p-4">
-                  <div className="mb-3 text-sm font-bold uppercase tracking-[0.14em] text-[var(--accent-deep)]">{t(uiLang, 'examples')}</div>
+                  <div className="mb-3 text-sm font-bold uppercase tracking-[0.14em] text-[var(--accent-deep)]">{t(uiLang, 'otherTranslations')}</div>
                   <div className="space-y-2">
                     {uniqueTranslations.map((translation) => (
                       <div key={`${translation.languageCode}-${translation.word}`} className="flex items-center justify-between gap-3 rounded-[0.85rem] bg-[var(--panel-quiet)] px-3 py-2">
@@ -768,17 +812,14 @@ function DictionarySheet({
 
           <div className="text-xs text-[var(--muted)]">
             {t(uiLang, 'dictionarySource')}:{' '}
-            <a className="font-semibold text-[var(--accent)] underline" href="https://freedictionaryapi.com/" target="_blank" rel="noreferrer">
-              FreeDictionaryAPI.com
-            </a>
-            {data?.sourceUrl && (
-              <>
-                {' · '}
-                <a className="font-semibold text-[var(--accent)] underline" href={data.sourceUrl} target="_blank" rel="noreferrer">
-                  Wiktionary
+            {(data?.sources ?? [{ id: 'freedictionaryapi', label: 'FreeDictionaryAPI.com', url: 'https://freedictionaryapi.com/' }]).map((source, index) => (
+              <span key={source.id}>
+                {index > 0 && ' · '}
+                <a className="font-semibold text-[var(--accent)] underline" href={source.url} target="_blank" rel="noreferrer">
+                  {source.label}
                 </a>
-              </>
-            )}
+              </span>
+            ))}
           </div>
         </div>
       </div>
@@ -788,7 +829,7 @@ function DictionarySheet({
 
 type SortKey = 'worst' | 'best' | 'most-practiced' | 'least-practiced' | 'unseen'
 
-function WordStatsPanel({ words, wordStats, targetLang, nativeLang, onPracticeWord }: {
+export function WordStatsPanel({ words, wordStats, targetLang, nativeLang, onPracticeWord }: {
   words: FlashCard[]
   wordStats: WordStatsMap
   targetLang: string

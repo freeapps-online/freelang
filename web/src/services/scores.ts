@@ -1,24 +1,30 @@
 import type { FlashCardScore } from '../types.ts'
 
 const SCORES_KEY = 'freelang-flashcard-scores'
+const SPELLING_SCORES_KEY = 'freelang-spelling-scores'
 const WORD_STATS_KEY = 'freelang-word-stats'
+type ScoreScope = 'flashcards' | 'spelling'
 
 // --- Session scores (streak, accuracy) ---
 
-export function loadScores(): FlashCardScore {
+function getScoresKey(scope: ScoreScope) {
+  return scope === 'spelling' ? SPELLING_SCORES_KEY : SCORES_KEY
+}
+
+export function loadScores(scope: ScoreScope = 'flashcards'): FlashCardScore {
   try {
-    const raw = localStorage.getItem(SCORES_KEY)
-      ?? localStorage.getItem('lango-flashcard-scores')
+    const raw = localStorage.getItem(getScoresKey(scope))
+      ?? (scope === 'flashcards' ? localStorage.getItem('lango-flashcard-scores') : null)
     if (raw) return JSON.parse(raw)
   } catch { /* ignore */ }
   return { correct: 0, total: 0, streak: 0, bestStreak: 0 }
 }
 
-function saveScores(scores: FlashCardScore) {
-  localStorage.setItem(SCORES_KEY, JSON.stringify(scores))
+function saveScores(scores: FlashCardScore, scope: ScoreScope) {
+  localStorage.setItem(getScoresKey(scope), JSON.stringify(scores))
 }
 
-export function recordAnswer(scores: FlashCardScore, correct: boolean): FlashCardScore {
+export function recordAnswer(scores: FlashCardScore, correct: boolean, scope: ScoreScope = 'flashcards'): FlashCardScore {
   const streak = correct ? scores.streak + 1 : 0
   const bestStreak = Math.max(scores.bestStreak, streak)
   const next = {
@@ -27,7 +33,7 @@ export function recordAnswer(scores: FlashCardScore, correct: boolean): FlashCar
     streak,
     bestStreak,
   }
-  saveScores(next)
+  saveScores(next, scope)
   return next
 }
 

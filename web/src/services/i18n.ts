@@ -13,6 +13,7 @@ export const UI_LANGUAGES = LANGUAGES.filter((language) =>
 
 type TranslationKey =
   | 'cards'
+  | 'spelling'
   | 'phrases'
   | 'sentences'
   | 'preferences'
@@ -21,11 +22,13 @@ type TranslationKey =
   | 'phraseStats'
   | 'sentenceStats'
   | 'backToCards'
+  | 'backToSpelling'
   | 'backToPhrases'
   | 'backToSentences'
   | 'play'
   | 'stats'
   | 'cardInput'
+  | 'spellingInput'
   | 'phraseInput'
   | 'sentenceInput'
   | 'speak'
@@ -56,13 +59,16 @@ type TranslationKey =
   | 'loadingMeaning'
   | 'meaningUnavailable'
   | 'dictionarySource'
+  | 'definitionLanguage'
   | 'examples'
   | 'synonyms'
+  | 'wordForms'
   | 'dictionaryView'
   | 'dictionaryViewDesc'
   | 'definitionView'
   | 'thesaurusView'
   | 'translationView'
+  | 'otherTranslations'
   | 'showDefinitionsExamples'
   | 'showSynonymsRelatedWords'
   | 'showTranslationsFirst'
@@ -75,6 +81,7 @@ type TranslationKey =
   | 'listenAndRepeat'
   | 'listenAndSayItBack'
   | 'restartCard'
+  | 'restartSpelling'
   | 'restartPhrase'
   | 'restartSentence'
   | 'micLive'
@@ -140,9 +147,17 @@ type TranslationKey =
   | 'labels'
   | 'upgradeToPro'
   | 'aiTranslationConversationTts'
+  | 'completeTheWord'
+  | 'swipeForLetter'
+  | 'hearWordAgain'
+  | 'sayMissingLetterHelp'
+  | 'playingWordPrompt'
+  | 'sayFullWordOrLetter'
+  | 'preparingWordPrompt'
 
 const EN_MESSAGES: Record<TranslationKey, string> = {
     cards: 'Words',
+    spelling: 'Spelling',
     phrases: 'Phrases',
     sentences: 'Sentences',
     preferences: 'Preferences',
@@ -151,11 +166,13 @@ const EN_MESSAGES: Record<TranslationKey, string> = {
     phraseStats: 'Phrase Stats',
     sentenceStats: 'Sentence Stats',
     backToCards: 'Back to Words',
+    backToSpelling: 'Back to Spelling',
     backToPhrases: 'Back to Phrases',
     backToSentences: 'Back to Sentences',
     play: 'Play',
     stats: 'Stats',
     cardInput: 'Word Input',
+    spellingInput: 'Spelling Input',
     phraseInput: 'Phrase Input',
     sentenceInput: 'Sentence Input',
     speak: 'Speak',
@@ -186,13 +203,16 @@ const EN_MESSAGES: Record<TranslationKey, string> = {
     loadingMeaning: 'Loading meaning...',
     meaningUnavailable: 'No dictionary entry found for this word yet.',
     dictionarySource: 'Dictionary source',
+    definitionLanguage: 'Definition language',
     examples: 'Examples',
     synonyms: 'Synonyms',
+    wordForms: 'Forms',
     dictionaryView: 'Word reference default',
     dictionaryViewDesc: 'Choose what opens first when you tap the word reference button.',
     definitionView: 'Dictionary',
     thesaurusView: 'Thesaurus',
     translationView: 'Translation',
+    otherTranslations: 'Other translations',
     showDefinitionsExamples: 'Show definitions and examples first',
     showSynonymsRelatedWords: 'Show synonyms and related words first',
     showTranslationsFirst: 'Show translations first',
@@ -205,6 +225,7 @@ const EN_MESSAGES: Record<TranslationKey, string> = {
     listenAndRepeat: 'Listen and repeat from audio only.',
     listenAndSayItBack: 'Listen and say it back from audio only.',
     restartCard: 'Restart this word',
+    restartSpelling: 'Restart this word',
     restartPhrase: 'Restart this phrase',
     restartSentence: 'Restart this sentence',
     micLive: 'Mic live',
@@ -270,6 +291,13 @@ const EN_MESSAGES: Record<TranslationKey, string> = {
     labels: 'Labels',
     upgradeToPro: 'Upgrade to Pro',
     aiTranslationConversationTts: 'AI Translation, Conversation & Kokoro TTS',
+    completeTheWord: 'Complete the word',
+    swipeForLetter: 'Swipe toward the missing letter.',
+    hearWordAgain: 'Hear word',
+    sayMissingLetterHelp: 'Say the full word or just the missing letter.',
+    playingWordPrompt: 'Playing the word. Listen first, then answer aloud.',
+    sayFullWordOrLetter: 'Say the full word or the missing letter now.',
+    preparingWordPrompt: 'Preparing the next word...',
 }
 
 const MESSAGES: Record<UiLocale, Partial<Record<TranslationKey, string>>> = {

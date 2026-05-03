@@ -43,6 +43,10 @@ vi.mock('./components/FlashcardsTab.tsx', () => ({
   FlashcardsTab: () => <div data-testid="flashcards-tab">flashcards</div>,
 }))
 
+vi.mock('./components/MissingLetterTab.tsx', () => ({
+  MissingLetterTab: () => <div data-testid="spelling-tab">spelling</div>,
+}))
+
 vi.mock('./components/SpeakTab.tsx', () => ({
   SentencesTab: ({ contentMode, showStats }: { contentMode: 'phrases' | 'sentences'; showStats: boolean }) => (
     <div data-testid={`${contentMode}-tab`}>{showStats ? `${contentMode}-stats` : contentMode}</div>
@@ -93,6 +97,18 @@ describe('App', () => {
     expect(main.querySelector('section')).not.toBeInTheDocument()
   })
 
+  it('renders fullscreen spelling directly inside main on /spelling', () => {
+    window.history.pushState({}, '', '/spelling')
+
+    render(<App />)
+
+    const main = screen.getByRole('main')
+    const spelling = screen.getByTestId('spelling-tab')
+
+    expect(main.firstElementChild).toBe(spelling)
+    expect(main.querySelector('section')).not.toBeInTheDocument()
+  })
+
   it('wraps preferences content in a section on /preferences', () => {
     window.history.pushState({}, '', '/preferences')
 
@@ -108,10 +124,10 @@ describe('App', () => {
   it('navigates between modes with the tab buttons', () => {
     render(<App />)
 
-    fireEvent.click(screen.getAllByRole('button', { name: 'Phrases' })[0])
+    fireEvent.click(screen.getAllByRole('button', { name: 'Spelling' })[0])
 
-    expect(window.location.pathname).toBe('/phrases')
-    expect(screen.getByTestId('phrases-tab')).toBeInTheDocument()
+    expect(window.location.pathname).toBe('/spelling')
+    expect(screen.getByTestId('spelling-tab')).toBeInTheDocument()
   })
 
   it('surfaces the flashcard mode switch in app chrome', () => {

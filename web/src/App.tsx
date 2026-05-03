@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
-import { ChevronDown, Layers3, MessageSquare, Mic, Settings2, Volume2, VolumeX } from 'lucide-react'
+import { ChevronDown, Layers3, MessageSquare, Mic, Settings2, Type, Volume2, VolumeX } from 'lucide-react'
 import { useApplySettings, useSettings } from './hooks.ts'
 import { FlashcardsTab } from './components/FlashcardsTab.tsx'
+import { MissingLetterTab } from './components/MissingLetterTab.tsx'
 import { SentencesTab } from './components/SpeakTab.tsx'
 import { PreferencesTab } from './components/PreferencesTab.tsx'
 import { FlashcardModeSwitch } from './components/FlashcardModeSwitch.tsx'
@@ -12,11 +13,13 @@ import { MAX_PHRASE_LEVEL, MAX_SENTENCE_LEVEL, PHRASE_LEVEL_LABELS } from './ser
 import { LEVEL_LABELS, LEVELS } from './services/vocabulary.ts'
 import type { Mode } from './types.ts'
 
-const MODES: Mode[] = ['flashcards', 'phrases', 'sentences', 'preferences']
+const MODES: Mode[] = ['flashcards', 'spelling', 'phrases', 'sentences', 'preferences']
 
 const PATH_TO_MODE: Record<string, Mode> = {
   '/': 'flashcards',
   '/cards': 'flashcards',
+  '/spelling': 'spelling',
+  '/missing-letters': 'spelling',
   '/phrases': 'phrases',
   '/speak': 'sentences',
   '/sentences': 'sentences',
@@ -25,6 +28,7 @@ const PATH_TO_MODE: Record<string, Mode> = {
 
 const MODE_TO_PATH: Record<Mode, string> = {
   flashcards: '/cards',
+  spelling: '/spelling',
   phrases: '/phrases',
   sentences: '/sentences',
   preferences: '/preferences',
@@ -52,7 +56,8 @@ export default function App() {
     return () => window.removeEventListener('popstate', onPop)
   }, [])
 
-  const isPracticeMode = mode === 'flashcards' || mode === 'phrases' || mode === 'sentences'
+  const isWordPracticeMode = mode === 'flashcards' || mode === 'spelling'
+  const isPracticeMode = isWordPracticeMode || mode === 'phrases' || mode === 'sentences'
   const isFullscreen = isPracticeMode
   const maxLevel = mode === 'phrases'
     ? MAX_PHRASE_LEVEL
@@ -63,11 +68,23 @@ export default function App() {
   const levelOptions = mode === 'phrases'
     ? Array.from({ length: MAX_PHRASE_LEVEL }, (_, index) => index + 1)
     : LEVELS.filter((level) => level <= maxLevel)
-  const activeInputMode = mode === 'flashcards' ? settings.flashcardInputMode : settings.sentenceInputMode
+  const activeInputMode = isWordPracticeMode ? settings.flashcardInputMode : settings.sentenceInputMode
   const tt = (key: Parameters<typeof t>[1]) => t(settings.interfaceLang, key)
-  const statsTitle = mode === 'flashcards' ? tt('wordStats') : mode === 'phrases' ? tt('phraseStats') : tt('sentenceStats')
-  const statsReturnLabel = mode === 'flashcards' ? tt('backToCards') : mode === 'phrases' ? tt('backToPhrases') : tt('backToSentences')
-  const inputTitle = mode === 'flashcards' ? tt('cardInput') : mode === 'phrases' ? tt('phraseInput') : tt('sentenceInput')
+  const statsTitle = isWordPracticeMode ? tt('wordStats') : mode === 'phrases' ? tt('phraseStats') : tt('sentenceStats')
+  const statsReturnLabel = mode === 'flashcards'
+    ? tt('backToCards')
+    : mode === 'spelling'
+      ? tt('backToSpelling')
+      : mode === 'phrases'
+        ? tt('backToPhrases')
+        : tt('backToSentences')
+  const inputTitle = mode === 'flashcards'
+    ? tt('cardInput')
+    : mode === 'spelling'
+      ? tt('spellingInput')
+      : mode === 'phrases'
+        ? tt('phraseInput')
+        : tt('sentenceInput')
 
   return (
     <div className="relative min-h-[100dvh] overflow-hidden">
@@ -109,7 +126,7 @@ export default function App() {
                   }`}
                   onClick={() => { navigate(item); setShowStats(false) }}
                 >
-                  {{ flashcards: tt('cards'), phrases: tt('phrases'), sentences: tt('sentences'), preferences: tt('preferences') }[item]}
+                  {{ flashcards: tt('cards'), spelling: tt('spelling'), phrases: tt('phrases'), sentences: tt('sentences'), preferences: tt('preferences') }[item]}
                 </button>
               ))}
               {isPracticeMode && (
@@ -136,7 +153,7 @@ export default function App() {
                     value={activeInputMode}
                     uiLang={settings.interfaceLang}
                     onChange={(nextMode) => {
-                      if (mode === 'flashcards') update({ flashcardInputMode: nextMode })
+                      if (isWordPracticeMode) update({ flashcardInputMode: nextMode })
                       else update({ sentenceInputMode: nextMode })
                     }}
                   />
@@ -153,6 +170,11 @@ export default function App() {
                           <div className="flex justify-between"><span>{tt('step1')}</span><span>{tt('repeatWord')}</span></div>
                           <div className="flex justify-between"><span>{tt('step2')}</span><span>{tt('sayMeaning')}</span></div>
                         </>
+                      ) : mode === 'spelling' ? (
+                        <>
+                          <div className="flex justify-between"><span>{tt('prompt')}</span><span>{tt('hearWordAgain')}</span></div>
+                          <div className="flex justify-between"><span>{tt('answer')}</span><span>{tt('sayFullWordOrLetter')}</span></div>
+                        </>
                       ) : (
                         <>
                           <div className="flex justify-between"><span>{tt('prompt')}</span><span>{mode === 'phrases' ? tt('hearPhrase') : tt('hearSentence')}</span></div>
@@ -168,6 +190,12 @@ export default function App() {
                           <div className="flex justify-between"><span>← →</span><span>Choose answer</span></div>
                           <div className="flex justify-between"><span>↑ ↓</span><span>Hear options</span></div>
                           <div className="flex justify-between"><span>Space / Enter</span><span>Replay word</span></div>
+                        </>
+                      ) : mode === 'spelling' ? (
+                        <>
+                          <div className="flex justify-between"><span>← →</span><span>{tt('swipeForLetter')}</span></div>
+                          <div className="flex justify-between"><span>↑ ↓</span><span>Hear letter choices</span></div>
+                          <div className="flex justify-between"><span>Space / Enter</span><span>{tt('hearWordAgain')}</span></div>
                         </>
                       ) : (
                         <>
@@ -231,7 +259,7 @@ export default function App() {
                   {showStats ? tt('play') : tt('stats')}
                 </button>
               )}
-              {mode === 'flashcards' && (
+              {isWordPracticeMode && (
                 <button
                   className={`flex h-8 w-8 items-center justify-center rounded-full border border-[var(--line)] ${settings.flashcardAudio ? 'bg-[var(--accent)]/25 text-[var(--accent)]' : 'bg-[var(--glass)] text-[var(--muted)]'}`}
                   onClick={() => update({ flashcardAudio: !settings.flashcardAudio })}
@@ -251,7 +279,7 @@ export default function App() {
                   value={activeInputMode}
                   uiLang={settings.interfaceLang}
                   onChange={(nextMode) => {
-                    if (mode === 'flashcards') update({ flashcardInputMode: nextMode })
+                    if (isWordPracticeMode) update({ flashcardInputMode: nextMode })
                     else update({ sentenceInputMode: nextMode })
                   }}
                   compact
@@ -269,6 +297,19 @@ export default function App() {
                 audioEnabled={settings.flashcardAudio}
                 inputMode={settings.flashcardInputMode}
                 dictionaryDefaultView={settings.dictionaryDefaultView}
+                uiLang={settings.interfaceLang}
+                onInputModeChange={(flashcardInputMode) => update({ flashcardInputMode })}
+                level={currentLevel}
+                showStats={showStats}
+                onShowStatsChange={setShowStats}
+              />
+            )}
+            {mode === 'spelling' && (
+              <MissingLetterTab
+                nativeLang={settings.nativeLang}
+                targetLang={settings.targetLang}
+                audioEnabled={settings.flashcardAudio}
+                inputMode={settings.flashcardInputMode}
                 uiLang={settings.interfaceLang}
                 onInputModeChange={(flashcardInputMode) => update({ flashcardInputMode })}
                 level={currentLevel}
@@ -313,8 +354,9 @@ export default function App() {
 
       {/* Mobile dock */}
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--line)] bg-[var(--dock)]/92 px-2 pb-[calc(env(safe-area-inset-bottom)+0.25rem)] pt-1 backdrop-blur-2xl lg:hidden">
-        <div className="mx-auto grid max-w-sm grid-cols-4">
+        <div className="mx-auto grid max-w-md grid-cols-5">
           <TabButton icon="flashcards" label={tt('cards')} active={mode === 'flashcards'} onClick={() => { navigate('flashcards'); setShowStats(false) }} />
+          <TabButton icon="spelling" label={tt('spelling')} active={mode === 'spelling'} onClick={() => { navigate('spelling'); setShowStats(false) }} />
           <TabButton icon="phrases" label={tt('phrases')} active={mode === 'phrases'} onClick={() => { navigate('phrases'); setShowStats(false) }} />
           <TabButton icon="speak" label={tt('sentences')} active={mode === 'sentences'} onClick={() => { navigate('sentences'); setShowStats(false) }} />
           <TabButton icon="preferences" label={tt('prefs')} active={mode === 'preferences'} onClick={() => { navigate('preferences'); setShowStats(false) }} />
@@ -344,6 +386,8 @@ function TabIcon({ name }: { name: string }) {
   switch (name) {
     case 'flashcards':
       return <Layers3 className="h-5 w-5" strokeWidth={1.7} />
+    case 'spelling':
+      return <Type className="h-5 w-5" strokeWidth={1.7} />
     case 'speak':
       return <Mic className="h-5 w-5" strokeWidth={1.7} />
     case 'phrases':
