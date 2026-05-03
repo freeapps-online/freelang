@@ -20,6 +20,8 @@ class SpeechService {
   private recognition: SpeechRecognition | null = null
   private synthesis = window.speechSynthesis
   private voicesLoaded = false
+  private unlocked = false
+  private pendingText: { text: string; lang: string } | null = null
 
   state: SpeechState = {
     isListening: false,
@@ -37,6 +39,24 @@ class SpeechService {
         this.voicesLoaded = true
       }, { once: true })
     }
+
+    // Chrome desktop blocks speechSynthesis until first user gesture.
+    // Unlock and replay the last blocked word on first interaction.
+    const unlock = () => {
+      if (this.unlocked) return
+      this.unlocked = true
+      console.log('[speech] unlocked by user gesture')
+      // Replay the pending word that was blocked before unlock
+      if (this.pendingText) {
+        const { text, lang } = this.pendingText
+        this.pendingText = null
+        void this.speak(text, lang)
+      }
+      window.removeEventListener('pointerdown', unlock)
+      window.removeEventListener('keydown', unlock)
+    }
+    window.addEventListener('pointerdown', unlock)
+    window.addEventListener('keydown', unlock)
   }
 
   subscribe(fn: Listener) {
@@ -116,6 +136,13 @@ class SpeechService {
   }
 
   speak(text: string, lang: string): Promise<void> {
+    // If Chrome hasn't been unlocked yet, save for replay after first gesture
+    if (!this.unlocked) {
+      console.log('[speech] blocked (no user gesture yet), queuing:', text)
+      this.pendingText = { text, lang }
+      return Promise.resolve()
+    }
+
     const doSpeak = () => new Promise<void>((resolve) => {
       // Only cancel if something is pending/speaking — avoids Chrome stalling bug
       if (this.synthesis.speaking || this.synthesis.pending) {

@@ -58,19 +58,24 @@ export function FlashcardsTab({
 
   const displayText = display?.text ?? ''
 
-  // --- Audio: speak word on new card ---
-  // Inline effect (not hook) — must depend on round?.card.word to catch all card changes
-  useEffect(() => {
-    if (!audioEnabled || transitioning || !displayText) return
-    void speech.speak(displayText, targetLang)
-  }, [audioEnabled, displayText, targetLang, round?.card.word, transitioning])
-
   // --- Swipe gesture ---
   const swipe = useSwipeGesture({
     disabled: !!result || transitioning || inputMode !== 'keyboard',
     onSwipe: answer,
     onTap: () => { if (audioEnabled && displayText) void speech.speak(displayText, targetLang) },
   })
+
+  // Reset card position when new card appears (transitioning ends)
+  useEffect(() => {
+    if (!transitioning) swipe.resetDrag()
+  }, [transitioning, swipe.resetDrag])
+
+  // --- Audio: speak word on new card ---
+  useEffect(() => {
+    if (!audioEnabled || transitioning || !displayText) return
+    console.log('[audio] speaking:', displayText)
+    void speech.speak(displayText, targetLang)
+  }, [audioEnabled, displayText, targetLang, round?.card.word, transitioning])
 
   // --- Voice recognition cycle (speak mode) ---
   const handleVoiceAnswer = useCallback((heardTarget: string, heardAnswer: string) => {
@@ -163,7 +168,7 @@ export function FlashcardsTab({
   const promptVisible = !listenOnly || result !== null
 
   return (
-    <div className="flex h-[calc(100dvh-80px-env(safe-area-inset-bottom,0px))] flex-col lg:h-auto">
+    <div className="flex flex-1 flex-col overflow-hidden lg:h-auto">
       <section
         className="flex flex-1 flex-col p-2 sm:p-3 lg:p-4"
         style={{ background: 'var(--warm-gradient)' }}

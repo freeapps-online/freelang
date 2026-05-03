@@ -236,7 +236,7 @@ export default function App() {
   }
 
   return (
-    <div className={`relative ${isFullscreen ? 'h-[100dvh] overflow-hidden' : 'min-h-[100dvh] overflow-hidden'}`}>
+    <div className="relative h-[100dvh] overflow-hidden">
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute left-[-18%] top-[-8%] h-72 w-72 rounded-full bg-[var(--accent-soft)]/35 blur-3xl lg:h-[34rem] lg:w-[34rem]" />
         <div className="absolute right-[-14%] top-[18%] h-72 w-72 rounded-full bg-[var(--sky-soft)]/30 blur-3xl lg:top-[-2%] lg:h-[28rem] lg:w-[28rem]" />
@@ -250,8 +250,8 @@ export default function App() {
         />
       </div>
 
-      <div className={`relative mx-auto max-w-[1540px] px-1 pt-1 sm:px-4 lg:px-8 lg:py-8 ${isFullscreen ? '' : 'min-h-[100dvh] pb-14'}`}>
-        <div className="lg:grid lg:grid-cols-[17rem_minmax(0,1fr)] lg:gap-7">
+      <div className="relative mx-auto flex h-full max-w-[1540px] flex-col px-1 sm:px-4 lg:px-8 lg:py-8">
+        <div className="flex flex-1 flex-col overflow-hidden lg:grid lg:grid-cols-[17rem_minmax(0,1fr)] lg:gap-7">
           {/* Desktop sidebar */}
           <aside className="hidden lg:flex lg:min-h-[calc(100dvh-4rem)] lg:flex-col lg:gap-5 lg:rounded-[2rem] lg:border lg:border-[var(--line)] lg:bg-[var(--glass-strong)] lg:p-6 lg:shadow-[var(--shadow-soft)] lg:backdrop-blur-xl">
             <div className="inline-flex items-center gap-2 rounded-full border border-[var(--line-strong)] bg-[var(--glass)] px-3 py-1 text-[0.65rem] font-bold uppercase tracking-[0.22em] text-[var(--accent-deep)]">
@@ -400,7 +400,7 @@ export default function App() {
           </aside>
 
           {/* Mobile header — single line */}
-          <header className="mb-1 flex items-center gap-1.5 lg:hidden">
+          <header className="mb-1 shrink-0 flex items-center gap-1.5 pt-1 lg:hidden">
             <LanguagePicker compact label="" value={settings.targetLang} onChange={(code) => update({ targetLang: code })} />
 
             <div className="flex-1" />
@@ -487,7 +487,7 @@ export default function App() {
           </header>
 
           {/* Content */}
-          <main className="min-w-0">
+          <main className={`min-w-0 ${isFullscreen ? 'overflow-hidden' : 'overflow-y-auto'}`}>
             <Suspense fallback={<ModeLoading mode={mode} />}>
               {renderModeContent()}
             </Suspense>
@@ -496,7 +496,7 @@ export default function App() {
       </div>
 
       {/* Mobile dock */}
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--line)] bg-[var(--dock)]/92 px-2 pb-[calc(env(safe-area-inset-bottom)+0.25rem)] pt-1 backdrop-blur-2xl lg:hidden">
+      <nav className="shrink-0 border-t border-[var(--line)] bg-[var(--dock)]/92 px-2 pb-[calc(env(safe-area-inset-bottom)+0.25rem)] pt-1 backdrop-blur-2xl lg:hidden">
         <div className="mx-auto grid max-w-md grid-cols-5">
           <TabButton icon="flashcards" label={tt('cards')} active={mode === 'flashcards'} onClick={() => { navigate('flashcards'); setShowStats(false) }} onPreload={() => preloadModeButton('flashcards')} />
           <TabButton icon="spelling" label={tt('spelling')} active={mode === 'spelling'} onClick={() => { navigate('spelling'); setShowStats(false) }} onPreload={() => preloadModeButton('spelling')} />
@@ -557,7 +557,7 @@ function ModeLoading({ mode }: { mode: Mode }) {
   }
 
   return (
-    <div className="flex h-[calc(100dvh-80px-env(safe-area-inset-bottom,0px))] items-center justify-center rounded-[1.5rem] border border-[var(--line)] bg-[var(--glass)] text-sm text-[var(--muted)]">
+    <div className="flex flex-1 items-center justify-center rounded-[1.5rem] border border-[var(--line)] bg-[var(--glass)] text-sm text-[var(--muted)]">
       Loading…
     </div>
   )
