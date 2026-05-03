@@ -236,7 +236,7 @@ export default function App() {
   }
 
   return (
-    <div className="relative h-[100dvh] overflow-hidden">
+    <div className="relative flex h-[100dvh] flex-col overflow-hidden">
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute left-[-18%] top-[-8%] h-72 w-72 rounded-full bg-[var(--accent-soft)]/35 blur-3xl lg:h-[34rem] lg:w-[34rem]" />
         <div className="absolute right-[-14%] top-[18%] h-72 w-72 rounded-full bg-[var(--sky-soft)]/30 blur-3xl lg:top-[-2%] lg:h-[28rem] lg:w-[28rem]" />
@@ -250,8 +250,8 @@ export default function App() {
         />
       </div>
 
-      <div className="relative mx-auto flex h-full max-w-[1540px] flex-col px-1 sm:px-4 lg:px-8 lg:py-8">
-        <div className="flex flex-1 flex-col overflow-hidden lg:grid lg:grid-cols-[17rem_minmax(0,1fr)] lg:gap-7">
+      <div className="relative mx-auto flex min-h-0 flex-1 w-full max-w-[1540px] flex-col px-1 sm:px-4 lg:px-8 lg:py-8">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden lg:grid lg:grid-cols-[17rem_minmax(0,1fr)] lg:gap-7">
           {/* Desktop sidebar */}
           <aside className="hidden lg:flex lg:min-h-[calc(100dvh-4rem)] lg:flex-col lg:gap-5 lg:rounded-[2rem] lg:border lg:border-[var(--line)] lg:bg-[var(--glass-strong)] lg:p-6 lg:shadow-[var(--shadow-soft)] lg:backdrop-blur-xl">
             <div className="inline-flex items-center gap-2 rounded-full border border-[var(--line-strong)] bg-[var(--glass)] px-3 py-1 text-[0.65rem] font-bold uppercase tracking-[0.22em] text-[var(--accent-deep)]">
