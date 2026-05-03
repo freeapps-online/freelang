@@ -55,7 +55,7 @@ export function FlashcardsTab({
   const [transitioning, setTransitioning] = useState(false)
   const startX = useRef(0)
   const dragging = useRef(false)
-  const [lastFeedback, setLastFeedback] = useState<{ nativeWord: string; correctAnswer: string } | null>(null)
+  const [lastFeedback, setLastFeedback] = useState<{ nativeWord: string; correctAnswer: string; correct: boolean } | null>(null)
   const [, setVoiceStep] = useState<VoiceStep>('repeat')
   const [, setVoiceAttempt] = useState<{ heardTarget: string; heardAnswer: string; repeatMatched: boolean } | null>(null)
   const [, setSpeakStatus] = useState<SpeakStatus>('idle')
@@ -132,7 +132,7 @@ export function FlashcardsTab({
     const cardDisplay = getCardDisplay(round.card, targetLang)
     let nextWordStats = wordStatsRef.current
     setResult(correct ? 'correct' : 'wrong')
-    setLastFeedback({ nativeWord: cardDisplay.text, correctAnswer })
+    setLastFeedback({ nativeWord: cardDisplay.text, correctAnswer, correct })
     setScores((prev) => recordAnswer(prev, correct))
     setWordStats((prev) => {
       nextWordStats = recordWordAnswer(prev, round.card.word, correct)
@@ -149,6 +149,7 @@ export function FlashcardsTab({
       setVoiceAttempt(null)
       heardTargetRef.current = ''
       setSpeakStatus('idle')
+      setResult(null)
       setRound(getFlashCardRound(nativeLang, targetLang, words, round.card, nextCard))
       setDragX(0)
       setTransitioning(false)
@@ -169,7 +170,7 @@ export function FlashcardsTab({
     setVoiceAttempt({ heardTarget, heardAnswer, repeatMatched: evaluation.repeatMatched })
     setVoiceStep('repeat')
     setResult(evaluation.answerMatched ? 'correct' : 'wrong')
-    setLastFeedback({ nativeWord: displayText, correctAnswer })
+    setLastFeedback({ nativeWord: displayText, correctAnswer, correct: evaluation.answerMatched })
     setScores((prev) => recordAnswer(prev, evaluation.answerMatched))
     setWordStats((prev) => {
       nextWordStats = recordWordAnswer(prev, round.card.word, evaluation.answerMatched)
@@ -185,6 +186,7 @@ export function FlashcardsTab({
       setVoiceAttempt(null)
       heardTargetRef.current = ''
       setSpeakStatus('idle')
+      setResult(null)
       setRound(getFlashCardRound(nativeLang, targetLang, words, round.card, nextCard))
       setTransitioning(false)
     }, 700)
@@ -444,8 +446,8 @@ export function FlashcardsTab({
 
               {/* Feedback below card */}
               <div className="shrink-0 text-center text-sm font-semibold" style={{ minHeight: '1.5em' }}>
-                {result && lastFeedback && (
-                  <span style={{ color: result === 'correct' ? 'var(--success)' : 'var(--error)' }}>
+                {lastFeedback && (
+                  <span style={{ color: lastFeedback.correct ? 'var(--success)' : 'var(--error)' }}>
                     {lastFeedback.nativeWord} = {lastFeedback.correctAnswer}
                   </span>
                 )}
