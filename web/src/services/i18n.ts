@@ -14,21 +14,25 @@ export const UI_LANGUAGES = LANGUAGES.filter((language) =>
 type TranslationKey =
   | 'cards'
   | 'spelling'
+  | 'cloze'
   | 'phrases'
   | 'sentences'
   | 'preferences'
   | 'prefs'
   | 'wordStats'
+  | 'clozeStats'
   | 'phraseStats'
   | 'sentenceStats'
   | 'backToCards'
   | 'backToSpelling'
+  | 'backToCloze'
   | 'backToPhrases'
   | 'backToSentences'
   | 'play'
   | 'stats'
   | 'cardInput'
   | 'spellingInput'
+  | 'clozeInput'
   | 'phraseInput'
   | 'sentenceInput'
   | 'speak'
@@ -51,6 +55,7 @@ type TranslationKey =
   | 'nextSentence'
   | 'speaker'
   | 'hearPhrase'
+  | 'hearSentenceAgain'
   | 'replayPrompt'
   | 'native'
   | 'target'
@@ -82,6 +87,7 @@ type TranslationKey =
   | 'listenAndSayItBack'
   | 'restartCard'
   | 'restartSpelling'
+  | 'restartCloze'
   | 'restartPhrase'
   | 'restartSentence'
   | 'micLive'
@@ -148,31 +154,41 @@ type TranslationKey =
   | 'upgradeToPro'
   | 'aiTranslationConversationTts'
   | 'completeTheWord'
+  | 'fillMissingWord'
   | 'swipeForLetter'
+  | 'swipeForWord'
   | 'hearWordAgain'
   | 'sayMissingLetterHelp'
+  | 'sayMissingWordHelp'
   | 'playingWordPrompt'
   | 'sayFullWordOrLetter'
   | 'preparingWordPrompt'
+  | 'playingClozePrompt'
+  | 'sayMissingWordNow'
+  | 'preparingClozePrompt'
 
 const EN_MESSAGES: Record<TranslationKey, string> = {
     cards: 'Words',
     spelling: 'Spelling',
+    cloze: 'Cloze',
     phrases: 'Phrases',
     sentences: 'Sentences',
     preferences: 'Preferences',
     prefs: 'Prefs',
     wordStats: 'Word Stats',
+    clozeStats: 'Cloze Stats',
     phraseStats: 'Phrase Stats',
     sentenceStats: 'Sentence Stats',
     backToCards: 'Back to Words',
     backToSpelling: 'Back to Spelling',
+    backToCloze: 'Back to Cloze',
     backToPhrases: 'Back to Phrases',
     backToSentences: 'Back to Sentences',
     play: 'Play',
     stats: 'Stats',
     cardInput: 'Word Input',
     spellingInput: 'Spelling Input',
+    clozeInput: 'Cloze Input',
     phraseInput: 'Phrase Input',
     sentenceInput: 'Sentence Input',
     speak: 'Speak',
@@ -195,6 +211,7 @@ const EN_MESSAGES: Record<TranslationKey, string> = {
     nextSentence: 'Next sentence',
     speaker: 'Speaker',
     hearPhrase: 'Hear the phrase',
+    hearSentenceAgain: 'Hear sentence',
     replayPrompt: 'Replay prompt',
     native: 'Native',
     target: 'Target',
@@ -226,6 +243,7 @@ const EN_MESSAGES: Record<TranslationKey, string> = {
     listenAndSayItBack: 'Listen and say it back from audio only.',
     restartCard: 'Restart this word',
     restartSpelling: 'Restart this word',
+    restartCloze: 'Restart this sentence',
     restartPhrase: 'Restart this phrase',
     restartSentence: 'Restart this sentence',
     micLive: 'Mic live',
@@ -292,12 +310,18 @@ const EN_MESSAGES: Record<TranslationKey, string> = {
     upgradeToPro: 'Upgrade to Pro',
     aiTranslationConversationTts: 'AI Translation, Conversation & Kokoro TTS',
     completeTheWord: 'Complete the word',
+    fillMissingWord: 'Fill the missing word',
     swipeForLetter: 'Swipe toward the missing letter.',
+    swipeForWord: 'Swipe toward the missing word.',
     hearWordAgain: 'Hear word',
     sayMissingLetterHelp: 'Say the full word or just the missing letter.',
+    sayMissingWordHelp: 'Say the missing word.',
     playingWordPrompt: 'Playing the word. Listen first, then answer aloud.',
     sayFullWordOrLetter: 'Say the full word or the missing letter now.',
     preparingWordPrompt: 'Preparing the next word...',
+    playingClozePrompt: 'Playing the sentence. Listen first, then say the missing word.',
+    sayMissingWordNow: 'Say the missing word now.',
+    preparingClozePrompt: 'Preparing the next sentence...',
 }
 
 const MESSAGES: Record<UiLocale, Partial<Record<TranslationKey, string>>> = {

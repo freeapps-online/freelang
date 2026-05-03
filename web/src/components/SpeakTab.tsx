@@ -53,6 +53,7 @@ export function SentencesTab({
   nativeLang,
   targetLang,
   level,
+  levelLabel,
   inputMode,
   uiLang,
   showStats: showStatsExternal,
@@ -63,6 +64,7 @@ export function SentencesTab({
   nativeLang: string
   targetLang: string
   level: number
+  levelLabel: string
   inputMode: PracticeInputMode
   uiLang: string
   showStats: boolean
@@ -265,12 +267,24 @@ export function SentencesTab({
   return (
     <div className="flex h-[calc(100dvh-80px)] flex-col gap-2 lg:h-auto">
       {showStats ? (
-        <SentenceStatsPanel sentences={sentences} stats={sentenceStats} targetLang={targetLang} nativeLang={nativeLang} onPracticeSentence={focusSentence} />
+        <SentenceStatsPanel
+          sentences={sentences}
+          stats={sentenceStats}
+          targetLang={targetLang}
+          nativeLang={nativeLang}
+          onPracticeSentence={focusSentence}
+          level={level}
+          levelLabel={levelLabel}
+          contentMode={contentMode}
+        />
       ) : (
         <>
           <div className="flex items-center justify-between gap-2">
             <div className="lg:hidden">
               <FlashcardModeSwitch value={inputMode} uiLang={uiLang} onChange={onInputModeChange} />
+            </div>
+            <div className="rounded-full border border-[var(--line)] bg-[var(--glass)] px-3 py-1.5 text-xs font-semibold text-[var(--muted)]">
+              Lv {level} · {levelLabel}
             </div>
             <div className="flex items-center gap-2">
               <button
@@ -400,12 +414,15 @@ export function SentencesTab({
   )
 }
 
-function SentenceStatsPanel({ sentences, stats, targetLang, nativeLang, onPracticeSentence }: {
+function SentenceStatsPanel({ sentences, stats, targetLang, nativeLang, onPracticeSentence, level, levelLabel, contentMode }: {
   sentences: Sentence[]
   stats: SentenceStatsMap
   targetLang: string
   nativeLang: string
   onPracticeSentence: (sentence: Sentence) => void
+  level: number
+  levelLabel: string
+  contentMode: SentenceContentMode
 }) {
   const [sort, setSort] = useState<'worst' | 'best' | 'mostWrong' | 'most' | 'unseen'>('worst')
 
@@ -445,6 +462,14 @@ function SentenceStatsPanel({ sentences, stats, targetLang, nativeLang, onPracti
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">
+      <div className="rounded-[0.9rem] border border-[var(--line)] bg-[var(--glass)] px-3 py-2">
+        <div className="text-[0.6rem] font-bold uppercase tracking-[0.15em] text-[var(--muted)]">Current scope</div>
+        <div className="mt-1 text-sm font-semibold text-[var(--ink)]">
+          {contentMode === 'phrases' ? `Phrase set ${level}` : `Level ${level}`}
+        </div>
+        <div className="text-xs text-[var(--muted)]">{levelLabel}</div>
+      </div>
+
       <div className="grid grid-cols-2 gap-2 lg:grid-cols-5">
         <MiniStat label="Avg score" value={`${overallAvg}%`} color={overallAvg >= 70 ? 'var(--success)' : 'var(--warning)'} detail={`${totalAttempts} attempts`} />
         <MiniStat label="Practiced" value={`${practiced.length}`} color="var(--success)" detail={`of ${rows.length}`} />

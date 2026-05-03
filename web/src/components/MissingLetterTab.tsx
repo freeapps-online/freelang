@@ -46,6 +46,7 @@ export function MissingLetterTab({
   uiLang,
   onInputModeChange,
   level,
+  levelLabel,
   showStats,
   onShowStatsChange,
 }: {
@@ -56,6 +57,7 @@ export function MissingLetterTab({
   uiLang: string
   onInputModeChange: (mode: PracticeInputMode) => void
   level: number
+  levelLabel: string
   showStats: boolean
   onShowStatsChange: (show: boolean) => void
 }) {
@@ -302,6 +304,9 @@ export function MissingLetterTab({
             <div className="lg:hidden">
               <FlashcardModeSwitch value={inputMode} uiLang={uiLang} onChange={handleInputModeSwitch} />
             </div>
+            <div className="rounded-full border border-[var(--line)] bg-[var(--glass)] px-3 py-1.5 text-xs font-semibold text-[var(--muted)]">
+              Lv {level} · {levelLabel}
+            </div>
             <div className="ml-auto flex items-center gap-2">
               <button
                 className="flex h-9 items-center justify-center gap-2 rounded-full border border-[var(--line)] bg-[var(--glass)] px-3 text-xs font-bold text-[var(--muted)] shadow-[var(--shadow-soft)]"
@@ -320,17 +325,33 @@ export function MissingLetterTab({
           </div>
 
           {showStats ? (
-            <WordStatsPanel words={words} wordStats={wordStats} targetLang={targetLang} nativeLang={nativeLang} onPracticeWord={focusCard} />
+            <WordStatsPanel
+              words={words}
+              wordStats={wordStats}
+              targetLang={targetLang}
+              nativeLang={nativeLang}
+              onPracticeWord={focusCard}
+              level={level}
+              levelLabel={levelLabel}
+            />
           ) : (
             <>
               {inputMode === 'keyboard' ? (
                 <div className="flex items-center justify-between gap-2">
-                  <div className="rounded-full border border-[var(--line)] bg-[var(--glass)] px-3 py-2 text-center">
+                  <button
+                    className="rounded-full border border-[var(--line)] bg-[var(--glass)] px-3 py-2 text-center transition hover:border-[var(--line-strong)] hover:bg-[var(--glass-hover)]"
+                    onClick={() => handleAnswer('left')}
+                    disabled={transitioning}
+                  >
                     <div className="font-semibold text-[var(--ink)]" style={{ fontSize: 'calc(0.875rem * var(--content-scale))' }}>← {round.leftOption}</div>
-                  </div>
-                  <div className="rounded-full border border-[var(--line)] bg-[var(--glass)] px-3 py-2 text-center">
+                  </button>
+                  <button
+                    className="rounded-full border border-[var(--line)] bg-[var(--glass)] px-3 py-2 text-center transition hover:border-[var(--line-strong)] hover:bg-[var(--glass-hover)]"
+                    onClick={() => handleAnswer('right')}
+                    disabled={transitioning}
+                  >
                     <div className="font-semibold text-[var(--ink)]" style={{ fontSize: 'calc(0.875rem * var(--content-scale))' }}>{round.rightOption} →</div>
-                  </div>
+                  </button>
                 </div>
               ) : (
                 <div className="rounded-[1rem] border border-[var(--line)] bg-[var(--glass)] px-4 py-3 text-sm text-[var(--muted)]">

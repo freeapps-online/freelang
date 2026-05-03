@@ -26,6 +26,7 @@ export function FlashcardsTab({
   uiLang,
   onInputModeChange,
   level,
+  levelLabel,
   showStats,
   onShowStatsChange,
 }: {
@@ -37,6 +38,7 @@ export function FlashcardsTab({
   uiLang: string
   onInputModeChange: (mode: PracticeInputMode) => void
   level: number
+  levelLabel: string
   showStats: boolean
   onShowStatsChange: (show: boolean) => void
 }) {
@@ -368,6 +370,9 @@ export function FlashcardsTab({
             <div className="lg:hidden">
               <FlashcardModeSwitch value={inputMode} uiLang={uiLang} onChange={handleInputModeSwitch} />
             </div>
+            <div className="rounded-full border border-[var(--line)] bg-[var(--glass)] px-3 py-1.5 text-xs font-semibold text-[var(--muted)]">
+              Lv {level} · {levelLabel}
+            </div>
             <div className="flex items-center gap-2">
               <button
                 className={`flex h-9 items-center justify-center gap-2 rounded-full border px-3 text-xs font-bold shadow-[var(--shadow-soft)] ${
@@ -398,19 +403,35 @@ export function FlashcardsTab({
           </div>
 
           {showStats ? (
-            <WordStatsPanel words={words} wordStats={wordStats} targetLang={targetLang} nativeLang={nativeLang} onPracticeWord={focusCard} />
+            <WordStatsPanel
+              words={words}
+              wordStats={wordStats}
+              targetLang={targetLang}
+              nativeLang={nativeLang}
+              onPracticeWord={focusCard}
+              level={level}
+              levelLabel={levelLabel}
+            />
           ) : (
             <>
               {inputMode === 'keyboard' ? (
                 <>
                   {/* Answer options */}
                   <div className="flex items-center justify-between gap-2">
-                    <div className="rounded-full border border-[var(--line)] bg-[var(--glass)] px-3 py-2 text-center">
+                    <button
+                      className="rounded-full border border-[var(--line)] bg-[var(--glass)] px-3 py-2 text-center transition hover:border-[var(--line-strong)] hover:bg-[var(--glass-hover)]"
+                      onClick={() => handleAnswer('left')}
+                      disabled={transitioning}
+                    >
                       <div className="font-semibold text-[var(--ink)]" style={{ fontSize: 'calc(0.875rem * var(--content-scale))' }}>← {round.leftOption}</div>
-                    </div>
-                    <div className="rounded-full border border-[var(--line)] bg-[var(--glass)] px-3 py-2 text-center">
+                    </button>
+                    <button
+                      className="rounded-full border border-[var(--line)] bg-[var(--glass)] px-3 py-2 text-center transition hover:border-[var(--line-strong)] hover:bg-[var(--glass-hover)]"
+                      onClick={() => handleAnswer('right')}
+                      disabled={transitioning}
+                    >
                       <div className="font-semibold text-[var(--ink)]" style={{ fontSize: 'calc(0.875rem * var(--content-scale))' }}>{round.rightOption} →</div>
-                    </div>
+                    </button>
                   </div>
                 </>
               ) : (
@@ -829,12 +850,14 @@ function DictionarySheet({
 
 type SortKey = 'worst' | 'best' | 'most-practiced' | 'least-practiced' | 'unseen'
 
-export function WordStatsPanel({ words, wordStats, targetLang, nativeLang, onPracticeWord }: {
+export function WordStatsPanel({ words, wordStats, targetLang, nativeLang, onPracticeWord, level, levelLabel }: {
   words: FlashCard[]
   wordStats: WordStatsMap
   targetLang: string
   nativeLang: string
   onPracticeWord: (card: FlashCard) => void
+  level: number
+  levelLabel: string
 }) {
   const [sort, setSort] = useState<SortKey>('worst')
 
@@ -908,6 +931,12 @@ export function WordStatsPanel({ words, wordStats, targetLang, nativeLang, onPra
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">
+      <div className="rounded-[0.9rem] border border-[var(--line)] bg-[var(--glass)] px-3 py-2">
+        <div className="text-[0.6rem] font-bold uppercase tracking-[0.15em] text-[var(--muted)]">Current scope</div>
+        <div className="mt-1 text-sm font-semibold text-[var(--ink)]">Level {level}</div>
+        <div className="text-xs text-[var(--muted)]">{levelLabel}</div>
+      </div>
+
       {/* Summary cards */}
       <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
         <MiniStat label="Overall" value={`${overallPct}%`} color={overallPct >= 70 ? 'var(--success)' : overallPct >= 40 ? 'var(--warning)' : 'var(--error)'} detail={`${totalCorrect}/${totalAnswers}`} />

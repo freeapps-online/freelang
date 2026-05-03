@@ -47,6 +47,10 @@ vi.mock('./components/MissingLetterTab.tsx', () => ({
   MissingLetterTab: () => <div data-testid="spelling-tab">spelling</div>,
 }))
 
+vi.mock('./components/ClozeTab.tsx', () => ({
+  ClozeTab: () => <div data-testid="cloze-tab">cloze</div>,
+}))
+
 vi.mock('./components/SpeakTab.tsx', () => ({
   SentencesTab: ({ contentMode, showStats }: { contentMode: 'phrases' | 'sentences'; showStats: boolean }) => (
     <div data-testid={`${contentMode}-tab`}>{showStats ? `${contentMode}-stats` : contentMode}</div>
@@ -109,6 +113,18 @@ describe('App', () => {
     expect(main.querySelector('section')).not.toBeInTheDocument()
   })
 
+  it('renders fullscreen cloze directly inside main on /cloze', () => {
+    window.history.pushState({}, '', '/cloze')
+
+    render(<App />)
+
+    const main = screen.getByRole('main')
+    const cloze = screen.getByTestId('cloze-tab')
+
+    expect(main.firstElementChild).toBe(cloze)
+    expect(main.querySelector('section')).not.toBeInTheDocument()
+  })
+
   it('wraps preferences content in a section on /preferences', () => {
     window.history.pushState({}, '', '/preferences')
 
@@ -124,10 +140,10 @@ describe('App', () => {
   it('navigates between modes with the tab buttons', () => {
     render(<App />)
 
-    fireEvent.click(screen.getAllByRole('button', { name: 'Spelling' })[0])
+    fireEvent.click(screen.getAllByRole('button', { name: 'Cloze' })[0])
 
-    expect(window.location.pathname).toBe('/spelling')
-    expect(screen.getByTestId('spelling-tab')).toBeInTheDocument()
+    expect(window.location.pathname).toBe('/cloze')
+    expect(screen.getByTestId('cloze-tab')).toBeInTheDocument()
   })
 
   it('surfaces the flashcard mode switch in app chrome', () => {

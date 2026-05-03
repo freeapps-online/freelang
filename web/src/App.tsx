@@ -3,6 +3,7 @@ import { ChevronDown, Layers3, MessageSquare, Mic, Settings2, Type, Volume2, Vol
 import { useApplySettings, useSettings } from './hooks.ts'
 import { FlashcardsTab } from './components/FlashcardsTab.tsx'
 import { MissingLetterTab } from './components/MissingLetterTab.tsx'
+import { ClozeTab } from './components/ClozeTab.tsx'
 import { SentencesTab } from './components/SpeakTab.tsx'
 import { PreferencesTab } from './components/PreferencesTab.tsx'
 import { FlashcardModeSwitch } from './components/FlashcardModeSwitch.tsx'
@@ -13,13 +14,14 @@ import { MAX_PHRASE_LEVEL, MAX_SENTENCE_LEVEL, PHRASE_LEVEL_LABELS } from './ser
 import { LEVEL_LABELS, LEVELS } from './services/vocabulary.ts'
 import type { Mode } from './types.ts'
 
-const MODES: Mode[] = ['flashcards', 'spelling', 'phrases', 'sentences', 'preferences']
+const MODES: Mode[] = ['flashcards', 'spelling', 'cloze', 'phrases', 'sentences', 'preferences']
 
 const PATH_TO_MODE: Record<string, Mode> = {
   '/': 'flashcards',
   '/cards': 'flashcards',
   '/spelling': 'spelling',
   '/missing-letters': 'spelling',
+  '/cloze': 'cloze',
   '/phrases': 'phrases',
   '/speak': 'sentences',
   '/sentences': 'sentences',
@@ -29,6 +31,7 @@ const PATH_TO_MODE: Record<string, Mode> = {
 const MODE_TO_PATH: Record<Mode, string> = {
   flashcards: '/cards',
   spelling: '/spelling',
+  cloze: '/cloze',
   phrases: '/phrases',
   sentences: '/sentences',
   preferences: '/preferences',
@@ -57,24 +60,36 @@ export default function App() {
   }, [])
 
   const isWordPracticeMode = mode === 'flashcards' || mode === 'spelling'
-  const isPracticeMode = isWordPracticeMode || mode === 'phrases' || mode === 'sentences'
+  const isSentencePracticeMode = mode === 'cloze' || mode === 'phrases' || mode === 'sentences'
+  const isPracticeMode = isWordPracticeMode || isSentencePracticeMode
   const isFullscreen = isPracticeMode
   const maxLevel = mode === 'phrases'
     ? MAX_PHRASE_LEVEL
-    : mode === 'sentences'
+    : mode === 'cloze' || mode === 'sentences'
       ? MAX_SENTENCE_LEVEL
       : LEVELS[LEVELS.length - 1]
   const currentLevel = Math.min(settings.cardLevel, maxLevel)
   const levelOptions = mode === 'phrases'
     ? Array.from({ length: MAX_PHRASE_LEVEL }, (_, index) => index + 1)
     : LEVELS.filter((level) => level <= maxLevel)
+  const currentLevelLabel = mode === 'phrases'
+    ? PHRASE_LEVEL_LABELS[currentLevel] ?? `Level ${currentLevel}`
+    : LEVEL_LABELS[currentLevel] ?? `Level ${currentLevel}`
   const activeInputMode = isWordPracticeMode ? settings.flashcardInputMode : settings.sentenceInputMode
   const tt = (key: Parameters<typeof t>[1]) => t(settings.interfaceLang, key)
-  const statsTitle = isWordPracticeMode ? tt('wordStats') : mode === 'phrases' ? tt('phraseStats') : tt('sentenceStats')
+  const statsTitle = isWordPracticeMode
+    ? tt('wordStats')
+    : mode === 'cloze'
+      ? tt('clozeStats')
+      : mode === 'phrases'
+        ? tt('phraseStats')
+        : tt('sentenceStats')
   const statsReturnLabel = mode === 'flashcards'
     ? tt('backToCards')
     : mode === 'spelling'
       ? tt('backToSpelling')
+      : mode === 'cloze'
+        ? tt('backToCloze')
       : mode === 'phrases'
         ? tt('backToPhrases')
         : tt('backToSentences')
@@ -82,6 +97,8 @@ export default function App() {
     ? tt('cardInput')
     : mode === 'spelling'
       ? tt('spellingInput')
+      : mode === 'cloze'
+        ? tt('clozeInput')
       : mode === 'phrases'
         ? tt('phraseInput')
         : tt('sentenceInput')
@@ -126,7 +143,7 @@ export default function App() {
                   }`}
                   onClick={() => { navigate(item); setShowStats(false) }}
                 >
-                  {{ flashcards: tt('cards'), spelling: tt('spelling'), phrases: tt('phrases'), sentences: tt('sentences'), preferences: tt('preferences') }[item]}
+                  {{ flashcards: tt('cards'), spelling: tt('spelling'), cloze: tt('cloze'), phrases: tt('phrases'), sentences: tt('sentences'), preferences: tt('preferences') }[item]}
                 </button>
               ))}
               {isPracticeMode && (
@@ -145,6 +162,32 @@ export default function App() {
 
             {isPracticeMode && (
               <div className="mt-auto space-y-3">
+                <div className="rounded-[1rem] border border-[var(--line)] bg-[var(--glass-soft)] p-3">
+                  <div className="mb-2 text-[0.6rem] font-bold uppercase tracking-[0.15em] text-[var(--muted)]">
+                    Level and theme
+                  </div>
+                  <div className="rounded-[0.9rem] border border-[var(--line)] bg-[var(--glass)] px-3 py-2">
+                    <div className="text-sm font-semibold text-[var(--ink)]">Level {currentLevel}</div>
+                    <div className="text-xs text-[var(--muted)]">{currentLevelLabel}</div>
+                  </div>
+                  <div className="mt-3 grid max-h-52 grid-cols-2 gap-1 overflow-y-auto rounded-[0.9rem] border border-[var(--line)] bg-[var(--glass)] p-1">
+                    {levelOptions.map((l) => (
+                      <button
+                        key={l}
+                        className={`rounded-[0.75rem] px-2 py-2 text-left ${
+                          l === currentLevel
+                            ? 'bg-[var(--accent-gradient)] font-semibold text-[var(--ink)]'
+                            : 'text-[var(--muted)] hover:bg-[var(--glass-hover)] hover:text-[var(--ink)]'
+                        }`}
+                        onClick={() => update({ cardLevel: l })}
+                      >
+                        <div className="text-[0.7rem] font-bold uppercase tracking-[0.12em]">Lv {l}</div>
+                        <div className="mt-0.5 text-[0.7rem]">{mode === 'phrases' ? PHRASE_LEVEL_LABELS[l] : LEVEL_LABELS[l]}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <div className="rounded-[1rem] border border-[var(--line)] bg-[var(--glass-soft)] p-3">
                   <div className="mb-2 text-[0.6rem] font-bold uppercase tracking-[0.15em] text-[var(--muted)]">
                     {inputTitle}
@@ -175,6 +218,11 @@ export default function App() {
                           <div className="flex justify-between"><span>{tt('prompt')}</span><span>{tt('hearWordAgain')}</span></div>
                           <div className="flex justify-between"><span>{tt('answer')}</span><span>{tt('sayFullWordOrLetter')}</span></div>
                         </>
+                      ) : mode === 'cloze' ? (
+                        <>
+                          <div className="flex justify-between"><span>{tt('prompt')}</span><span>{tt('hearSentenceAgain')}</span></div>
+                          <div className="flex justify-between"><span>{tt('answer')}</span><span>{tt('sayMissingWordNow')}</span></div>
+                        </>
                       ) : (
                         <>
                           <div className="flex justify-between"><span>{tt('prompt')}</span><span>{mode === 'phrases' ? tt('hearPhrase') : tt('hearSentence')}</span></div>
@@ -196,6 +244,12 @@ export default function App() {
                           <div className="flex justify-between"><span>← →</span><span>{tt('swipeForLetter')}</span></div>
                           <div className="flex justify-between"><span>↑ ↓</span><span>Hear letter choices</span></div>
                           <div className="flex justify-between"><span>Space / Enter</span><span>{tt('hearWordAgain')}</span></div>
+                        </>
+                      ) : mode === 'cloze' ? (
+                        <>
+                          <div className="flex justify-between"><span>← →</span><span>{tt('swipeForWord')}</span></div>
+                          <div className="flex justify-between"><span>↑ ↓</span><span>Hear word choices</span></div>
+                          <div className="flex justify-between"><span>Space / Enter</span><span>{tt('hearSentenceAgain')}</span></div>
                         </>
                       ) : (
                         <>
@@ -224,7 +278,8 @@ export default function App() {
                     className="flex items-center gap-1 rounded-full border border-[var(--line)] bg-[var(--glass)] px-2 py-1.5 text-xs font-semibold text-[var(--muted)]"
                   onClick={() => setLevelOpen(!levelOpen)}
                 >
-                  Lv {currentLevel}
+                  <span>Lv {currentLevel}</span>
+                  <span className="max-w-24 truncate">{currentLevelLabel}</span>
                     <ChevronDown className={`h-3 w-3 transition-transform ${levelOpen ? 'rotate-180' : ''}`} strokeWidth={2.2} />
                   </button>
                   {levelOpen && (
@@ -298,8 +353,9 @@ export default function App() {
                 inputMode={settings.flashcardInputMode}
                 dictionaryDefaultView={settings.dictionaryDefaultView}
                 uiLang={settings.interfaceLang}
-                onInputModeChange={(flashcardInputMode) => update({ flashcardInputMode })}
                 level={currentLevel}
+                levelLabel={currentLevelLabel}
+                onInputModeChange={(flashcardInputMode) => update({ flashcardInputMode })}
                 showStats={showStats}
                 onShowStatsChange={setShowStats}
               />
@@ -311,10 +367,24 @@ export default function App() {
                 audioEnabled={settings.flashcardAudio}
                 inputMode={settings.flashcardInputMode}
                 uiLang={settings.interfaceLang}
-                onInputModeChange={(flashcardInputMode) => update({ flashcardInputMode })}
                 level={currentLevel}
+                levelLabel={currentLevelLabel}
+                onInputModeChange={(flashcardInputMode) => update({ flashcardInputMode })}
                 showStats={showStats}
                 onShowStatsChange={setShowStats}
+              />
+            )}
+            {mode === 'cloze' && (
+              <ClozeTab
+                nativeLang={settings.nativeLang}
+                targetLang={settings.targetLang}
+                level={currentLevel}
+                levelLabel={currentLevelLabel}
+                inputMode={settings.sentenceInputMode}
+                uiLang={settings.interfaceLang}
+                showStats={showStats}
+                onShowStatsChange={setShowStats}
+                onInputModeChange={(sentenceInputMode) => update({ sentenceInputMode })}
               />
             )}
             {mode === 'phrases' && (
@@ -323,6 +393,7 @@ export default function App() {
                 nativeLang={settings.nativeLang}
                 targetLang={settings.targetLang}
                 level={currentLevel}
+                levelLabel={currentLevelLabel}
                 inputMode={settings.sentenceInputMode}
                 uiLang={settings.interfaceLang}
                 showStats={showStats}
@@ -336,6 +407,7 @@ export default function App() {
                 nativeLang={settings.nativeLang}
                 targetLang={settings.targetLang}
                 level={currentLevel}
+                levelLabel={currentLevelLabel}
                 inputMode={settings.sentenceInputMode}
                 uiLang={settings.interfaceLang}
                 showStats={showStats}
@@ -354,9 +426,10 @@ export default function App() {
 
       {/* Mobile dock */}
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--line)] bg-[var(--dock)]/92 px-2 pb-[calc(env(safe-area-inset-bottom)+0.25rem)] pt-1 backdrop-blur-2xl lg:hidden">
-        <div className="mx-auto grid max-w-md grid-cols-5">
+        <div className="mx-auto grid max-w-xl grid-cols-6">
           <TabButton icon="flashcards" label={tt('cards')} active={mode === 'flashcards'} onClick={() => { navigate('flashcards'); setShowStats(false) }} />
           <TabButton icon="spelling" label={tt('spelling')} active={mode === 'spelling'} onClick={() => { navigate('spelling'); setShowStats(false) }} />
+          <TabButton icon="cloze" label={tt('cloze')} active={mode === 'cloze'} onClick={() => { navigate('cloze'); setShowStats(false) }} />
           <TabButton icon="phrases" label={tt('phrases')} active={mode === 'phrases'} onClick={() => { navigate('phrases'); setShowStats(false) }} />
           <TabButton icon="speak" label={tt('sentences')} active={mode === 'sentences'} onClick={() => { navigate('sentences'); setShowStats(false) }} />
           <TabButton icon="preferences" label={tt('prefs')} active={mode === 'preferences'} onClick={() => { navigate('preferences'); setShowStats(false) }} />
@@ -388,6 +461,8 @@ function TabIcon({ name }: { name: string }) {
       return <Layers3 className="h-5 w-5" strokeWidth={1.7} />
     case 'spelling':
       return <Type className="h-5 w-5" strokeWidth={1.7} />
+    case 'cloze':
+      return <MessageSquare className="h-5 w-5" strokeWidth={1.7} />
     case 'speak':
       return <Mic className="h-5 w-5" strokeWidth={1.7} />
     case 'phrases':
