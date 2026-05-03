@@ -1,24 +1,26 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useApplySettings, useSettings } from './hooks.ts'
 import { FlashcardsTab } from './components/FlashcardsTab.tsx'
-import { SpeakTab } from './components/SpeakTab.tsx'
+import { SentencesTab } from './components/SpeakTab.tsx'
 import { PreferencesTab } from './components/PreferencesTab.tsx'
+import { FlashcardModeSwitch } from './components/FlashcardModeSwitch.tsx'
 import { LanguagePicker } from './components/LanguagePicker.tsx'
 import { LEVEL_LABELS, LEVELS } from './services/vocabulary.ts'
 import type { Mode } from './types.ts'
 
-const MODES: Mode[] = ['flashcards', 'speak', 'preferences']
+const MODES: Mode[] = ['flashcards', 'sentences', 'preferences']
 
 const PATH_TO_MODE: Record<string, Mode> = {
   '/': 'flashcards',
   '/cards': 'flashcards',
-  '/speak': 'speak',
+  '/speak': 'sentences',
+  '/sentences': 'sentences',
   '/preferences': 'preferences',
 }
 
 const MODE_TO_PATH: Record<Mode, string> = {
   flashcards: '/cards',
-  speak: '/speak',
+  sentences: '/sentences',
   preferences: '/preferences',
 }
 
@@ -44,7 +46,9 @@ export default function App() {
     return () => window.removeEventListener('popstate', onPop)
   }, [])
 
-  const isFullscreen = mode === 'flashcards' || mode === 'speak'
+  const isFullscreen = mode === 'flashcards' || mode === 'sentences'
+  const statsTitle = mode === 'flashcards' ? 'Word Stats' : 'Sentence Stats'
+  const statsReturnLabel = mode === 'flashcards' ? 'Back to Cards' : 'Back to Sentences'
 
   return (
     <div className="relative min-h-[100dvh] overflow-hidden">
@@ -54,8 +58,8 @@ export default function App() {
         <div className="absolute bottom-[-10%] left-[10%] h-80 w-80 rounded-full bg-[var(--mint-soft)]/25 blur-3xl lg:left-[45%] lg:h-[26rem] lg:w-[26rem]" />
       </div>
 
-      <div className={`relative mx-auto max-w-[1540px] px-2 pt-1 sm:px-4 lg:px-8 lg:py-8 ${isFullscreen ? 'flex min-h-[100dvh] flex-col pb-14' : 'min-h-[100dvh] pb-14'}`}>
-        <div className={`${isFullscreen ? 'flex flex-1 flex-col lg:grid lg:grid-cols-[17rem_minmax(0,1fr)] lg:gap-7' : 'lg:grid lg:grid-cols-[17rem_minmax(0,1fr)] lg:gap-7'}`}>
+      <div className={`relative mx-auto max-w-[1540px] px-1 pt-1 sm:px-4 lg:px-8 lg:py-8 ${isFullscreen ? '' : 'min-h-[100dvh] pb-14'}`}>
+        <div className="lg:grid lg:grid-cols-[17rem_minmax(0,1fr)] lg:gap-7">
           {/* Desktop sidebar */}
           <aside className="hidden lg:flex lg:min-h-[calc(100dvh-4rem)] lg:flex-col lg:gap-5 lg:rounded-[2rem] lg:border lg:border-[var(--line)] lg:bg-[var(--glass-strong)] lg:p-6 lg:shadow-[var(--shadow-soft)] lg:backdrop-blur-xl">
             <div className="inline-flex items-center gap-2 rounded-full border border-[var(--line-strong)] bg-[var(--glass)] px-3 py-1 text-[0.65rem] font-bold uppercase tracking-[0.22em] text-[var(--accent-deep)]">
@@ -79,10 +83,10 @@ export default function App() {
                   }`}
                   onClick={() => { navigate(item); setShowStats(false) }}
                 >
-                  {{ flashcards: 'Cards', speak: 'Speak', preferences: 'Preferences' }[item]}
+                  {{ flashcards: 'Cards', sentences: 'Sentences', preferences: 'Preferences' }[item]}
                 </button>
               ))}
-              {mode === 'flashcards' && (
+              {isFullscreen && (
                 <button
                   className={`w-full rounded-[1rem] px-4 py-3 text-left text-sm font-semibold transition duration-200 ${
                     showStats
@@ -91,105 +95,179 @@ export default function App() {
                   }`}
                   onClick={() => setShowStats(!showStats)}
                 >
-                  {showStats ? 'Back to Cards' : 'Word Stats'}
+                  {showStats ? statsReturnLabel : statsTitle}
                 </button>
               )}
             </nav>
 
-            {mode === 'flashcards' && (
-              <div className="mt-auto space-y-1 rounded-[1rem] border border-[var(--line)] bg-[var(--glass-soft)] p-3 text-[0.7rem] text-[var(--muted)]">
-                <div className="font-bold uppercase tracking-[0.15em]">Keyboard</div>
-                <div className="flex justify-between"><span>← →</span><span>Choose answer</span></div>
-                <div className="flex justify-between"><span>↑ ↓</span><span>Hear options</span></div>
-                <div className="flex justify-between"><span>Space / Enter</span><span>Replay word</span></div>
+            {(mode === 'flashcards' || mode === 'sentences') && (
+              <div className="mt-auto space-y-3">
+                <div className="rounded-[1rem] border border-[var(--line)] bg-[var(--glass-soft)] p-3">
+                  <div className="mb-2 text-[0.6rem] font-bold uppercase tracking-[0.15em] text-[var(--muted)]">
+                    {mode === 'flashcards' ? 'Card Input' : 'Sentence Input'}
+                  </div>
+                  <FlashcardModeSwitch
+                    value={mode === 'flashcards' ? settings.flashcardInputMode : settings.sentenceInputMode}
+                    onChange={(nextMode) => {
+                      if (mode === 'flashcards') update({ flashcardInputMode: nextMode })
+                      else update({ sentenceInputMode: nextMode })
+                    }}
+                  />
+                </div>
+
+                <div className="space-y-1 rounded-[1rem] border border-[var(--line)] bg-[var(--glass-soft)] p-3 text-[0.7rem] text-[var(--muted)]">
+                  <div className="font-bold uppercase tracking-[0.15em]">
+                    {(mode === 'flashcards' ? settings.flashcardInputMode : settings.sentenceInputMode) === 'speak' ? 'Speak' : 'Keyboard'}
+                  </div>
+                  {(mode === 'flashcards' ? settings.flashcardInputMode : settings.sentenceInputMode) === 'speak' ? (
+                    <>
+                      {mode === 'flashcards' ? (
+                        <>
+                          <div className="flex justify-between"><span>Step 1</span><span>Repeat the word</span></div>
+                          <div className="flex justify-between"><span>Step 2</span><span>Say the meaning</span></div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="flex justify-between"><span>Prompt</span><span>Hear the sentence</span></div>
+                          <div className="flex justify-between"><span>Answer</span><span>Say it back aloud</span></div>
+                        </>
+                      )}
+                      <div className="flex justify-between"><span>Auto</span><span>Listen and move on</span></div>
+                    </>
+                  ) : (
+                    <>
+                      {mode === 'flashcards' ? (
+                        <>
+                          <div className="flex justify-between"><span>← →</span><span>Choose answer</span></div>
+                          <div className="flex justify-between"><span>↑ ↓</span><span>Hear options</span></div>
+                          <div className="flex justify-between"><span>Space / Enter</span><span>Replay word</span></div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="flex justify-between"><span>Hold mic</span><span>Record sentence</span></div>
+                          <div className="flex justify-between"><span>← → / Enter</span><span>Next sentence</span></div>
+                          <div className="flex justify-between"><span>Speaker</span><span>Replay prompt</span></div>
+                        </>
+                      )}
+                    </>
+                  )}
+                </div>
               </div>
             )}
           </aside>
 
           {/* Mobile header */}
-          <header className="mb-1 flex items-center gap-2 lg:hidden">
-            <LanguagePicker compact label="" value={settings.nativeLang} onChange={(code) => update({ nativeLang: code })} />
-            <span className="text-xs text-[var(--muted)]">→</span>
-            <LanguagePicker compact label="" value={settings.targetLang} onChange={(code) => update({ targetLang: code })} />
+          <header className="mb-2 flex flex-col gap-2 lg:hidden">
+            <div className="flex items-center gap-2">
+              <LanguagePicker compact label="" value={settings.nativeLang} onChange={(code) => update({ nativeLang: code })} />
+              <span className="text-xs text-[var(--muted)]">→</span>
+              <LanguagePicker compact label="" value={settings.targetLang} onChange={(code) => update({ targetLang: code })} />
 
-            {(mode === 'flashcards' || mode === 'speak') && (
-              <div className="relative ml-auto">
+              {(mode === 'flashcards' || mode === 'sentences') && (
+                <div className="relative ml-auto">
+                  <button
+                    className="flex items-center gap-1 rounded-full border border-[var(--line)] bg-[var(--glass)] px-2 py-1.5 text-xs font-semibold text-[var(--muted)]"
+                    onClick={() => setLevelOpen(!levelOpen)}
+                  >
+                    Lv {settings.cardLevel}
+                    <svg className={`h-3 w-3 transition-transform ${levelOpen ? 'rotate-180' : ''}`} fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                  {levelOpen && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setLevelOpen(false)} />
+                      <div className="absolute right-0 top-full z-50 mt-1 max-h-72 w-48 overflow-y-auto rounded-[1rem] border border-[var(--line-strong)] bg-[var(--panel-strong)] p-1 shadow-[var(--shadow-soft)] backdrop-blur-xl">
+                        {LEVELS.map((l) => (
+                          <button
+                            key={l}
+                            className={`flex w-full items-center gap-2 rounded-[0.75rem] px-3 py-2 text-left text-sm ${
+                              l === settings.cardLevel
+                                ? 'bg-[var(--accent-gradient)] font-semibold text-[var(--ink)]'
+                                : 'text-[var(--muted)] hover:bg-[var(--glass-hover)] hover:text-[var(--ink)]'
+                            }`}
+                            onClick={() => { update({ cardLevel: l }); setLevelOpen(false) }}
+                          >
+                            <span className="font-bold">{l}</span>
+                            <span>{LEVEL_LABELS[l]}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {isFullscreen && (
                 <button
-                  className="flex items-center gap-1 rounded-full border border-[var(--line)] bg-[var(--glass)] px-2 py-1.5 text-xs font-semibold text-[var(--muted)]"
-                  onClick={() => setLevelOpen(!levelOpen)}
+                  className={`rounded-full px-2 py-1.5 text-xs font-semibold ${showStats ? 'bg-[var(--sky)] text-[var(--paper)]' : 'text-[var(--muted)]'}`}
+                  onClick={() => setShowStats(!showStats)}
                 >
-                  Lv {settings.cardLevel}
-                  <svg className={`h-3 w-3 transition-transform ${levelOpen ? 'rotate-180' : ''}`} fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                  </svg>
+                  {showStats ? 'Play' : 'Stats'}
                 </button>
-                {levelOpen && (
-                  <>
-                    <div className="fixed inset-0 z-40" onClick={() => setLevelOpen(false)} />
-                    <div className="absolute right-0 top-full z-50 mt-1 max-h-72 w-48 overflow-y-auto rounded-[1rem] border border-[var(--line-strong)] bg-[var(--panel-strong)] p-1 shadow-[var(--shadow-soft)] backdrop-blur-xl">
-                      {LEVELS.map((l) => (
-                        <button
-                          key={l}
-                          className={`flex w-full items-center gap-2 rounded-[0.75rem] px-3 py-2 text-left text-sm ${
-                            l === settings.cardLevel
-                              ? 'bg-[var(--accent-gradient)] font-semibold text-[var(--ink)]'
-                              : 'text-[var(--muted)] hover:bg-[var(--glass-hover)] hover:text-[var(--ink)]'
-                          }`}
-                          onClick={() => { update({ cardLevel: l }); setLevelOpen(false) }}
-                        >
-                          <span className="font-bold">{l}</span>
-                          <span>{LEVEL_LABELS[l]}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
+              )}
+              {mode === 'flashcards' && (
+                <button
+                  className={`flex h-8 w-8 items-center justify-center rounded-full border border-[var(--line)] ${settings.flashcardAudio ? 'bg-[var(--accent)]/25 text-[var(--accent)]' : 'bg-[var(--glass)] text-[var(--muted)]'}`}
+                  onClick={() => update({ flashcardAudio: !settings.flashcardAudio })}
+                >
+                  {settings.flashcardAudio ? (
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19.114 5.636a9 9 0 0 1 0 12.728M16.463 8.288a5.25 5.25 0 0 1 0 7.424M6.75 8.25l4.72-4.72a.75.75 0 0 1 1.28.53v15.88a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.009 9.009 0 0 1 2.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75Z" />
+                    </svg>
+                  ) : (
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 9.75 19.5 12m0 0 2.25 2.25M19.5 12l2.25-2.25M19.5 12l-2.25 2.25m-10.5-6 4.72-4.72a.75.75 0 0 1 1.28.531V19.94a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.009 9.009 0 0 1 2.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75Z" />
+                    </svg>
+                  )}
+                </button>
+              )}
+            </div>
 
-            {isFullscreen && (
-              <button
-                className={`rounded-full px-2 py-1.5 text-xs font-semibold ${showStats ? 'bg-[var(--sky)] text-[var(--paper)]' : 'text-[var(--muted)]'}`}
-                onClick={() => setShowStats(!showStats)}
-              >
-                {showStats ? 'Play' : 'Stats'}
-              </button>
-            )}
-            {mode === 'flashcards' && (
-              <button
-                className={`flex h-8 w-8 items-center justify-center rounded-full border border-[var(--line)] ${settings.flashcardAudio ? 'bg-[var(--accent)]/25 text-[var(--accent)]' : 'bg-[var(--glass)] text-[var(--muted)]'}`}
-                onClick={() => update({ flashcardAudio: !settings.flashcardAudio })}
-              >
-                {settings.flashcardAudio ? (
-                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.114 5.636a9 9 0 0 1 0 12.728M16.463 8.288a5.25 5.25 0 0 1 0 7.424M6.75 8.25l4.72-4.72a.75.75 0 0 1 1.28.53v15.88a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.009 9.009 0 0 1 2.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75Z" />
-                  </svg>
-                ) : (
-                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 9.75 19.5 12m0 0 2.25 2.25M19.5 12l2.25-2.25M19.5 12l-2.25 2.25m-10.5-6 4.72-4.72a.75.75 0 0 1 1.28.531V19.94a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.009 9.009 0 0 1 2.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75Z" />
-                  </svg>
-                )}
-              </button>
+            {(mode === 'flashcards' || mode === 'sentences') && (
+              <div className="flex justify-center">
+                <FlashcardModeSwitch
+                  value={mode === 'flashcards' ? settings.flashcardInputMode : settings.sentenceInputMode}
+                  onChange={(nextMode) => {
+                    if (mode === 'flashcards') update({ flashcardInputMode: nextMode })
+                    else update({ sentenceInputMode: nextMode })
+                  }}
+                  compact
+                />
+              </div>
             )}
           </header>
 
           {/* Content */}
-          <main className={`min-w-0 ${isFullscreen ? 'flex min-h-0 flex-1 flex-col lg:block' : ''}`}>
-            <section className={`backdrop-blur-xl lg:rounded-[1.5rem] lg:bg-[var(--panel-quiet)] lg:p-5 ${isFullscreen ? 'flex min-h-0 flex-1 flex-col' : 'rounded-[1.25rem] bg-[var(--panel-quiet)] p-3 sm:p-4'}`}>
-              <div className={`${isFullscreen ? 'flex min-h-0 flex-1 flex-col' : 'min-h-[34rem] sm:min-h-[36rem] lg:min-h-0'}`}>
-                {mode === 'flashcards' && (
-                  <FlashcardsTab
-                    nativeLang={settings.nativeLang}
-                    targetLang={settings.targetLang}
-                    audioEnabled={settings.flashcardAudio}
-                    level={settings.cardLevel}
-                    showStats={showStats}
-                  />
-                )}
-                {mode === 'speak' && <SpeakTab nativeLang={settings.nativeLang} targetLang={settings.targetLang} level={settings.cardLevel} showStats={showStats} />}
-                {mode === 'preferences' && <PreferencesTab settings={settings} update={update} />}
-              </div>
-            </section>
+          <main className="min-w-0">
+            {mode === 'flashcards' && (
+              <FlashcardsTab
+                nativeLang={settings.nativeLang}
+                targetLang={settings.targetLang}
+                audioEnabled={settings.flashcardAudio}
+                inputMode={settings.flashcardInputMode}
+                onInputModeChange={(flashcardInputMode) => update({ flashcardInputMode })}
+                level={settings.cardLevel}
+                showStats={showStats}
+                onShowStatsChange={setShowStats}
+              />
+            )}
+            {mode === 'sentences' && (
+              <SentencesTab
+                nativeLang={settings.nativeLang}
+                targetLang={settings.targetLang}
+                level={settings.cardLevel}
+                inputMode={settings.sentenceInputMode}
+                showStats={showStats}
+                onShowStatsChange={setShowStats}
+                onInputModeChange={(sentenceInputMode) => update({ sentenceInputMode })}
+              />
+            )}
+            {mode === 'preferences' && (
+              <section className="rounded-[1.25rem] bg-[var(--panel-quiet)] p-3 sm:p-4 lg:rounded-[1.5rem] lg:p-5">
+                <PreferencesTab settings={settings} update={update} />
+              </section>
+            )}
           </main>
         </div>
       </div>
@@ -198,7 +276,7 @@ export default function App() {
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--line)] bg-[var(--dock)]/92 px-2 pb-[calc(env(safe-area-inset-bottom)+0.25rem)] pt-1 backdrop-blur-2xl lg:hidden">
         <div className="mx-auto grid max-w-xs grid-cols-3">
           <TabButton icon="flashcards" label="Cards" active={mode === 'flashcards'} onClick={() => navigate('flashcards')} />
-          <TabButton icon="speak" label="Speak" active={mode === 'speak'} onClick={() => navigate('speak')} />
+          <TabButton icon="speak" label="Sentences" active={mode === 'sentences'} onClick={() => navigate('sentences')} />
           <TabButton icon="preferences" label="Prefs" active={mode === 'preferences'} onClick={() => navigate('preferences')} />
         </div>
       </nav>

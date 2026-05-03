@@ -4,6 +4,7 @@ export type ThemePreference = 'system' | 'light' | 'dark'
 export type FontSizePreference = 'small' | 'medium' | 'large' | 'xlarge'
 export type MotionPreference = 'full' | 'reduced'
 export type SurfacePreference = 'soft' | 'bold'
+export type PracticeInputMode = 'keyboard' | 'speak'
 
 export interface Settings {
   nativeLang: string
@@ -14,6 +15,8 @@ export interface Settings {
   motion: MotionPreference
   surface: SurfacePreference
   flashcardAudio: boolean
+  flashcardInputMode: PracticeInputMode
+  sentenceInputMode: PracticeInputMode
   cardLevel: number
 }
 
@@ -26,6 +29,8 @@ const defaults: Settings = {
   motion: 'full',
   surface: 'soft',
   flashcardAudio: true,
+  flashcardInputMode: 'keyboard',
+  sentenceInputMode: 'keyboard',
   cardLevel: 1,
 }
 

@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "pnpm --filter @freelanguageapp/web dev",
     "build": "pnpm --filter @freelanguageapp/web build",
+    "seo:generate": "pnpm --filter @freelanguageapp/web seo:generate",
+    "test": "pnpm --filter @freelanguageapp/web test",
     "preview": "pnpm --filter @freelanguageapp/web preview",
     "cf:deploy": "pnpm build && wrangler pages deploy web/dist",
     "cf:preview": "pnpm build && wrangler pages deploy web/dist --branch preview"

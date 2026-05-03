@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { LanguagePicker } from './LanguagePicker.tsx'
-import type { Settings, ThemePreference, FontSizePreference, MotionPreference, SurfacePreference } from '../services/settings.ts'
+import type { Settings, ThemePreference, FontSizePreference, MotionPreference, SurfacePreference, PracticeInputMode } from '../services/settings.ts'
 
 export function PreferencesTab({
   settings,
@@ -99,6 +99,28 @@ export function PreferencesTab({
                 ]}
               />
             </SettingsPanel>
+
+            <SettingsPanel title="Card mode" description="Choose between assisted multiple-choice practice and hands-free speaking practice.">
+              <ChoiceGrid<PracticeInputMode>
+                value={settings.flashcardInputMode}
+                onChange={(flashcardInputMode) => update({ flashcardInputMode })}
+                options={[
+                  { value: 'keyboard', label: 'Keyboard', detail: 'Swipe, tap, or use arrow keys' },
+                  { value: 'speak', label: 'Speak', detail: 'Repeat and answer aloud, then auto-advance' },
+                ]}
+              />
+            </SettingsPanel>
+
+            <SettingsPanel title="Sentence mode" description="Use buttons and hold-to-talk, or run the sentence deck hands-free.">
+              <ChoiceGrid<PracticeInputMode>
+                value={settings.sentenceInputMode}
+                onChange={(sentenceInputMode) => update({ sentenceInputMode })}
+                options={[
+                  { value: 'keyboard', label: 'Keyboard', detail: 'Tap next and hold to record' },
+                  { value: 'speak', label: 'Speak', detail: 'Prompt, listen, score, and move on automatically' },
+                ]}
+              />
+            </SettingsPanel>
           </div>
         </div>
       </section>
@@ -111,6 +133,8 @@ export function PreferencesTab({
             <PreferenceStat label="Labels" value={settings.labelSize} />
             <PreferenceStat label="Content" value={settings.contentSize} />
             <PreferenceStat label="Card audio" value={settings.flashcardAudio ? 'on' : 'off'} />
+            <PreferenceStat label="Card mode" value={settings.flashcardInputMode} />
+            <PreferenceStat label="Sentence mode" value={settings.sentenceInputMode} />
           </div>
         </div>
 

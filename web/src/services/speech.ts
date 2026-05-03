@@ -6,6 +6,14 @@ export type SpeechState = {
 }
 
 type Listener = () => void
+type ListenOptions = {
+  continuous?: boolean
+  interimResults?: boolean
+  onStart?: () => void
+  onInterim?: (text: string) => void
+  onEnd?: () => void
+  onError?: (error: string) => void
+}
 
 class SpeechService {
   private listeners: Listener[] = []
@@ -41,26 +49,28 @@ class SpeechService {
     this.listeners.forEach(fn => fn())
   }
 
-  startListening(lang: string, onResult: (text: string) => void) {
+  startListening(lang: string, onResult: (text: string) => void, options: ListenOptions = {}) {
     this.stopListening()
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
     if (!SpeechRecognition) {
       this.state.error = 'Speech recognition not supported'
       this.notify()
+      options.onError?.(this.state.error)
       return
     }
 
     this.recognition = new SpeechRecognition()
     this.recognition.lang = lang
-    this.recognition.interimResults = true
-    this.recognition.continuous = false
+    this.recognition.interimResults = options.interimResults ?? true
+    this.recognition.continuous = options.continuous ?? false
 
     this.recognition.onstart = () => {
       this.state.isListening = true
       this.state.transcript = ''
       this.state.error = null
       this.notify()
+      options.onStart?.()
     }
 
     this.recognition.onresult = (e) => {
@@ -76,7 +86,8 @@ class SpeechService {
       }
       this.state.transcript = final || interim
       this.notify()
-      if (final) onResult(final)
+      if (interim) options.onInterim?.(interim)
+      if (final) onResult(final.trim())
     }
 
     this.recognition.onerror = (e) => {
@@ -85,11 +96,13 @@ class SpeechService {
       }
       this.state.isListening = false
       this.notify()
+      options.onError?.(e.error)
     }
 
     this.recognition.onend = () => {
       this.state.isListening = false
       this.notify()
+      options.onEnd?.()
     }
 
     this.recognition.start()

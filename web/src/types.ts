@@ -4,7 +4,7 @@ export interface Language {
   flag: string
 }
 
-export type Mode = 'flashcards' | 'speak' | 'preferences'
+export type Mode = 'flashcards' | 'sentences' | 'preferences'
 
 export interface FlashCard {
   word: string

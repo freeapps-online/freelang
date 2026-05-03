@@ -4,3 +4,6 @@ dist
 *.local
 *.png
 .playwright-mcp/
+web/public/learn/
+web/public/robots.txt
+web/public/sitemap.xml

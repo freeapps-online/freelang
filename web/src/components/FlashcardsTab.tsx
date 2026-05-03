@@ -4,24 +4,35 @@ import { loadScores, recordAnswer, loadWordStats, recordWordAnswer, pickWeighted
 import { speech } from '../services/speech.ts'
 import { useSpeech } from '../hooks.ts'
 import { reportCardScore } from '../services/cloud.ts'
+import { evaluateVoiceAttempt } from '../services/flashcardsVoice.ts'
+import { FlashcardModeSwitch } from './FlashcardModeSwitch.tsx'
+import type { PracticeInputMode } from '../services/settings.ts'
 import type { FlashCard, FlashCardRound, FlashCardScore } from '../types.ts'
 
 type SwipeResult = 'correct' | 'wrong' | null
+type VoiceStep = 'repeat' | 'answer'
+type SpeakStatus = 'idle' | 'prompting' | 'listening-repeat' | 'listening-answer' | 'blocked' | 'unsupported'
 
 export function FlashcardsTab({
   nativeLang,
   targetLang,
   audioEnabled,
+  inputMode,
+  onInputModeChange,
   level,
   showStats,
+  onShowStatsChange,
 }: {
   nativeLang: string
   targetLang: string
   audioEnabled: boolean
+  inputMode: PracticeInputMode
+  onInputModeChange: (mode: PracticeInputMode) => void
   level: number
   showStats: boolean
+  onShowStatsChange: (show: boolean) => void
 }) {
-  useSpeech()
+  const sp = useSpeech()
   const [words, setWords] = useState<FlashCard[]>(getLoadedWords(level))
   const [round, setRound] = useState<FlashCardRound | null>(null)
   const [scores, setScores] = useState<FlashCardScore>(loadScores)
@@ -32,7 +43,13 @@ export function FlashcardsTab({
   const startX = useRef(0)
   const dragging = useRef(false)
   const [lastFeedback, setLastFeedback] = useState<{ nativeWord: string; correctAnswer: string } | null>(null)
+  const [voiceStep, setVoiceStep] = useState<VoiceStep>('repeat')
+  const [voiceAttempt, setVoiceAttempt] = useState<{ heardTarget: string; heardAnswer: string; repeatMatched: boolean } | null>(null)
+  const [speakStatus, setSpeakStatus] = useState<SpeakStatus>('idle')
   const feedbackTimer = useRef<number>(0)
+  const speakTimer = useRef<number>(0)
+  const speakRunId = useRef(0)
+  const heardTargetRef = useRef('')
 
   useEffect(() => {
     let cancelled = false
@@ -40,12 +57,17 @@ export function FlashcardsTab({
       if (cancelled) return
       setWords(w)
       const card = pickWeightedCard(w, wordStats)
+      setVoiceStep('repeat')
+      setVoiceAttempt(null)
+      heardTargetRef.current = ''
+      setSpeakStatus('idle')
       setRound(getFlashCardRound(nativeLang, targetLang, w, undefined, card))
     })
     return () => { cancelled = true }
   }, [level, nativeLang, targetLang])
 
   const display = round ? getCardDisplay(round.card, targetLang) : null
+  const correctAnswer = round ? (round.card.translations[nativeLang] ?? round.card.word) : ''
 
   const handleAnswer = useCallback((side: 'left' | 'right') => {
     if (transitioning || !round || words.length === 0) return
@@ -62,6 +84,10 @@ export function FlashcardsTab({
 
     window.setTimeout(() => {
       const nextCard = pickWeightedCard(words, wordStats, round.card)
+      setVoiceStep('repeat')
+      setVoiceAttempt(null)
+      heardTargetRef.current = ''
+      setSpeakStatus('idle')
       setRound(getFlashCardRound(nativeLang, targetLang, words, round.card, nextCard))
       setDragX(0)
       setTransitioning(false)
@@ -74,12 +100,44 @@ export function FlashcardsTab({
     }, 3500)
   }, [round, nativeLang, targetLang, transitioning, words, wordStats])
 
+  const handleVoiceAnswer = useCallback((heardTarget: string, heardAnswer: string) => {
+    if (transitioning || !round || words.length === 0) return
+
+    const evaluation = evaluateVoiceAttempt(display?.text ?? '', heardTarget, correctAnswer, heardAnswer)
+    setVoiceAttempt({ heardTarget, heardAnswer, repeatMatched: evaluation.repeatMatched })
+    setVoiceStep('repeat')
+    setResult(evaluation.answerMatched ? 'correct' : 'wrong')
+    setLastFeedback({ nativeWord: display?.text ?? '', correctAnswer })
+    setScores((prev) => recordAnswer(prev, evaluation.answerMatched))
+    setWordStats((prev) => recordWordAnswer(prev, round.card.word, evaluation.answerMatched))
+    void reportCardScore(round.card.word, evaluation.answerMatched)
+    setTransitioning(true)
+
+    window.setTimeout(() => {
+      const nextCard = pickWeightedCard(words, wordStats, round.card)
+      setVoiceStep('repeat')
+      setVoiceAttempt(null)
+      heardTargetRef.current = ''
+      setSpeakStatus('idle')
+      setRound(getFlashCardRound(nativeLang, targetLang, words, round.card, nextCard))
+      setTransitioning(false)
+    }, 700)
+
+    window.clearTimeout(feedbackTimer.current)
+    feedbackTimer.current = window.setTimeout(() => {
+      setResult(null)
+      setLastFeedback(null)
+      setVoiceAttempt(null)
+    }, 4500)
+  }, [correctAnswer, display?.text, nativeLang, round, targetLang, transitioning, words, wordStats])
+
   useEffect(() => {
     if (!audioEnabled || transitioning || !display) return
     void speech.speak(display.text, targetLang)
   }, [audioEnabled, display?.text, targetLang, round?.card.word, transitioning])
 
   useEffect(() => {
+    if (inputMode !== 'keyboard') return
     const onKeyDown = (event: KeyboardEvent) => {
       if (transitioning) return
       const target = event.target as HTMLElement | null
@@ -93,16 +151,16 @@ export function FlashcardsTab({
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [handleAnswer, transitioning])
+  }, [handleAnswer, inputMode, transitioning])
 
-  useEffect(() => () => { speech.stopSpeaking() }, [])
+  useEffect(() => () => { speech.stopSpeaking(); speech.stopListening() }, [])
 
   const onPointerDown = useCallback((event: React.PointerEvent) => {
-    if (transitioning) return
+    if (transitioning || inputMode !== 'keyboard') return
     dragging.current = true
     startX.current = event.clientX
     ;(event.target as HTMLElement).setPointerCapture(event.pointerId)
-  }, [transitioning])
+  }, [inputMode, transitioning])
 
   const onPointerMove = useCallback((event: React.PointerEvent) => {
     if (!dragging.current) return
@@ -123,6 +181,112 @@ export function FlashcardsTab({
     }
   }, [dragX, handleAnswer, audioEnabled, display, targetLang])
 
+  const handleInputModeSwitch = useCallback((mode: PracticeInputMode) => {
+    speakRunId.current += 1
+    window.clearTimeout(speakTimer.current)
+    speech.stopListening()
+    speech.stopSpeaking()
+    setVoiceStep('repeat')
+    setVoiceAttempt(null)
+    heardTargetRef.current = ''
+    setSpeakStatus('idle')
+    onInputModeChange(mode)
+  }, [onInputModeChange])
+
+  const focusCard = useCallback((card: FlashCard) => {
+    speech.stopListening()
+    speech.stopSpeaking()
+    window.clearTimeout(feedbackTimer.current)
+    setResult(null)
+    setLastFeedback(null)
+    setVoiceStep('repeat')
+    setVoiceAttempt(null)
+    heardTargetRef.current = ''
+    setSpeakStatus('idle')
+    setDragX(0)
+    setTransitioning(false)
+    setRound(getFlashCardRound(nativeLang, targetLang, words, undefined, card))
+    onShowStatsChange(false)
+  }, [nativeLang, onShowStatsChange, targetLang, words])
+
+  useEffect(() => {
+    if (inputMode !== 'speak' || showStats || !round || transitioning) return
+
+    const runId = ++speakRunId.current
+    const displayText = getCardDisplay(round.card, targetLang).text
+    const answerText = round.card.translations[nativeLang] ?? round.card.word
+
+    const handleRecognitionError = (error: string, step: VoiceStep) => {
+      if (runId !== speakRunId.current) return
+      if (error === 'not-allowed' || error === 'service-not-allowed') {
+        setSpeakStatus('blocked')
+        return
+      }
+      if (error === 'Speech recognition not supported') {
+        setSpeakStatus('unsupported')
+        return
+      }
+      if (error === 'no-speech') {
+        speakTimer.current = window.setTimeout(() => {
+          if (runId !== speakRunId.current) return
+          if (step === 'repeat') {
+            startRepeatListening()
+          } else {
+            startAnswerListening(heardTargetRef.current)
+          }
+        }, 250)
+      }
+    }
+
+    const startAnswerListening = (heardTarget: string) => {
+      if (runId !== speakRunId.current) return
+      setVoiceStep('answer')
+      setSpeakStatus('listening-answer')
+      speech.startListening(nativeLang, (heardAnswer) => {
+        if (runId !== speakRunId.current) return
+        handleVoiceAnswer(heardTarget, heardAnswer)
+      }, {
+        onError: (error) => handleRecognitionError(error, 'answer'),
+      })
+    }
+
+    const startRepeatListening = () => {
+      if (runId !== speakRunId.current) return
+      setVoiceStep('repeat')
+      setSpeakStatus('listening-repeat')
+      speech.startListening(targetLang, (heardTarget) => {
+        if (runId !== speakRunId.current) return
+        heardTargetRef.current = heardTarget
+        const repeatMatched = evaluateVoiceAttempt(displayText, heardTarget, answerText, answerText).repeatMatched
+        setVoiceAttempt({ heardTarget, heardAnswer: '', repeatMatched })
+        speakTimer.current = window.setTimeout(() => {
+          startAnswerListening(heardTarget)
+        }, 160)
+      }, {
+        onError: (error) => handleRecognitionError(error, 'repeat'),
+      })
+    }
+
+    const runSpeakCycle = async () => {
+      setVoiceStep('repeat')
+      setVoiceAttempt(null)
+      if (audioEnabled) {
+        setSpeakStatus('prompting')
+        await speech.speak(displayText, targetLang)
+        if (runId !== speakRunId.current) return
+      }
+      startRepeatListening()
+    }
+
+    void runSpeakCycle()
+
+    return () => {
+      window.clearTimeout(speakTimer.current)
+      speech.stopListening()
+      speech.stopSpeaking()
+    }
+  }, [audioEnabled, handleVoiceAnswer, inputMode, nativeLang, round, showStats, targetLang, transitioning])
+
   if (!round || !display) {
     return <div className="flex flex-1 items-center justify-center text-[var(--muted)]">Loading...</div>
   }
@@ -130,74 +294,129 @@ export function FlashcardsTab({
   const pct = scores.total > 0 ? Math.round((scores.correct / scores.total) * 100) : 0
 
   return (
-    <div className="flex h-[calc(100dvh-90px)] flex-col lg:h-auto">
+    <div className="flex h-[calc(100dvh-80px)] flex-col lg:h-auto">
       <section
         className="flex flex-1 flex-col p-2 sm:p-3 lg:p-4"
         style={{ background: 'var(--warm-gradient)' }}
       >
         <div className="flex h-full flex-col gap-2">
-          {showStats ? (
-            <WordStatsPanel words={words} wordStats={wordStats} targetLang={targetLang} nativeLang={nativeLang} />
-          ) : (<>
-          {/* Answer options + live score */}
           <div className="flex items-center justify-between gap-2">
-            <div className="rounded-full border border-[var(--line)] bg-[var(--glass)] px-3 py-2 text-center">
-              <div className="font-semibold text-[var(--ink)]" style={{ fontSize: 'calc(0.875rem * var(--content-scale))' }}>← {round.leftOption}</div>
-            </div>
+            <FlashcardModeSwitch value={inputMode} onChange={handleInputModeSwitch} />
             <div className="flex items-center gap-2 text-xs font-bold">
               <span className="text-[var(--success)]">{scores.correct}</span>
               <span className="text-[var(--muted)]">/</span>
               <span className="text-[var(--error)]">{scores.total - scores.correct}</span>
             </div>
-            <div className="rounded-full border border-[var(--line)] bg-[var(--glass)] px-3 py-2 text-center">
-              <div className="font-semibold text-[var(--ink)]" style={{ fontSize: 'calc(0.875rem * var(--content-scale))' }}>{round.rightOption} →</div>
-            </div>
           </div>
 
-          {/* Card */}
-          <div className="flex flex-1 items-center justify-center overflow-hidden">
-            <div
-              className="relative flex w-full max-w-[24rem] cursor-grab flex-col items-center justify-center gap-3 rounded-[1.5rem] border border-[var(--line-strong)] px-5 py-8 text-center shadow-[var(--shadow-soft)] active:cursor-grabbing select-none touch-none sm:rounded-[2rem] sm:py-10"
-              style={{
-                background: 'var(--card-gradient)',
-                transform: `translateX(${dragX}px) rotate(${dragX * 0.08}deg)`,
-                transition: transitioning ? 'transform 0.35s ease-out, opacity 0.35s ease-out' : 'none',
-                opacity: transitioning ? 0 : 1,
-              }}
-              onPointerDown={onPointerDown}
-              onPointerMove={onPointerMove}
-              onPointerUp={onPointerUp}
-            >
-              {Math.abs(dragX) > 30 && !transitioning && (
-                <div
-                  className="absolute top-5 rounded-full px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-[var(--paper)]"
-                  style={{
-                    left: dragX < 0 ? 18 : 'auto',
-                    right: dragX > 0 ? 18 : 'auto',
-                    background: dragX < 0
-                      ? (round.correctSide === 'left' ? 'var(--success)' : 'var(--error)')
-                      : (round.correctSide === 'right' ? 'var(--success)' : 'var(--error)'),
-                  }}
-                >
-                  {dragX < 0 ? round.leftOption : round.rightOption}
+          {showStats ? (
+            <WordStatsPanel words={words} wordStats={wordStats} targetLang={targetLang} nativeLang={nativeLang} onPracticeWord={focusCard} />
+          ) : (
+            <>
+              {inputMode === 'keyboard' ? (
+                <>
+                  {/* Answer options */}
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="rounded-full border border-[var(--line)] bg-[var(--glass)] px-3 py-2 text-center">
+                      <div className="font-semibold text-[var(--ink)]" style={{ fontSize: 'calc(0.875rem * var(--content-scale))' }}>← {round.leftOption}</div>
+                    </div>
+                    <div className="rounded-full border border-[var(--line)] bg-[var(--glass)] px-3 py-2 text-center">
+                      <div className="font-semibold text-[var(--ink)]" style={{ fontSize: 'calc(0.875rem * var(--content-scale))' }}>{round.rightOption} →</div>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <VoiceStepCard
+                    title="1. Repeat the card"
+                    active={voiceStep === 'repeat'}
+                    complete={voiceAttempt?.repeatMatched === true}
+                    detail={voiceAttempt?.heardTarget ? `Heard: ${voiceAttempt.heardTarget}` : `Say ${display.text}`}
+                  />
+                  <VoiceStepCard
+                    title="2. Say the meaning"
+                    active={voiceStep === 'answer'}
+                    complete={result === 'correct'}
+                    detail={voiceAttempt?.heardAnswer ? `Heard: ${voiceAttempt.heardAnswer}` : `Say ${correctAnswer}`}
+                  />
                 </div>
               )}
 
-              <div className="drop-shadow-sm" style={{ fontSize: `calc(4.5rem * var(--content-scale))` }}>{display.emoji}</div>
-              <div className="display-font leading-none text-[var(--ink)]" style={{ fontSize: `calc(2.25rem * var(--content-scale))` }}>{display.text}</div>
-              {display.translit && <div className="italic text-[var(--muted)]" style={{ fontSize: `calc(1.5rem * var(--content-scale))` }}>{display.translit}</div>}
-            </div>
-          </div>
+              {/* Card */}
+              <div className="flex flex-1 items-center justify-center overflow-hidden">
+                <div
+                  className={`relative flex w-full max-w-[24rem] flex-col items-center justify-center gap-3 rounded-[1.5rem] border border-[var(--line-strong)] px-5 py-8 text-center shadow-[var(--shadow-soft)] select-none touch-none sm:rounded-[2rem] sm:py-10 ${
+                    inputMode === 'keyboard' ? 'cursor-grab active:cursor-grabbing' : ''
+                  }`}
+                  style={{
+                    background: 'var(--card-gradient)',
+                    transform: inputMode === 'keyboard' ? `translateX(${dragX}px) rotate(${dragX * 0.08}deg)` : 'none',
+                    transition: transitioning ? 'transform 0.35s ease-out, opacity 0.35s ease-out' : 'none',
+                    opacity: transitioning ? 0 : 1,
+                  }}
+                  onPointerDown={inputMode === 'keyboard' ? onPointerDown : undefined}
+                  onPointerMove={inputMode === 'keyboard' ? onPointerMove : undefined}
+                  onPointerUp={inputMode === 'keyboard' ? onPointerUp : undefined}
+                  onClick={inputMode === 'speak' && audioEnabled ? () => { void speech.speak(display.text, targetLang) } : undefined}
+                >
+                  {inputMode === 'keyboard' && Math.abs(dragX) > 30 && !transitioning && (
+                    <div
+                      className="absolute top-5 rounded-full px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-[var(--paper)]"
+                      style={{
+                        left: dragX < 0 ? 18 : 'auto',
+                        right: dragX > 0 ? 18 : 'auto',
+                        background: dragX < 0
+                          ? (round.correctSide === 'left' ? 'var(--success)' : 'var(--error)')
+                          : (round.correctSide === 'right' ? 'var(--success)' : 'var(--error)'),
+                      }}
+                    >
+                      {dragX < 0 ? round.leftOption : round.rightOption}
+                    </div>
+                  )}
 
-          {/* Feedback */}
-          <div className="pb-2 text-center font-semibold" style={{ fontSize: 'calc(0.875rem * var(--content-scale))' }}>
-            {result && lastFeedback && (
-              <span style={{ color: result === 'correct' ? 'var(--success)' : 'var(--error)' }}>
-                {lastFeedback.nativeWord} = {lastFeedback.correctAnswer}
-              </span>
-            )}
-          </div>
-          </>)}
+                  <div className="drop-shadow-sm" style={{ fontSize: `calc(4.5rem * var(--content-scale))` }}>{display.emoji}</div>
+                  <div className="display-font leading-none text-[var(--ink)]" style={{ fontSize: `calc(2.25rem * var(--content-scale))` }}>{display.text}</div>
+                  {display.translit && <div className="italic text-[var(--muted)]" style={{ fontSize: `calc(1.5rem * var(--content-scale))` }}>{display.translit}</div>}
+                  {inputMode === 'speak' && (
+                    <div className="mt-2 text-xs text-[var(--muted)]">
+                      {audioEnabled ? 'Tap the card to hear it again.' : 'Audio is off. Use the speaker toggle above if needed.'}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {inputMode === 'speak' && (
+                <div className="space-y-2">
+                  <div className="rounded-[0.9rem] border border-[var(--line)] bg-[var(--glass)] px-3 py-2 text-xs text-[var(--muted)]">
+                    {sp.isListening
+                      ? `Listening: ${sp.transcript || 'speak now...'}` : {
+                        prompting: 'Playing the card. Repeat it, then say the meaning.',
+                        'listening-repeat': 'Step 1: repeat the card exactly as shown.',
+                        'listening-answer': 'Step 2: say the meaning in your native language.',
+                        blocked: 'Microphone permission is blocked in this browser.',
+                        unsupported: 'Speech recognition is not supported in this browser.',
+                        idle: 'Preparing the next card...',
+                      }[speakStatus]}
+                  </div>
+                  <button
+                    className="w-full rounded-[1.1rem] border border-[var(--line)] bg-[var(--glass)] px-4 py-3 text-sm font-semibold text-[var(--ink)]"
+                    onClick={() => focusCard(round.card)}
+                  >
+                    Restart this card
+                  </button>
+                </div>
+              )}
+
+              {/* Feedback */}
+              <div className="pb-2 text-center font-semibold" style={{ fontSize: 'calc(0.875rem * var(--content-scale))' }}>
+                {result && lastFeedback && (
+                  <span style={{ color: result === 'correct' ? 'var(--success)' : 'var(--error)' }}>
+                    {lastFeedback.nativeWord} = {lastFeedback.correctAnswer}
+                  </span>
+                )}
+              </div>
+            </>
+          )}
         </div>
       </section>
 
@@ -224,9 +443,32 @@ export function FlashcardsTab({
   )
 }
 
+function VoiceStepCard({ title, detail, active, complete }: { title: string; detail: string; active: boolean; complete: boolean }) {
+  return (
+    <div
+      className={`rounded-[1rem] border px-3 py-2.5 ${
+        complete
+          ? 'border-[var(--success)]/30 bg-[var(--success)]/8'
+          : active
+            ? 'border-[var(--accent-soft)] bg-[var(--accent-gradient)]'
+            : 'border-[var(--line)] bg-[var(--glass)]'
+      }`}
+    >
+      <div className="text-[0.68rem] font-bold uppercase tracking-[0.16em] text-[var(--muted)]">{title}</div>
+      <div className="mt-1 text-sm text-[var(--ink)]">{detail}</div>
+    </div>
+  )
+}
+
 type SortKey = 'worst' | 'best' | 'most-practiced' | 'least-practiced' | 'unseen'
 
-function WordStatsPanel({ words, wordStats, targetLang, nativeLang }: { words: FlashCard[]; wordStats: WordStatsMap; targetLang: string; nativeLang: string }) {
+function WordStatsPanel({ words, wordStats, targetLang, nativeLang, onPracticeWord }: {
+  words: FlashCard[]
+  wordStats: WordStatsMap
+  targetLang: string
+  nativeLang: string
+  onPracticeWord: (card: FlashCard) => void
+}) {
   const [sort, setSort] = useState<SortKey>('worst')
 
   const rows = words.map((w) => {
@@ -237,6 +479,7 @@ function WordStatsPanel({ words, wordStats, targetLang, nativeLang }: { words: F
     const pct = total > 0 ? Math.round((correct / total) * 100) : -1
     return {
       key: w.word,
+      card: w,
       word: w.translations[targetLang] ?? w.word,
       meaning: w.translations[nativeLang] ?? w.word,
       emoji: w.emoji,
@@ -336,7 +579,11 @@ function WordStatsPanel({ words, wordStats, targetLang, nativeLang }: { words: F
       {/* Word list */}
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto rounded-[0.75rem] border border-[var(--line)] bg-[var(--glass)]">
         {sorted.map((r) => (
-          <div key={r.key} className="flex items-center gap-3 border-b border-[var(--line)] px-3 py-2 last:border-b-0">
+          <button
+            key={r.key}
+            className="flex items-center gap-3 border-b border-[var(--line)] px-3 py-2 text-left transition hover:bg-[var(--glass-hover)] last:border-b-0"
+            onClick={() => onPracticeWord(r.card)}
+          >
             <span className="text-base">{r.emoji}</span>
             <div className="flex-1 min-w-0">
               <div className="truncate text-sm font-semibold text-[var(--ink)]">{r.word}</div>
@@ -361,7 +608,7 @@ function WordStatsPanel({ words, wordStats, targetLang, nativeLang }: { words: F
                 <span className="w-10 text-right text-[0.65rem] text-[var(--muted)]">{r.correct}/{r.total}</span>
               </div>
             )}
-          </div>
+          </button>
         ))}
       </div>
     </div>
@@ -377,4 +624,3 @@ function MiniStat({ label, value, color, detail }: { label: string; value: strin
     </div>
   )
 }
-
