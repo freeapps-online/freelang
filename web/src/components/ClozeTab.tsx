@@ -11,6 +11,7 @@ import { isSpeechMatch } from '../services/flashcardsVoice.ts'
 import type { PracticeInputMode } from '../services/settings.ts'
 import type { Sentence } from '../types.ts'
 import { PracticeLayout, CardShell, FeedbackToast, VoiceControls } from './practice/index.ts'
+import { SentenceStatsPanel } from './practice/SentenceStatsPanel.tsx'
 
 type SwipeResult = 'correct' | 'wrong' | null
 type SpeakStatus = 'idle' | 'prompting' | 'listening-answer' | 'blocked' | 'unsupported'
@@ -35,142 +36,7 @@ function pickWeightedSentence(pool: Sentence[], stats: ClozeStatsMap, exclude?: 
   return filtered[filtered.length - 1]
 }
 
-function MiniStat({ label, value, color, detail }: { label: string; value: string; color: string; detail: string }) {
-  return (
-    <div className="rounded-[0.75rem] border border-[var(--line)] bg-[var(--glass)] p-2.5">
-      <div className="text-[0.6rem] font-bold uppercase tracking-[0.15em] text-[var(--muted)]">{label}</div>
-      <div className="mt-1 text-xl font-extrabold" style={{ color }}>{value}</div>
-      <div className="text-[0.6rem] text-[var(--muted)]">{detail}</div>
-    </div>
-  )
-}
 
-function ClozeStatsPanel({
-  sentences,
-  stats,
-  targetLang,
-  nativeLang,
-  onPracticeSentence,
-  level,
-  levelLabel,
-}: {
-  sentences: Sentence[]
-  stats: ClozeStatsMap
-  targetLang: string
-  nativeLang: string
-  onPracticeSentence: (sentence: Sentence) => void
-  level: number
-  levelLabel: string
-}) {
-  const [sort, setSort] = useState<'worst' | 'best' | 'mostWrong' | 'most' | 'unseen'>('worst')
-
-  const rows = sentences.map((sentence) => {
-    const stat = stats[sentence.id]
-    const avg = stat && stat.attempts > 0 ? Math.round(stat.totalScore / stat.attempts) : -1
-    return {
-      id: sentence.id,
-      sentence,
-      text: sentence.text[targetLang] ?? sentence.text.en ?? '',
-      meaning: sentence.text[nativeLang] ?? sentence.text.en ?? '',
-      emoji: sentence.emoji,
-      attempts: stat?.attempts ?? 0,
-      avgScore: avg,
-      right: stat?.right ?? 0,
-      wrong: stat?.wrong ?? 0,
-    }
-  })
-
-  const practiced = rows.filter((row) => row.attempts > 0)
-  const unseen = rows.filter((row) => row.attempts === 0)
-  const totalAttempts = rows.reduce((sum, row) => sum + row.attempts, 0)
-  const overallAvg = practiced.length > 0 ? Math.round(practiced.reduce((sum, row) => sum + row.avgScore, 0) / practiced.length) : 0
-  const totalRight = rows.reduce((sum, row) => sum + row.right, 0)
-  const totalWrong = rows.reduce((sum, row) => sum + row.wrong, 0)
-
-  const sorted = [...rows]
-  switch (sort) {
-    case 'worst':
-      sorted.sort((a, b) => {
-        if (!a.attempts) return 1
-        if (!b.attempts) return -1
-        return a.avgScore - b.avgScore
-      })
-      break
-    case 'best':
-      sorted.sort((a, b) => {
-        if (!a.attempts) return 1
-        if (!b.attempts) return -1
-        return b.avgScore - a.avgScore
-      })
-      break
-    case 'mostWrong':
-      sorted.sort((a, b) => b.wrong - a.wrong || b.attempts - a.attempts)
-      break
-    case 'most':
-      sorted.sort((a, b) => b.attempts - a.attempts)
-      break
-    case 'unseen':
-      sorted.sort((a, b) => a.attempts - b.attempts)
-      break
-  }
-
-  return (
-    <div className="flex min-h-0 flex-1 flex-col gap-3">
-      <div className="rounded-[0.9rem] border border-[var(--line)] bg-[var(--glass)] px-3 py-2">
-        <div className="text-[0.6rem] font-bold uppercase tracking-[0.15em] text-[var(--muted)]">Current scope</div>
-        <div className="mt-1 text-sm font-semibold text-[var(--ink)]">Level {level}</div>
-        <div className="text-xs text-[var(--muted)]">{levelLabel}</div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-2 lg:grid-cols-5">
-        <MiniStat label="Avg score" value={`${overallAvg}%`} color={overallAvg >= 70 ? 'var(--success)' : 'var(--warning)'} detail={`${totalAttempts} attempts`} />
-        <MiniStat label="Practiced" value={`${practiced.length}`} color="var(--success)" detail={`of ${rows.length}`} />
-        <MiniStat label="Right" value={`${totalRight}`} color="var(--success)" detail={`>= ${CLOZE_PASS_SCORE}%`} />
-        <MiniStat label="Wrong" value={`${totalWrong}`} color="var(--error)" detail={`under ${CLOZE_PASS_SCORE}%`} />
-        <MiniStat label="Unseen" value={`${unseen.length}`} color="var(--sky)" detail="not tried yet" />
-      </div>
-
-      <div className="flex gap-1 overflow-x-auto">
-        {([['worst', 'Weakest'], ['best', 'Strongest'], ['mostWrong', 'Most wrong'], ['most', 'Most tried'], ['unseen', 'New']] as const).map(([key, label]) => (
-          <button key={key} className={`shrink-0 rounded-full px-2.5 py-1 text-[0.65rem] font-semibold ${sort === key ? 'bg-[var(--ink)] text-[var(--paper)]' : 'text-[var(--muted)]'}`} onClick={() => setSort(key)}>
-            {label}
-          </button>
-        ))}
-      </div>
-
-      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto rounded-[0.75rem] border border-[var(--line)] bg-[var(--glass)]">
-        {sorted.map((row) => (
-          <button
-            key={row.id}
-            className="flex items-center gap-3 border-b border-[var(--line)] px-3 py-2 text-left transition hover:bg-[var(--glass-hover)] last:border-b-0"
-            onClick={() => onPracticeSentence(row.sentence)}
-          >
-            <span>{row.emoji}</span>
-            <div className="min-w-0 flex-1">
-              <div className="truncate text-sm font-semibold text-[var(--ink)]">{row.text}</div>
-              <div className="truncate text-xs text-[var(--muted)]">{row.meaning}</div>
-            </div>
-            {row.attempts === 0 ? (
-              <span className="text-xs text-[var(--muted)]">new</span>
-            ) : (
-              <div className="flex shrink-0 items-center gap-3">
-                <div className="flex items-center gap-1.5 text-[0.65rem] font-semibold">
-                  <span className="rounded-full bg-[rgba(45,144,119,0.12)] px-2 py-1 text-[var(--success)]">R {row.right}</span>
-                  <span className="rounded-full bg-[rgba(199,79,67,0.12)] px-2 py-1 text-[var(--error)]">W {row.wrong}</span>
-                </div>
-                <div className="h-1.5 w-12 overflow-hidden rounded-full bg-[var(--line)]">
-                  <div className="h-full rounded-full" style={{ width: `${row.avgScore}%`, background: row.avgScore >= 70 ? 'var(--success)' : row.avgScore >= 40 ? 'var(--warning)' : 'var(--error)' }} />
-                </div>
-                <span className="w-8 text-right text-xs font-semibold" style={{ color: row.avgScore >= 70 ? 'var(--success)' : row.avgScore >= 40 ? 'var(--warning)' : 'var(--error)' }}>{row.avgScore}%</span>
-                <span className="w-6 text-right text-[0.6rem] text-[var(--muted)]">×{row.attempts}</span>
-              </div>
-            )}
-          </button>
-        ))}
-      </div>
-    </div>
-  )
-}
 
 export function ClozeTab({
   nativeLang,
@@ -382,7 +248,7 @@ export function ClozeTab({
   return (
     <PracticeLayout>
       {showStats ? (
-        <ClozeStatsPanel sentences={sentences} stats={stats} targetLang={targetLang} nativeLang={nativeLang} onPracticeSentence={focusSentence} level={level} levelLabel={levelLabel} />
+        <SentenceStatsPanel sentences={sentences} stats={stats} targetLang={targetLang} nativeLang={nativeLang} onPracticeSentence={focusSentence} level={level} levelLabel={levelLabel} uiLang={uiLang} passScore={CLOZE_PASS_SCORE} />
       ) : (
         <>
           <div className="flex flex-1 items-center justify-center overflow-hidden">

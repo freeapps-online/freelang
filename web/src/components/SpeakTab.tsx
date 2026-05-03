@@ -1,5 +1,4 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
-import { ArrowRight, Mic, Volume2 } from 'lucide-react'
 import { speech } from '../services/speech.ts'
 import { useSpeech } from '../useSpeech.ts'
 import { reportSentenceScore } from '../services/cloud.ts'
@@ -9,6 +8,8 @@ import { SENTENCE_PASS_SCORE, loadSentenceStats, recordSentenceAttempt, type Sen
 import type { PracticeInputMode } from '../services/settings.ts'
 import { getTranslit } from '../services/translit.ts'
 import type { Sentence } from '../types.ts'
+import { PracticeLayout, CardShell, VoiceControls } from './practice/index.ts'
+import { SentenceStatsPanel } from './practice/SentenceStatsPanel.tsx'
 
 function pickWeightedSentence(pool: Sentence[], stats: SentenceStatsMap, exclude?: Sentence): Sentence {
   const filtered = exclude ? pool.filter(s => s.id !== exclude.id) : pool
@@ -283,34 +284,19 @@ export function SentencesTab({
   if (!sentence) return <div className="flex flex-1 items-center justify-center text-[var(--muted)]">{t(uiLang, 'loading')}</div>
 
   return (
-    <div className="flex h-[calc(100dvh-80px)] flex-col gap-2 lg:h-auto">
+    <PracticeLayout>
       {showStats ? (
-        <SentenceStatsPanel
-          sentences={sentences}
-          stats={sentenceStats}
-          targetLang={targetLang}
-          nativeLang={nativeLang}
-          onPracticeSentence={focusSentence}
-          level={level}
-          levelLabel={levelLabel}
-          lengthFilter={lengthFilter}
-          uiLang={uiLang}
-        />
+        <SentenceStatsPanel sentences={sentences} stats={sentenceStats} targetLang={targetLang} nativeLang={nativeLang} onPracticeSentence={focusSentence} level={level} levelLabel={levelLabel} lengthFilter={lengthFilter} uiLang={uiLang} />
       ) : (
         <>
-          {/* Card */}
           <div className="flex flex-1 items-center justify-center overflow-hidden">
-            <div
-              className={`relative flex w-full max-w-md flex-col items-center gap-2.5 rounded-[1.5rem] border border-[var(--line-strong)] px-4 py-4 text-center shadow-[var(--shadow-soft)] select-none touch-none sm:gap-3 sm:rounded-[2rem] sm:px-6 sm:py-8 ${inputMode === 'keyboard' ? 'cursor-grab active:cursor-grabbing' : ''}`}
-              style={{
-                background: 'var(--card-gradient)',
-                transform: inputMode === 'keyboard' ? `translateX(${dragX}px) rotate(${dragX * 0.05}deg)` : 'none',
-                transition: transitioning ? 'transform 0.3s ease-out, opacity 0.3s ease-out' : 'none',
-                opacity: transitioning ? 0 : 1,
-              }}
-              onPointerDown={inputMode === 'keyboard' ? onPointerDown : undefined}
-              onPointerMove={inputMode === 'keyboard' ? onPointerMove : undefined}
-              onPointerUp={inputMode === 'keyboard' ? onPointerUp : undefined}
+            <CardShell
+              dragX={inputMode === 'keyboard' ? dragX : 0}
+              transitioning={transitioning}
+              swipeable={inputMode === 'keyboard'}
+              onPointerDown={onPointerDown}
+              onPointerMove={onPointerMove}
+              onPointerUp={onPointerUp}
               onClick={inputMode === 'speak' ? playAudio : undefined}
             >
               <div className="drop-shadow-sm" style={{ fontSize: 'calc(3rem * var(--content-scale))' }}>{sentence.emoji}</div>
@@ -323,177 +309,37 @@ export function SentencesTab({
                 </>
               ) : (
                 <div className="space-y-2">
-                  <div className="rounded-full border border-[var(--line)] bg-[var(--glass)] px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-[var(--accent-deep)]">
-                    {t(uiLang, 'listenFirst')}
-                  </div>
+                  <div className="rounded-full border border-[var(--line)] bg-[var(--glass)] px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-[var(--accent-deep)]">{t(uiLang, 'listenFirst')}</div>
                   <div className="text-sm text-[var(--muted)]">{t(uiLang, 'hiddenUntilAnswer')}</div>
                 </div>
               )}
               <div className="text-sm text-[var(--muted)]">{nativeText}</div>
 
-              {/* Live transcription */}
               {sp.isListening && sp.transcript && (
-                <div className="italic text-[var(--sky)]" style={{ fontSize: 'calc(0.875rem * var(--content-scale))' }}>
-                  {sp.transcript}
-                </div>
+                <div className="italic text-[var(--sky)]" style={{ fontSize: 'calc(0.875rem * var(--content-scale))' }}>{sp.transcript}</div>
               )}
 
-              {/* Scored result */}
               {attempt && (
                 <div className="space-y-2">
                   <div className="flex flex-wrap justify-center gap-1">
                     {attempt.words.map((w, i) => (
                       <div key={i} className="flex flex-col items-center gap-0.5">
-                        <span className="rounded px-1.5 py-0.5 text-sm font-medium" style={{ color: w.ok ? 'var(--success)' : 'var(--error)', background: w.ok ? 'rgba(45,144,119,0.1)' : 'rgba(199,79,67,0.1)' }}>
-                          {w.expected}
-                        </span>
-                        {!w.ok && w.got && (
-                          <span className="text-[0.6rem] text-[var(--error)]">{w.got}</span>
-                        )}
+                        <span className="rounded px-1.5 py-0.5 text-sm font-medium" style={{ color: w.ok ? 'var(--success)' : 'var(--error)', background: w.ok ? 'rgba(45,144,119,0.1)' : 'rgba(199,79,67,0.1)' }}>{w.expected}</span>
+                        {!w.ok && w.got && <span className="text-[0.6rem] text-[var(--error)]">{w.got}</span>}
                       </div>
                     ))}
                   </div>
                   <div className="font-semibold" style={{ color: attempt.score >= 70 ? 'var(--success)' : attempt.score >= 40 ? 'var(--warning)' : 'var(--error)' }}>{attempt.score}%</div>
                 </div>
               )}
-            </div>
+            </CardShell>
           </div>
 
-          {/* Controls */}
-          {inputMode === 'keyboard' ? (
-            <div className="flex items-center justify-center gap-3 py-1">
-              <button className="flex h-10 w-10 items-center justify-center rounded-full border border-[var(--line)] bg-[var(--glass)] text-[var(--muted)]" onClick={playAudio} disabled={sp.isSpeaking}>
-                <Volume2 className="h-5 w-5" strokeWidth={2} />
-              </button>
-              <button
-                className={`flex h-14 w-14 items-center justify-center rounded-full border-2 transition ${sp.isListening ? 'border-[var(--error)] bg-[var(--error)] text-white pulse-ring' : 'border-[var(--accent)] bg-[var(--accent)] text-white'}`}
-                onPointerDown={startRecording} onPointerUp={stopRecording} onPointerLeave={stopRecording}
-              >
-                <Mic className="h-6 w-6" strokeWidth={2.2} />
-              </button>
-              <button className="flex h-10 w-10 items-center justify-center rounded-full border border-[var(--line)] bg-[var(--glass)] text-[var(--muted)]" onClick={goNext}>
-                <ArrowRight className="h-5 w-5" strokeWidth={2} />
-              </button>
-            </div>
-          ) : null}
+          {inputMode === 'keyboard' && (
+            <VoiceControls isListening={sp.isListening} isSpeaking={sp.isSpeaking} onPlayAudio={playAudio} onStartRecording={startRecording} onStopRecording={stopRecording} onNext={goNext} />
+          )}
         </>
       )}
-    </div>
-  )
-}
-
-function SentenceStatsPanel({ sentences, stats, targetLang, nativeLang, onPracticeSentence, level, levelLabel, lengthFilter, uiLang }: {
-  sentences: Sentence[]
-  stats: SentenceStatsMap
-  targetLang: string
-  nativeLang: string
-  onPracticeSentence: (sentence: Sentence) => void
-  level: number
-  levelLabel: string
-  lengthFilter: SentenceLengthFilter
-  uiLang: string
-}) {
-  const [sort, setSort] = useState<'worst' | 'best' | 'mostWrong' | 'most' | 'unseen'>('worst')
-
-  const rows = sentences.map(s => {
-    const st = stats[s.id]
-    const avg = st && st.attempts > 0 ? Math.round(st.totalScore / st.attempts) : -1
-    return {
-      id: s.id,
-      sentence: s,
-      text: s.text[targetLang] ?? s.text.en ?? '',
-      meaning: s.text[nativeLang] ?? '',
-      emoji: s.emoji,
-      attempts: st?.attempts ?? 0,
-      bestScore: st?.bestScore ?? 0,
-      avgScore: avg,
-      lastScore: st?.lastScore ?? 0,
-      right: st?.right ?? 0,
-      wrong: st?.wrong ?? 0,
-    }
-  })
-
-  const practiced = rows.filter(r => r.attempts > 0)
-  const unseen = rows.filter(r => r.attempts === 0)
-  const totalAttempts = rows.reduce((a, r) => a + r.attempts, 0)
-  const overallAvg = practiced.length > 0 ? Math.round(practiced.reduce((a, r) => a + r.avgScore, 0) / practiced.length) : 0
-  const totalRight = rows.reduce((a, r) => a + r.right, 0)
-  const totalWrong = rows.reduce((a, r) => a + r.wrong, 0)
-
-  const sorted = [...rows]
-  switch (sort) {
-    case 'worst': sorted.sort((a, b) => { if (!a.attempts) return 1; if (!b.attempts) return -1; return a.avgScore - b.avgScore }); break
-    case 'best': sorted.sort((a, b) => { if (!a.attempts) return 1; if (!b.attempts) return -1; return b.avgScore - a.avgScore }); break
-    case 'mostWrong': sorted.sort((a, b) => b.wrong - a.wrong || b.attempts - a.attempts); break
-    case 'most': sorted.sort((a, b) => b.attempts - a.attempts); break
-    case 'unseen': sorted.sort((a, b) => a.attempts - b.attempts); break
-  }
-
-  return (
-    <div className="flex min-h-0 flex-1 flex-col gap-3">
-      <div className="rounded-[0.9rem] border border-[var(--line)] bg-[var(--glass)] px-3 py-2">
-        <div className="text-[0.6rem] font-bold uppercase tracking-[0.15em] text-[var(--muted)]">Current scope</div>
-        <div className="mt-1 text-sm font-semibold text-[var(--ink)]">Level {level}</div>
-        <div className="text-xs text-[var(--muted)]">{levelLabel}</div>
-        <div className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--accent-deep)]">
-          {lengthFilter === 'short' ? t(uiLang, 'shortLength') : t(uiLang, 'longLength')}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-2 lg:grid-cols-5">
-        <MiniStat label="Avg score" value={`${overallAvg}%`} color={overallAvg >= 70 ? 'var(--success)' : 'var(--warning)'} detail={`${totalAttempts} attempts`} />
-        <MiniStat label="Practiced" value={`${practiced.length}`} color="var(--success)" detail={`of ${rows.length}`} />
-        <MiniStat label="Right" value={`${totalRight}`} color="var(--success)" detail={`>= ${SENTENCE_PASS_SCORE}%`} />
-        <MiniStat label="Wrong" value={`${totalWrong}`} color="var(--error)" detail={`under ${SENTENCE_PASS_SCORE}%`} />
-        <MiniStat label="Unseen" value={`${unseen.length}`} color="var(--sky)" detail="not tried yet" />
-      </div>
-
-      <div className="flex gap-1 overflow-x-auto">
-        {([['worst', 'Weakest'], ['best', 'Strongest'], ['mostWrong', 'Most wrong'], ['most', 'Most tried'], ['unseen', 'New']] as const).map(([k, l]) => (
-          <button key={k} className={`shrink-0 rounded-full px-2.5 py-1 text-[0.65rem] font-semibold ${sort === k ? 'bg-[var(--ink)] text-[var(--paper)]' : 'text-[var(--muted)]'}`} onClick={() => setSort(k)}>{l}</button>
-        ))}
-      </div>
-
-      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto rounded-[0.75rem] border border-[var(--line)] bg-[var(--glass)]">
-        {sorted.map(r => (
-          <button
-            key={r.id}
-            className="flex items-center gap-3 border-b border-[var(--line)] px-3 py-2 text-left transition hover:bg-[var(--glass-hover)] last:border-b-0"
-            onClick={() => onPracticeSentence(r.sentence)}
-          >
-            <span>{r.emoji}</span>
-            <div className="flex-1 min-w-0">
-              <div className="truncate text-sm font-semibold text-[var(--ink)]">{r.text}</div>
-              <div className="truncate text-xs text-[var(--muted)]">{r.meaning}</div>
-            </div>
-            {r.attempts === 0 ? (
-              <span className="text-xs text-[var(--muted)]">new</span>
-            ) : (
-              <div className="flex shrink-0 items-center gap-3">
-                <div className="flex items-center gap-1.5 text-[0.65rem] font-semibold">
-                  <span className="rounded-full bg-[rgba(45,144,119,0.12)] px-2 py-1 text-[var(--success)]">R {r.right}</span>
-                  <span className="rounded-full bg-[rgba(199,79,67,0.12)] px-2 py-1 text-[var(--error)]">W {r.wrong}</span>
-                </div>
-                <div className="h-1.5 w-12 overflow-hidden rounded-full bg-[var(--line)]">
-                  <div className="h-full rounded-full" style={{ width: `${r.avgScore}%`, background: r.avgScore >= 70 ? 'var(--success)' : r.avgScore >= 40 ? 'var(--warning)' : 'var(--error)' }} />
-                </div>
-                <span className="w-8 text-right text-xs font-semibold" style={{ color: r.avgScore >= 70 ? 'var(--success)' : r.avgScore >= 40 ? 'var(--warning)' : 'var(--error)' }}>{r.avgScore}%</span>
-                <span className="w-6 text-right text-[0.6rem] text-[var(--muted)]">×{r.attempts}</span>
-              </div>
-            )}
-          </button>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-function MiniStat({ label, value, color, detail }: { label: string; value: string; color: string; detail: string }) {
-  return (
-    <div className="rounded-[0.75rem] border border-[var(--line)] bg-[var(--glass)] p-2.5">
-      <div className="text-[0.6rem] font-bold uppercase tracking-[0.15em] text-[var(--muted)]">{label}</div>
-      <div className="mt-1 text-xl font-extrabold" style={{ color }}>{value}</div>
-      <div className="text-[0.6rem] text-[var(--muted)]">{detail}</div>
-    </div>
+    </PracticeLayout>
   )
 }
