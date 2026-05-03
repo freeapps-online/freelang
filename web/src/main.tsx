@@ -2,7 +2,6 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
-import { loadLevel } from './services/vocabulary.ts'
 import { registerDevice } from './services/cloud.ts'
 
 createRoot(document.getElementById('root')!).render(
@@ -11,8 +10,19 @@ createRoot(document.getElementById('root')!).render(
   </StrictMode>,
 )
 
-// Register anonymous device + preload vocab
-setTimeout(() => {
+// Keep background network work off the critical path.
+const warmBackgroundServices = () => {
   void registerDevice('Learner', 'en', 'es')
-  for (let i = 1; i <= 20; i++) loadLevel(i)
-}, 1000)
+}
+
+const requestIdle = 'requestIdleCallback' in window
+  ? (window as Window & typeof globalThis & {
+      requestIdleCallback: (callback: IdleRequestCallback, options?: IdleRequestOptions) => number
+    }).requestIdleCallback
+  : null
+
+if (requestIdle) {
+  requestIdle(() => warmBackgroundServices(), { timeout: 2000 })
+} else {
+  setTimeout(warmBackgroundServices, 1000)
+}

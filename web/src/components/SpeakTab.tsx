@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { ArrowRight, Headphones, Mic, Volume2 } from 'lucide-react'
 import { speech } from '../services/speech.ts'
-import { useSpeech } from '../hooks.ts'
+import { useSpeech } from '../useSpeech.ts'
 import { reportSentenceScore } from '../services/cloud.ts'
 import { FlashcardModeSwitch } from './FlashcardModeSwitch.tsx'
 import { t } from '../services/i18n.ts'

@@ -1,20 +1,27 @@
-import { useState, useEffect, useCallback } from 'react'
+import { Suspense, lazy, startTransition, useState, useEffect, useCallback } from 'react'
 import { ChevronDown, Layers3, MessageSquare, Mic, Settings2, Type, Volume2, VolumeX } from 'lucide-react'
 import { useApplySettings, useSettings } from './hooks.ts'
-import { FlashcardsTab } from './components/FlashcardsTab.tsx'
-import { MissingLetterTab } from './components/MissingLetterTab.tsx'
-import { ClozeTab } from './components/ClozeTab.tsx'
-import { SentencesTab } from './components/SpeakTab.tsx'
-import { PreferencesTab } from './components/PreferencesTab.tsx'
 import { FlashcardModeSwitch } from './components/FlashcardModeSwitch.tsx'
 import { InterfaceLanguagePicker } from './components/InterfaceLanguagePicker.tsx'
 import { LanguagePicker } from './components/LanguagePicker.tsx'
 import { t } from './services/i18n.ts'
+import { LEVEL_LABELS, LEVELS } from './services/levelMetadata.ts'
 import { MAX_PHRASE_LEVEL, MAX_SENTENCE_LEVEL, PHRASE_LEVEL_LABELS } from './services/practiceContent.ts'
-import { LEVEL_LABELS, LEVELS } from './services/vocabulary.ts'
 import type { Mode } from './types.ts'
 
 const MODES: Mode[] = ['flashcards', 'spelling', 'cloze', 'phrases', 'sentences', 'preferences']
+
+const loadFlashcardsTab = () => import('./components/FlashcardsTab.tsx')
+const loadMissingLetterTab = () => import('./components/MissingLetterTab.tsx')
+const loadClozeTab = () => import('./components/ClozeTab.tsx')
+const loadSentencesTab = () => import('./components/SpeakTab.tsx')
+const loadPreferencesTab = () => import('./components/PreferencesTab.tsx')
+
+const FlashcardsTab = lazy(async () => ({ default: (await loadFlashcardsTab()).FlashcardsTab }))
+const MissingLetterTab = lazy(async () => ({ default: (await loadMissingLetterTab()).MissingLetterTab }))
+const ClozeTab = lazy(async () => ({ default: (await loadClozeTab()).ClozeTab }))
+const SentencesTab = lazy(async () => ({ default: (await loadSentencesTab()).SentencesTab }))
+const PreferencesTab = lazy(async () => ({ default: (await loadPreferencesTab()).PreferencesTab }))
 
 const PATH_TO_MODE: Record<string, Mode> = {
   '/': 'flashcards',
@@ -41,6 +48,26 @@ function getModeFromPath(): Mode {
   return PATH_TO_MODE[window.location.pathname] ?? 'flashcards'
 }
 
+function preloadMode(mode: Mode) {
+  switch (mode) {
+    case 'flashcards':
+      void loadFlashcardsTab()
+      return
+    case 'spelling':
+      void loadMissingLetterTab()
+      return
+    case 'cloze':
+      void loadClozeTab()
+      return
+    case 'phrases':
+    case 'sentences':
+      void loadSentencesTab()
+      return
+    case 'preferences':
+      void loadPreferencesTab()
+  }
+}
+
 export default function App() {
   const [mode, setMode] = useState<Mode>(getModeFromPath)
   const { settings, update } = useSettings()
@@ -49,12 +76,14 @@ export default function App() {
   const [showStats, setShowStats] = useState(false)
 
   const navigate = useCallback((m: Mode) => {
-    setMode(m)
+    startTransition(() => setMode(m))
     window.history.pushState(null, '', MODE_TO_PATH[m])
   }, [])
 
   useEffect(() => {
-    const onPop = () => setMode(getModeFromPath())
+    const onPop = () => {
+      startTransition(() => setMode(getModeFromPath()))
+    }
     window.addEventListener('popstate', onPop)
     return () => window.removeEventListener('popstate', onPop)
   }, [])
@@ -103,6 +132,96 @@ export default function App() {
         ? tt('phraseInput')
         : tt('sentenceInput')
 
+  const preloadModeButton = useCallback((nextMode: Mode) => {
+    preloadMode(nextMode)
+  }, [])
+
+  const renderModeContent = () => {
+    switch (mode) {
+      case 'flashcards':
+        return (
+          <FlashcardsTab
+            nativeLang={settings.nativeLang}
+            targetLang={settings.targetLang}
+            audioEnabled={settings.flashcardAudio}
+            inputMode={settings.flashcardInputMode}
+            dictionaryDefaultView={settings.dictionaryDefaultView}
+            uiLang={settings.interfaceLang}
+            level={currentLevel}
+            levelLabel={currentLevelLabel}
+            onInputModeChange={(flashcardInputMode) => update({ flashcardInputMode })}
+            showStats={showStats}
+            onShowStatsChange={setShowStats}
+          />
+        )
+      case 'spelling':
+        return (
+          <MissingLetterTab
+            nativeLang={settings.nativeLang}
+            targetLang={settings.targetLang}
+            audioEnabled={settings.flashcardAudio}
+            inputMode={settings.flashcardInputMode}
+            uiLang={settings.interfaceLang}
+            level={currentLevel}
+            levelLabel={currentLevelLabel}
+            onInputModeChange={(flashcardInputMode) => update({ flashcardInputMode })}
+            showStats={showStats}
+            onShowStatsChange={setShowStats}
+          />
+        )
+      case 'cloze':
+        return (
+          <ClozeTab
+            nativeLang={settings.nativeLang}
+            targetLang={settings.targetLang}
+            level={currentLevel}
+            levelLabel={currentLevelLabel}
+            inputMode={settings.sentenceInputMode}
+            uiLang={settings.interfaceLang}
+            showStats={showStats}
+            onShowStatsChange={setShowStats}
+            onInputModeChange={(sentenceInputMode) => update({ sentenceInputMode })}
+          />
+        )
+      case 'phrases':
+        return (
+          <SentencesTab
+            contentMode="phrases"
+            nativeLang={settings.nativeLang}
+            targetLang={settings.targetLang}
+            level={currentLevel}
+            levelLabel={currentLevelLabel}
+            inputMode={settings.sentenceInputMode}
+            uiLang={settings.interfaceLang}
+            showStats={showStats}
+            onShowStatsChange={setShowStats}
+            onInputModeChange={(sentenceInputMode) => update({ sentenceInputMode })}
+          />
+        )
+      case 'sentences':
+        return (
+          <SentencesTab
+            contentMode="sentences"
+            nativeLang={settings.nativeLang}
+            targetLang={settings.targetLang}
+            level={currentLevel}
+            levelLabel={currentLevelLabel}
+            inputMode={settings.sentenceInputMode}
+            uiLang={settings.interfaceLang}
+            showStats={showStats}
+            onShowStatsChange={setShowStats}
+            onInputModeChange={(sentenceInputMode) => update({ sentenceInputMode })}
+          />
+        )
+      case 'preferences':
+        return (
+          <section className="rounded-[1.25rem] bg-[var(--panel-quiet)] p-3 sm:p-4 lg:rounded-[1.5rem] lg:p-5">
+            <PreferencesTab settings={settings} update={update} />
+          </section>
+        )
+    }
+  }
+
   return (
     <div className="relative min-h-[100dvh] overflow-hidden">
       <div className="pointer-events-none absolute inset-0">
@@ -142,6 +261,8 @@ export default function App() {
                       : 'border border-transparent text-[var(--muted)] hover:bg-[var(--glass-hover)] hover:text-[var(--ink)]'
                   }`}
                   onClick={() => { navigate(item); setShowStats(false) }}
+                  onMouseEnter={() => preloadModeButton(item)}
+                  onFocus={() => preloadModeButton(item)}
                 >
                   {{ flashcards: tt('cards'), spelling: tt('spelling'), cloze: tt('cloze'), phrases: tt('phrases'), sentences: tt('sentences'), preferences: tt('preferences') }[item]}
                 </button>
@@ -345,81 +466,9 @@ export default function App() {
 
           {/* Content */}
           <main className="min-w-0">
-            {mode === 'flashcards' && (
-              <FlashcardsTab
-                nativeLang={settings.nativeLang}
-                targetLang={settings.targetLang}
-                audioEnabled={settings.flashcardAudio}
-                inputMode={settings.flashcardInputMode}
-                dictionaryDefaultView={settings.dictionaryDefaultView}
-                uiLang={settings.interfaceLang}
-                level={currentLevel}
-                levelLabel={currentLevelLabel}
-                onInputModeChange={(flashcardInputMode) => update({ flashcardInputMode })}
-                showStats={showStats}
-                onShowStatsChange={setShowStats}
-              />
-            )}
-            {mode === 'spelling' && (
-              <MissingLetterTab
-                nativeLang={settings.nativeLang}
-                targetLang={settings.targetLang}
-                audioEnabled={settings.flashcardAudio}
-                inputMode={settings.flashcardInputMode}
-                uiLang={settings.interfaceLang}
-                level={currentLevel}
-                levelLabel={currentLevelLabel}
-                onInputModeChange={(flashcardInputMode) => update({ flashcardInputMode })}
-                showStats={showStats}
-                onShowStatsChange={setShowStats}
-              />
-            )}
-            {mode === 'cloze' && (
-              <ClozeTab
-                nativeLang={settings.nativeLang}
-                targetLang={settings.targetLang}
-                level={currentLevel}
-                levelLabel={currentLevelLabel}
-                inputMode={settings.sentenceInputMode}
-                uiLang={settings.interfaceLang}
-                showStats={showStats}
-                onShowStatsChange={setShowStats}
-                onInputModeChange={(sentenceInputMode) => update({ sentenceInputMode })}
-              />
-            )}
-            {mode === 'phrases' && (
-              <SentencesTab
-                contentMode="phrases"
-                nativeLang={settings.nativeLang}
-                targetLang={settings.targetLang}
-                level={currentLevel}
-                levelLabel={currentLevelLabel}
-                inputMode={settings.sentenceInputMode}
-                uiLang={settings.interfaceLang}
-                showStats={showStats}
-                onShowStatsChange={setShowStats}
-                onInputModeChange={(sentenceInputMode) => update({ sentenceInputMode })}
-              />
-            )}
-            {mode === 'sentences' && (
-              <SentencesTab
-                contentMode="sentences"
-                nativeLang={settings.nativeLang}
-                targetLang={settings.targetLang}
-                level={currentLevel}
-                levelLabel={currentLevelLabel}
-                inputMode={settings.sentenceInputMode}
-                uiLang={settings.interfaceLang}
-                showStats={showStats}
-                onShowStatsChange={setShowStats}
-                onInputModeChange={(sentenceInputMode) => update({ sentenceInputMode })}
-              />
-            )}
-            {mode === 'preferences' && (
-              <section className="rounded-[1.25rem] bg-[var(--panel-quiet)] p-3 sm:p-4 lg:rounded-[1.5rem] lg:p-5">
-                <PreferencesTab settings={settings} update={update} />
-              </section>
-            )}
+            <Suspense fallback={<ModeLoading mode={mode} />}>
+              {renderModeContent()}
+            </Suspense>
           </main>
         </div>
       </div>
@@ -427,19 +476,19 @@ export default function App() {
       {/* Mobile dock */}
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--line)] bg-[var(--dock)]/92 px-2 pb-[calc(env(safe-area-inset-bottom)+0.25rem)] pt-1 backdrop-blur-2xl lg:hidden">
         <div className="mx-auto grid max-w-xl grid-cols-6">
-          <TabButton icon="flashcards" label={tt('cards')} active={mode === 'flashcards'} onClick={() => { navigate('flashcards'); setShowStats(false) }} />
-          <TabButton icon="spelling" label={tt('spelling')} active={mode === 'spelling'} onClick={() => { navigate('spelling'); setShowStats(false) }} />
-          <TabButton icon="cloze" label={tt('cloze')} active={mode === 'cloze'} onClick={() => { navigate('cloze'); setShowStats(false) }} />
-          <TabButton icon="phrases" label={tt('phrases')} active={mode === 'phrases'} onClick={() => { navigate('phrases'); setShowStats(false) }} />
-          <TabButton icon="speak" label={tt('sentences')} active={mode === 'sentences'} onClick={() => { navigate('sentences'); setShowStats(false) }} />
-          <TabButton icon="preferences" label={tt('prefs')} active={mode === 'preferences'} onClick={() => { navigate('preferences'); setShowStats(false) }} />
+          <TabButton icon="flashcards" label={tt('cards')} active={mode === 'flashcards'} onClick={() => { navigate('flashcards'); setShowStats(false) }} onPreload={() => preloadModeButton('flashcards')} />
+          <TabButton icon="spelling" label={tt('spelling')} active={mode === 'spelling'} onClick={() => { navigate('spelling'); setShowStats(false) }} onPreload={() => preloadModeButton('spelling')} />
+          <TabButton icon="cloze" label={tt('cloze')} active={mode === 'cloze'} onClick={() => { navigate('cloze'); setShowStats(false) }} onPreload={() => preloadModeButton('cloze')} />
+          <TabButton icon="phrases" label={tt('phrases')} active={mode === 'phrases'} onClick={() => { navigate('phrases'); setShowStats(false) }} onPreload={() => preloadModeButton('phrases')} />
+          <TabButton icon="speak" label={tt('sentences')} active={mode === 'sentences'} onClick={() => { navigate('sentences'); setShowStats(false) }} onPreload={() => preloadModeButton('sentences')} />
+          <TabButton icon="preferences" label={tt('prefs')} active={mode === 'preferences'} onClick={() => { navigate('preferences'); setShowStats(false) }} onPreload={() => preloadModeButton('preferences')} />
         </div>
       </nav>
     </div>
   )
 }
 
-function TabButton({ icon, label, active, onClick }: { icon: string; label: string; active: boolean; onClick: () => void }) {
+function TabButton({ icon, label, active, onClick, onPreload }: { icon: string; label: string; active: boolean; onClick: () => void; onPreload?: () => void }) {
   return (
     <button
       className={`relative flex flex-col items-center gap-1 rounded-[1rem] px-2 py-2 text-center ${
@@ -448,6 +497,9 @@ function TabButton({ icon, label, active, onClick }: { icon: string; label: stri
           : 'text-[var(--muted)]'
       }`}
       onClick={onClick}
+      onTouchStart={onPreload}
+      onMouseEnter={onPreload}
+      onFocus={onPreload}
     >
       <TabIcon name={icon} />
       <span className="text-[0.6rem] font-bold uppercase tracking-[0.14em]">{label}</span>
@@ -472,4 +524,22 @@ function TabIcon({ name }: { name: string }) {
     default:
       return null
   }
+}
+
+function ModeLoading({ mode }: { mode: Mode }) {
+  if (mode === 'preferences') {
+    return (
+      <section className="rounded-[1.25rem] bg-[var(--panel-quiet)] p-3 sm:p-4 lg:rounded-[1.5rem] lg:p-5">
+        <div className="rounded-[1.25rem] border border-[var(--line)] bg-[var(--glass-strong)] px-4 py-12 text-center text-sm text-[var(--muted)]">
+          Loading…
+        </div>
+      </section>
+    )
+  }
+
+  return (
+    <div className="flex h-[calc(100dvh-80px)] items-center justify-center rounded-[1.5rem] border border-[var(--line)] bg-[var(--glass)] text-sm text-[var(--muted)]">
+      Loading…
+    </div>
+  )
 }

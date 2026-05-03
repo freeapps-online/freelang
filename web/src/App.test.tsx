@@ -26,7 +26,7 @@ vi.mock('./hooks.ts', () => ({
   useApplySettings: () => undefined,
 }))
 
-vi.mock('./services/vocabulary.ts', () => ({
+vi.mock('./services/levelMetadata.ts', () => ({
   LEVEL_LABELS: { 1: 'Basics', 2: 'Daily Life' },
   LEVELS: [1, 2],
 }))
@@ -67,83 +67,83 @@ describe('App', () => {
     window.history.pushState({}, '', '/cards')
   })
 
-  it('renders fullscreen flashcards directly inside main on /cards', () => {
+  it('renders fullscreen flashcards directly inside main on /cards', async () => {
     render(<App />)
 
     const main = screen.getByRole('main')
-    const flashcards = screen.getByTestId('flashcards-tab')
+    const flashcards = await screen.findByTestId('flashcards-tab')
 
     expect(main.firstElementChild).toBe(flashcards)
     expect(main.querySelector('section')).not.toBeInTheDocument()
   })
 
-  it('renders fullscreen sentences directly inside main on /sentences', () => {
+  it('renders fullscreen sentences directly inside main on /sentences', async () => {
     window.history.pushState({}, '', '/sentences')
 
     render(<App />)
 
     const main = screen.getByRole('main')
-    const sentences = screen.getByTestId('sentences-tab')
+    const sentences = await screen.findByTestId('sentences-tab')
 
     expect(main.firstElementChild).toBe(sentences)
     expect(main.querySelector('section')).not.toBeInTheDocument()
   })
 
-  it('renders fullscreen phrases directly inside main on /phrases', () => {
+  it('renders fullscreen phrases directly inside main on /phrases', async () => {
     window.history.pushState({}, '', '/phrases')
 
     render(<App />)
 
     const main = screen.getByRole('main')
-    const phrases = screen.getByTestId('phrases-tab')
+    const phrases = await screen.findByTestId('phrases-tab')
 
     expect(main.firstElementChild).toBe(phrases)
     expect(main.querySelector('section')).not.toBeInTheDocument()
   })
 
-  it('renders fullscreen spelling directly inside main on /spelling', () => {
+  it('renders fullscreen spelling directly inside main on /spelling', async () => {
     window.history.pushState({}, '', '/spelling')
 
     render(<App />)
 
     const main = screen.getByRole('main')
-    const spelling = screen.getByTestId('spelling-tab')
+    const spelling = await screen.findByTestId('spelling-tab')
 
     expect(main.firstElementChild).toBe(spelling)
     expect(main.querySelector('section')).not.toBeInTheDocument()
   })
 
-  it('renders fullscreen cloze directly inside main on /cloze', () => {
+  it('renders fullscreen cloze directly inside main on /cloze', async () => {
     window.history.pushState({}, '', '/cloze')
 
     render(<App />)
 
     const main = screen.getByRole('main')
-    const cloze = screen.getByTestId('cloze-tab')
+    const cloze = await screen.findByTestId('cloze-tab')
 
     expect(main.firstElementChild).toBe(cloze)
     expect(main.querySelector('section')).not.toBeInTheDocument()
   })
 
-  it('wraps preferences content in a section on /preferences', () => {
+  it('wraps preferences content in a section on /preferences', async () => {
     window.history.pushState({}, '', '/preferences')
 
     render(<App />)
 
     const main = screen.getByRole('main')
-    const prefs = screen.getByTestId('preferences-tab')
+    const prefs = await screen.findByTestId('preferences-tab')
 
     expect(main.firstElementChild?.tagName).toBe('SECTION')
     expect(main.firstElementChild).toContainElement(prefs)
   })
 
-  it('navigates between modes with the tab buttons', () => {
+  it('navigates between modes with the tab buttons', async () => {
     render(<App />)
 
     fireEvent.click(screen.getAllByRole('button', { name: 'Cloze' })[0])
 
     expect(window.location.pathname).toBe('/cloze')
-    expect(screen.getByTestId('cloze-tab')).toBeInTheDocument()
+    expect(await screen.findByTestId('cloze-tab')).toBeInTheDocument()
   })
 
   it('surfaces the flashcard mode switch in app chrome', () => {
@@ -154,13 +154,13 @@ describe('App', () => {
     expect(updateMock).toHaveBeenCalledWith({ flashcardInputMode: 'speak' })
   })
 
-  it('opens sentence stats from sentences mode', () => {
+  it('opens sentence stats from sentences mode', async () => {
     window.history.pushState({}, '', '/speak')
 
     render(<App />)
 
     fireEvent.click(screen.getByRole('button', { name: 'Sentence Stats' }))
 
-    expect(screen.getByTestId('sentences-tab')).toHaveTextContent('sentences-stats')
+    expect(await screen.findByTestId('sentences-tab')).toHaveTextContent('sentences-stats')
   })
 })

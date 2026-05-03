@@ -2,7 +2,7 @@ import { mkdir, readdir, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { getTranslit } from '../src/services/translit.ts'
-import { LEVEL_LABELS } from '../src/services/vocabulary.ts'
+import { LEVEL_LABELS } from '../src/services/levelMetadata.ts'
 import { LANGUAGES, type FlashCard, type Sentence } from '../src/types.ts'
 
 const __filename = fileURLToPath(import.meta.url)

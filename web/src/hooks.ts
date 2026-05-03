@@ -1,13 +1,5 @@
-import { useState, useEffect, useSyncExternalStore, useCallback } from 'react'
-import { speech, type SpeechState } from './services/speech.ts'
+import { useState, useEffect, useCallback } from 'react'
 import { loadSettings, saveSettings, type Settings } from './services/settings.ts'
-
-export function useSpeech(): SpeechState {
-  return useSyncExternalStore(
-    (cb) => speech.subscribe(cb),
-    () => speech.state,
-  )
-}
 
 export function useSettings() {
   const [settings, setSettings] = useState<Settings>(loadSettings)

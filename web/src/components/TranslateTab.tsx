@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 import { speech } from '../services/speech.ts'
-import { useSpeech } from '../hooks.ts'
+import { useSpeech } from '../useSpeech.ts'
 import { MicButton } from './MicButton.tsx'
 import { LANGUAGES, type Message } from '../types.ts'
 
