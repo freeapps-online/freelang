@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { LanguagePicker } from './LanguagePicker.tsx'
 import { t } from '../services/i18n.ts'
-import type { Settings, ThemePreference, FontSizePreference, MotionPreference, SurfacePreference, PracticeInputMode } from '../services/settings.ts'
+import type { Settings, ThemePreference, FontSizePreference, MotionPreference, SurfacePreference, PracticeInputMode, DictionaryViewPreference } from '../services/settings.ts'
 
 export function PreferencesTab({
   settings,
@@ -124,6 +124,18 @@ export function PreferencesTab({
                 ]}
               />
             </SettingsPanel>
+
+            <SettingsPanel title={tt('dictionaryView')} description={tt('dictionaryViewDesc')}>
+              <ChoiceGrid<DictionaryViewPreference>
+                value={settings.dictionaryDefaultView}
+                onChange={(dictionaryDefaultView) => update({ dictionaryDefaultView })}
+                options={[
+                  { value: 'dictionary', label: tt('definitionView'), detail: tt('showDefinitionsExamples') },
+                  { value: 'thesaurus', label: tt('thesaurusView'), detail: tt('showSynonymsRelatedWords') },
+                  { value: 'translation', label: tt('translationView'), detail: tt('showTranslationsFirst') },
+                ]}
+              />
+            </SettingsPanel>
           </div>
         </div>
       </section>
@@ -138,6 +150,11 @@ export function PreferencesTab({
             <PreferenceStat label={tt('flashcardAudio')} value={settings.flashcardAudio ? tt('on') : tt('off')} />
             <PreferenceStat label={tt('cardMode')} value={settings.flashcardInputMode === 'speak' ? tt('speak') : tt('keyboard')} />
             <PreferenceStat label={tt('sentenceMode')} value={settings.sentenceInputMode === 'speak' ? tt('speak') : tt('keyboard')} />
+            <PreferenceStat label={tt('dictionaryView')} value={tt(({
+              dictionary: 'definitionView',
+              thesaurus: 'thesaurusView',
+              translation: 'translationView',
+            } as const)[settings.dictionaryDefaultView])} />
           </div>
         </div>
 

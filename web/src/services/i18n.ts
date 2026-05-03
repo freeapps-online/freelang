@@ -13,19 +13,24 @@ export const UI_LANGUAGES = LANGUAGES.filter((language) =>
 
 type TranslationKey =
   | 'cards'
+  | 'phrases'
   | 'sentences'
   | 'preferences'
   | 'prefs'
   | 'wordStats'
+  | 'phraseStats'
   | 'sentenceStats'
   | 'backToCards'
+  | 'backToPhrases'
   | 'backToSentences'
   | 'play'
   | 'stats'
   | 'cardInput'
+  | 'phraseInput'
   | 'sentenceInput'
   | 'speak'
   | 'keyboard'
+  | 'touch'
   | 'step1'
   | 'step2'
   | 'repeatWord'
@@ -37,13 +42,40 @@ type TranslationKey =
   | 'auto'
   | 'listenMoveOn'
   | 'holdMic'
+  | 'recordPhrase'
   | 'recordSentence'
+  | 'nextPhrase'
   | 'nextSentence'
   | 'speaker'
+  | 'hearPhrase'
   | 'replayPrompt'
   | 'native'
   | 'target'
+  | 'meaning'
+  | 'openDictionary'
+  | 'loadingMeaning'
+  | 'meaningUnavailable'
+  | 'dictionarySource'
+  | 'examples'
+  | 'synonyms'
+  | 'dictionaryView'
+  | 'dictionaryViewDesc'
+  | 'definitionView'
+  | 'thesaurusView'
+  | 'translationView'
+  | 'showDefinitionsExamples'
+  | 'showSynonymsRelatedWords'
+  | 'showTranslationsFirst'
+  | 'dictionaryEmpty'
+  | 'thesaurusEmpty'
+  | 'translationEmpty'
+  | 'listenOnly'
+  | 'listenFirst'
+  | 'hiddenUntilAnswer'
+  | 'listenAndRepeat'
+  | 'listenAndSayItBack'
   | 'restartCard'
+  | 'restartPhrase'
   | 'restartSentence'
   | 'micLive'
   | 'prompting'
@@ -110,20 +142,25 @@ type TranslationKey =
   | 'aiTranslationConversationTts'
 
 const EN_MESSAGES: Record<TranslationKey, string> = {
-    cards: 'Cards',
+    cards: 'Words',
+    phrases: 'Phrases',
     sentences: 'Sentences',
     preferences: 'Preferences',
     prefs: 'Prefs',
     wordStats: 'Word Stats',
+    phraseStats: 'Phrase Stats',
     sentenceStats: 'Sentence Stats',
-    backToCards: 'Back to Cards',
+    backToCards: 'Back to Words',
+    backToPhrases: 'Back to Phrases',
     backToSentences: 'Back to Sentences',
     play: 'Play',
     stats: 'Stats',
-    cardInput: 'Card Input',
+    cardInput: 'Word Input',
+    phraseInput: 'Phrase Input',
     sentenceInput: 'Sentence Input',
     speak: 'Speak',
     keyboard: 'Keyboard',
+    touch: 'Touch',
     step1: 'Step 1',
     step2: 'Step 2',
     repeatWord: 'Repeat the word',
@@ -135,13 +172,40 @@ const EN_MESSAGES: Record<TranslationKey, string> = {
     auto: 'Auto',
     listenMoveOn: 'Listen and move on',
     holdMic: 'Hold mic',
+    recordPhrase: 'Record phrase',
     recordSentence: 'Record sentence',
+    nextPhrase: 'Next phrase',
     nextSentence: 'Next sentence',
     speaker: 'Speaker',
+    hearPhrase: 'Hear the phrase',
     replayPrompt: 'Replay prompt',
     native: 'Native',
     target: 'Target',
-    restartCard: 'Restart this card',
+    meaning: 'Meaning',
+    openDictionary: 'Open meaning',
+    loadingMeaning: 'Loading meaning...',
+    meaningUnavailable: 'No dictionary entry found for this word yet.',
+    dictionarySource: 'Dictionary source',
+    examples: 'Examples',
+    synonyms: 'Synonyms',
+    dictionaryView: 'Word reference default',
+    dictionaryViewDesc: 'Choose what opens first when you tap the word reference button.',
+    definitionView: 'Dictionary',
+    thesaurusView: 'Thesaurus',
+    translationView: 'Translation',
+    showDefinitionsExamples: 'Show definitions and examples first',
+    showSynonymsRelatedWords: 'Show synonyms and related words first',
+    showTranslationsFirst: 'Show translations first',
+    dictionaryEmpty: 'No dictionary definitions found for this word.',
+    thesaurusEmpty: 'No synonyms found for this word.',
+    translationEmpty: 'No extra translations found for this word.',
+    listenOnly: 'Listen only',
+    listenFirst: 'Listen first',
+    hiddenUntilAnswer: 'Text stays hidden until you answer.',
+    listenAndRepeat: 'Listen and repeat from audio only.',
+    listenAndSayItBack: 'Listen and say it back from audio only.',
+    restartCard: 'Restart this word',
+    restartPhrase: 'Restart this phrase',
     restartSentence: 'Restart this sentence',
     micLive: 'Mic live',
     prompting: 'Prompting',
@@ -188,14 +252,14 @@ const EN_MESSAGES: Record<TranslationKey, string> = {
     gentlerLayers: 'Gentler layers',
     bold: 'Bold',
     strongerPanelSeparation: 'Stronger panel separation',
-    flashcardAudio: 'Flashcard audio',
-    flashcardAudioDesc: 'Auto-pronounce each shown card and allow quick replay.',
+    flashcardAudio: 'Word audio',
+    flashcardAudioDesc: 'Auto-pronounce each shown word and allow quick replay.',
     on: 'On',
     off: 'Off',
-    speakCardsImmediately: 'Speak cards immediately',
-    keepCardsSilent: 'Keep cards silent by default',
-    cardMode: 'Card mode',
-    cardModeDesc: 'Choose between assisted multiple-choice practice and hands-free speaking practice.',
+    speakCardsImmediately: 'Speak words immediately',
+    keepCardsSilent: 'Keep words silent by default',
+    cardMode: 'Word mode',
+    cardModeDesc: 'Choose between assisted multiple-choice word practice and hands-free speaking practice.',
     swipeTapArrowKeys: 'Swipe, tap, or use arrow keys',
     repeatAnswerAutoAdvance: 'Repeat and answer aloud, then auto-advance',
     sentenceMode: 'Sentence mode',
@@ -225,6 +289,7 @@ const MESSAGES: Record<UiLocale, Partial<Record<TranslationKey, string>>> = {
     sentenceInput: 'Entrada de frases',
     speak: 'Hablar',
     keyboard: 'Teclado',
+    touch: 'Tocar',
     step1: 'Paso 1',
     step2: 'Paso 2',
     repeatWord: 'Repite la palabra',
@@ -263,6 +328,7 @@ const MESSAGES: Record<UiLocale, Partial<Record<TranslationKey, string>>> = {
     sentenceInput: 'Saisie phrases',
     speak: 'Parler',
     keyboard: 'Clavier',
+    touch: 'Toucher',
     step1: 'Étape 1',
     step2: 'Étape 2',
     repeatWord: 'Répète le mot',
@@ -301,6 +367,7 @@ const MESSAGES: Record<UiLocale, Partial<Record<TranslationKey, string>>> = {
     sentenceInput: 'Satzeingabe',
     speak: 'Sprechen',
     keyboard: 'Tastatur',
+    touch: 'Tippen',
     step1: 'Schritt 1',
     step2: 'Schritt 2',
     repeatWord: 'Wort wiederholen',
@@ -339,6 +406,7 @@ const MESSAGES: Record<UiLocale, Partial<Record<TranslationKey, string>>> = {
     sentenceInput: 'Input frasi',
     speak: 'Parla',
     keyboard: 'Tastiera',
+    touch: 'Tocco',
     step1: 'Passo 1',
     step2: 'Passo 2',
     repeatWord: 'Ripeti la parola',
@@ -377,6 +445,7 @@ const MESSAGES: Record<UiLocale, Partial<Record<TranslationKey, string>>> = {
     sentenceInput: 'Entrada das frases',
     speak: 'Falar',
     keyboard: 'Teclado',
+    touch: 'Toque',
     step1: 'Passo 1',
     step2: 'Passo 2',
     repeatWord: 'Repita a palavra',
@@ -415,6 +484,7 @@ const MESSAGES: Record<UiLocale, Partial<Record<TranslationKey, string>>> = {
     sentenceInput: '例文入力',
     speak: '話す',
     keyboard: 'キーボード',
+    touch: 'タップ',
     step1: '手順1',
     step2: '手順2',
     repeatWord: '単語を繰り返す',
@@ -453,6 +523,7 @@ const MESSAGES: Record<UiLocale, Partial<Record<TranslationKey, string>>> = {
     sentenceInput: '문장 입력',
     speak: '말하기',
     keyboard: '키보드',
+    touch: '터치',
     step1: '1단계',
     step2: '2단계',
     repeatWord: '단어를 따라 말하기',
@@ -491,6 +562,7 @@ const MESSAGES: Record<UiLocale, Partial<Record<TranslationKey, string>>> = {
     sentenceInput: '句子输入',
     speak: '口说',
     keyboard: '键盘',
+    touch: '触控',
     step1: '步骤1',
     step2: '步骤2',
     repeatWord: '重复单词',
@@ -529,6 +601,7 @@ const MESSAGES: Record<UiLocale, Partial<Record<TranslationKey, string>>> = {
     sentenceInput: 'Режим предложений',
     speak: 'Голос',
     keyboard: 'Клавиатура',
+    touch: 'Касание',
     step1: 'Шаг 1',
     step2: 'Шаг 2',
     repeatWord: 'Повтори слово',
@@ -567,6 +640,7 @@ const MESSAGES: Record<UiLocale, Partial<Record<TranslationKey, string>>> = {
     sentenceInput: 'إدخال الجمل',
     speak: 'تحدث',
     keyboard: 'لوحة المفاتيح',
+    touch: 'لمس',
     step1: 'الخطوة 1',
     step2: 'الخطوة 2',
     repeatWord: 'كرر الكلمة',
@@ -605,6 +679,7 @@ const MESSAGES: Record<UiLocale, Partial<Record<TranslationKey, string>>> = {
     sentenceInput: 'वाक्य इनपुट',
     speak: 'बोलें',
     keyboard: 'कीबोर्ड',
+    touch: 'स्पर्श',
     step1: 'कदम 1',
     step2: 'कदम 2',
     repeatWord: 'शब्द दोहराएँ',
@@ -643,6 +718,7 @@ const MESSAGES: Record<UiLocale, Partial<Record<TranslationKey, string>>> = {
     sentenceInput: 'Cümle girişi',
     speak: 'Konuş',
     keyboard: 'Klavye',
+    touch: 'Dokun',
     step1: 'Adım 1',
     step2: 'Adım 2',
     repeatWord: 'Kelimeyi tekrarla',
@@ -681,6 +757,7 @@ const MESSAGES: Record<UiLocale, Partial<Record<TranslationKey, string>>> = {
     sentenceInput: 'Zininvoer',
     speak: 'Spreken',
     keyboard: 'Toetsenbord',
+    touch: 'Tik',
     step1: 'Stap 1',
     step2: 'Stap 2',
     repeatWord: 'Herhaal het woord',
@@ -719,6 +796,7 @@ const MESSAGES: Record<UiLocale, Partial<Record<TranslationKey, string>>> = {
     sentenceInput: 'Tryb zdań',
     speak: 'Mów',
     keyboard: 'Klawiatura',
+    touch: 'Dotyk',
     step1: 'Krok 1',
     step2: 'Krok 2',
     repeatWord: 'Powtórz słowo',
@@ -757,6 +835,7 @@ const MESSAGES: Record<UiLocale, Partial<Record<TranslationKey, string>>> = {
     sentenceInput: 'Режим речень',
     speak: 'Говорити',
     keyboard: 'Клавіатура',
+    touch: 'Дотик',
     step1: 'Крок 1',
     step2: 'Крок 2',
     repeatWord: 'Повтори слово',

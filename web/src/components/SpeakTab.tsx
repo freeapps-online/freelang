@@ -1,34 +1,15 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
+import { ArrowRight, Headphones, Mic, Volume2 } from 'lucide-react'
 import { speech } from '../services/speech.ts'
 import { useSpeech } from '../hooks.ts'
 import { reportSentenceScore } from '../services/cloud.ts'
 import { FlashcardModeSwitch } from './FlashcardModeSwitch.tsx'
 import { t } from '../services/i18n.ts'
+import { loadPracticeDeck, type SentenceContentMode } from '../services/practiceContent.ts'
 import { SENTENCE_PASS_SCORE, loadSentenceStats, recordSentenceAttempt, type SentenceStatsMap } from '../services/sentenceStats.ts'
 import type { PracticeInputMode } from '../services/settings.ts'
 import { getTranslit } from '../services/translit.ts'
 import type { Sentence } from '../types.ts'
-
-// Auto-discover all sentence files at build time
-const sentenceGlob = import.meta.glob('../data/sentences*.ts') as Record<string, () => Promise<{ default: Sentence[] }>>
-const sentenceModules: Record<number, () => Promise<{ default: Sentence[] }>> = {}
-for (const [path, loader] of Object.entries(sentenceGlob)) {
-  const m = path.match(/sentences(\d+)\.ts$/)
-  if (m) sentenceModules[parseInt(m[1])] = loader
-}
-const MAX_SENTENCE_LEVEL = Math.max(...Object.keys(sentenceModules).map(Number), 1)
-
-const loadedSentences: Map<number, Sentence[]> = new Map()
-
-async function loadSentences(level: number): Promise<Sentence[]> {
-  const cached = loadedSentences.get(level)
-  if (cached) return cached
-  const loader = sentenceModules[level]
-  if (!loader) return []
-  const mod = await loader()
-  loadedSentences.set(level, mod.default)
-  return mod.default
-}
 
 function pickWeightedSentence(pool: Sentence[], stats: SentenceStatsMap, exclude?: Sentence): Sentence {
   const filtered = exclude ? pool.filter(s => s.id !== exclude.id) : pool
@@ -68,15 +49,17 @@ function scoreAttempt(expected: string, attempt: string): AttemptResult {
 }
 
 export function SentencesTab({
+  contentMode,
   nativeLang,
   targetLang,
-  level: rawLevel,
+  level,
   inputMode,
   uiLang,
   showStats: showStatsExternal,
   onShowStatsChange,
   onInputModeChange,
 }: {
+  contentMode: SentenceContentMode
   nativeLang: string
   targetLang: string
   level: number
@@ -87,12 +70,12 @@ export function SentencesTab({
   onInputModeChange: (mode: PracticeInputMode) => void
 }) {
   const sp = useSpeech()
-  const level = Math.min(rawLevel, MAX_SENTENCE_LEVEL)
   const [sentences, setSentences] = useState<Sentence[]>([])
   const [sentence, setSentence] = useState<Sentence | null>(null)
   const [attempt, setAttempt] = useState<AttemptResult | null>(null)
   const [sentenceStats, setSentenceStats] = useState<SentenceStatsMap>(loadSentenceStats)
   const showStats = showStatsExternal
+  const [listenOnly, setListenOnly] = useState(false)
   const [dragX, setDragX] = useState(0)
   const [transitioning, setTransitioning] = useState(false)
   const [speakStatus, setSpeakStatus] = useState<SpeakStatus>('idle')
@@ -101,21 +84,28 @@ export function SentencesTab({
   const advanceTimer = useRef<number>(0)
   const speakTimer = useRef<number>(0)
   const speakRunId = useRef(0)
+  const sentenceStatsRef = useRef(sentenceStats)
+
+  useEffect(() => {
+    sentenceStatsRef.current = sentenceStats
+  }, [sentenceStats])
 
   useEffect(() => {
     let cancelled = false
-    loadSentences(level).then((s) => {
+    loadPracticeDeck(contentMode, level).then((s) => {
       if (cancelled) return
       setSentences(s)
-      setSentence(pickWeightedSentence(s, sentenceStats))
+      setSentence(pickWeightedSentence(s, sentenceStatsRef.current))
       setAttempt(null)
       setSpeakStatus('idle')
     })
     return () => { cancelled = true }
-  }, [level])
+  }, [contentMode, level])
 
   const targetText = sentence?.text[targetLang] ?? sentence?.text.en ?? ''
   const nativeText = sentence?.text[nativeLang] ?? sentence?.text.en ?? ''
+  const restartKey = contentMode === 'phrases' ? 'restartPhrase' : 'restartSentence'
+  const promptVisible = !listenOnly || attempt !== null
 
   const playAudio = useCallback(() => {
     if (!targetText) return
@@ -127,24 +117,28 @@ export function SentencesTab({
     if (targetText && !transitioning) void speech.speak(targetText, targetLang)
   }, [inputMode, targetText, targetLang, sentence?.id, transitioning])
 
-  const selectNextSentence = useCallback((exclude?: Sentence) => {
+  const selectNextSentence = useCallback((exclude?: Sentence, statsOverride = sentenceStatsRef.current) => {
     if (sentences.length === 0) return
-    setSentence(pickWeightedSentence(sentences, sentenceStats, exclude))
+    setSentence(pickWeightedSentence(sentences, statsOverride, exclude))
     setAttempt(null)
     setDragX(0)
     setTransitioning(false)
     setSpeakStatus('idle')
-  }, [sentenceStats, sentences])
+  }, [sentences])
 
   const commitAttempt = useCallback((currentSentence: Sentence, result: AttemptResult, autoAdvance: boolean) => {
+    let nextSentenceStats = sentenceStatsRef.current
     setAttempt(result)
-    setSentenceStats(prev => recordSentenceAttempt(prev, currentSentence.id, result.score))
+    setSentenceStats(prev => {
+      nextSentenceStats = recordSentenceAttempt(prev, currentSentence.id, result.score)
+      return nextSentenceStats
+    })
     void reportSentenceScore(currentSentence.id, result.score)
 
     if (autoAdvance) {
       window.clearTimeout(advanceTimer.current)
       advanceTimer.current = window.setTimeout(() => {
-        selectNextSentence(currentSentence)
+        selectNextSentence(currentSentence, nextSentenceStats)
       }, result.score >= SENTENCE_PASS_SCORE ? 900 : 1300)
     }
   }, [selectNextSentence])
@@ -275,12 +269,28 @@ export function SentencesTab({
       ) : (
         <>
           <div className="flex items-center justify-between gap-2">
-            <FlashcardModeSwitch value={inputMode} uiLang={uiLang} onChange={onInputModeChange} />
-            {inputMode === 'speak' && (
-              <span className="text-xs font-semibold text-[var(--muted)]">
-                {sp.isListening ? t(uiLang, 'micLive') : speakStatus === 'prompting' ? t(uiLang, 'prompting') : t(uiLang, 'auto')}
-              </span>
-            )}
+            <div className="lg:hidden">
+              <FlashcardModeSwitch value={inputMode} uiLang={uiLang} onChange={onInputModeChange} />
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                className={`flex h-9 items-center justify-center gap-2 rounded-full border px-3 text-xs font-bold shadow-[var(--shadow-soft)] ${
+                  listenOnly
+                    ? 'border-[var(--accent-soft)] bg-[var(--accent-gradient)] text-[var(--ink)]'
+                    : 'border-[var(--line)] bg-[var(--glass)] text-[var(--muted)]'
+                }`}
+                onClick={() => setListenOnly((value) => !value)}
+                title={t(uiLang, 'listenOnly')}
+              >
+                <Headphones className="h-4 w-4" strokeWidth={1.8} />
+                <span className="hidden sm:inline">{t(uiLang, 'listenOnly')}</span>
+              </button>
+              {inputMode === 'speak' && (
+                <span className="text-xs font-semibold text-[var(--muted)]">
+                  {sp.isListening ? t(uiLang, 'micLive') : speakStatus === 'prompting' ? t(uiLang, 'prompting') : t(uiLang, 'auto')}
+                </span>
+              )}
+            </div>
           </div>
 
           {/* Card */}
@@ -296,11 +306,23 @@ export function SentencesTab({
               onPointerDown={inputMode === 'keyboard' ? onPointerDown : undefined}
               onPointerMove={inputMode === 'keyboard' ? onPointerMove : undefined}
               onPointerUp={inputMode === 'keyboard' ? onPointerUp : undefined}
+              onClick={inputMode === 'speak' ? playAudio : undefined}
             >
               <div className="drop-shadow-sm" style={{ fontSize: 'calc(3rem * var(--content-scale))' }}>{sentence.emoji}</div>
-              <button className="display-font leading-snug text-[var(--ink)]" style={{ fontSize: 'calc(1.5rem * var(--content-scale))' }} onClick={playAudio}>{targetText}</button>
-              {getTranslit(targetText, targetLang) && (
-                <div className="italic text-[var(--muted)]" style={{ fontSize: 'calc(1rem * var(--content-scale))' }}>{getTranslit(targetText, targetLang)}</div>
+              {promptVisible ? (
+                <>
+                  <button className="display-font leading-snug text-[var(--ink)]" style={{ fontSize: 'calc(1.5rem * var(--content-scale))' }} onClick={playAudio}>{targetText}</button>
+                  {getTranslit(targetText, targetLang) && (
+                    <div className="italic text-[var(--muted)]" style={{ fontSize: 'calc(1rem * var(--content-scale))' }}>{getTranslit(targetText, targetLang)}</div>
+                  )}
+                </>
+              ) : (
+                <div className="space-y-2">
+                  <div className="rounded-full border border-[var(--line)] bg-[var(--glass)] px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-[var(--accent-deep)]">
+                    {t(uiLang, 'listenFirst')}
+                  </div>
+                  <div className="text-sm text-[var(--muted)]">{t(uiLang, 'hiddenUntilAnswer')}</div>
+                </div>
               )}
               <div className="text-sm text-[var(--muted)]">{nativeText}</div>
 
@@ -336,16 +358,16 @@ export function SentencesTab({
           {inputMode === 'keyboard' ? (
             <div className="flex items-center justify-center gap-3 py-1">
               <button className="flex h-10 w-10 items-center justify-center rounded-full border border-[var(--line)] bg-[var(--glass)] text-[var(--muted)]" onClick={playAudio} disabled={sp.isSpeaking}>
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19.114 5.636a9 9 0 0 1 0 12.728M16.463 8.288a5.25 5.25 0 0 1 0 7.424M6.75 8.25l4.72-4.72a.75.75 0 0 1 1.28.53v15.88a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.009 9.009 0 0 1 2.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75Z" /></svg>
+                <Volume2 className="h-5 w-5" strokeWidth={2} />
               </button>
               <button
                 className={`flex h-14 w-14 items-center justify-center rounded-full border-2 transition ${sp.isListening ? 'border-[var(--error)] bg-[var(--error)] text-white pulse-ring' : 'border-[var(--accent)] bg-[var(--accent)] text-white'}`}
                 onPointerDown={startRecording} onPointerUp={stopRecording} onPointerLeave={stopRecording}
               >
-                <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5z" /><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" /></svg>
+                <Mic className="h-6 w-6" strokeWidth={2.2} />
               </button>
               <button className="flex h-10 w-10 items-center justify-center rounded-full border border-[var(--line)] bg-[var(--glass)] text-[var(--muted)]" onClick={goNext}>
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" /></svg>
+                <ArrowRight className="h-5 w-5" strokeWidth={2} />
               </button>
             </div>
           ) : (
@@ -353,18 +375,22 @@ export function SentencesTab({
               <div className="rounded-[0.9rem] border border-[var(--line)] bg-[var(--glass)] px-3 py-2 text-xs text-[var(--muted)]">
                 {sp.isListening
                   ? `Listening: ${sp.transcript || 'speak now...'}` : {
-                    prompting: 'Playing the sentence. Say it back exactly as shown.',
-                    listening: 'Listening for your sentence now.',
+                    prompting: listenOnly
+                      ? `Playing the ${contentMode === 'phrases' ? 'phrase' : 'sentence'}. Answer from audio only.`
+                      : `Playing the ${contentMode === 'phrases' ? 'phrase' : 'sentence'}. Say it back exactly as shown.`,
+                    listening: listenOnly
+                      ? t(uiLang, 'listenAndSayItBack')
+                      : `Listening for your ${contentMode === 'phrases' ? 'phrase' : 'sentence'} now.`,
                     blocked: 'Microphone permission is blocked in this browser.',
                     unsupported: 'Speech recognition is not supported in this browser.',
-                    idle: 'Preparing the next sentence...',
+                    idle: `Preparing the next ${contentMode === 'phrases' ? 'phrase' : 'sentence'}...`,
                   }[speakStatus]}
               </div>
               <button
                 className="w-full rounded-[1.1rem] border border-[var(--line)] bg-[var(--glass)] px-4 py-3 text-sm font-semibold text-[var(--ink)]"
                 onClick={() => focusSentence(sentence)}
               >
-                {t(uiLang, 'restartSentence')}
+                {t(uiLang, restartKey)}
               </button>
             </div>
           )}

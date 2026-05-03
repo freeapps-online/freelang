@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { ChevronDown } from 'lucide-react'
 import { UI_LANGUAGES, type UiLocale } from '../services/i18n.ts'
 
 export function InterfaceLanguagePicker({
@@ -19,9 +20,7 @@ export function InterfaceLanguagePicker({
       >
         <span className="text-sm">{active.flag}</span>
         <span>{active.code.toUpperCase()}</span>
-        <svg className={`h-3 w-3 text-[var(--muted)] transition-transform ${open ? 'rotate-180' : ''}`} fill="currentColor" viewBox="0 0 20 20">
-          <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-        </svg>
+        <ChevronDown className={`h-3 w-3 text-[var(--muted)] transition-transform ${open ? 'rotate-180' : ''}`} strokeWidth={2.2} />
       </button>
 
       {open && (

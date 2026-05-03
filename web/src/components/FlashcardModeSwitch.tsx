@@ -1,3 +1,4 @@
+import { Hand, Mic } from 'lucide-react'
 import type { PracticeInputMode } from '../services/settings.ts'
 import { t } from '../services/i18n.ts'
 
@@ -17,12 +18,21 @@ export function FlashcardModeSwitch({
       {(['keyboard', 'speak'] as const).map((mode) => (
         <button
           key={mode}
-          className={`rounded-full px-3 py-1.5 text-[0.68rem] font-bold uppercase tracking-[0.14em] ${
+          aria-label={mode === 'keyboard' ? t(uiLang, 'touch') : t(uiLang, mode)}
+          className={`flex h-9 w-9 items-center justify-center rounded-full sm:h-auto sm:w-auto sm:px-3 sm:py-1.5 text-[0.68rem] font-bold uppercase tracking-[0.14em] ${
             value === mode ? 'bg-[var(--ink)] text-[var(--paper)]' : 'text-[var(--muted)]'
           }`}
           onClick={() => onChange(mode)}
+          title={mode === 'keyboard' ? t(uiLang, 'touch') : t(uiLang, mode)}
         >
-          {t(uiLang, mode)}
+          <span className="sm:hidden" aria-hidden="true">
+            {mode === 'keyboard' ? (
+              <Hand className="h-4 w-4" strokeWidth={2} />
+            ) : (
+              <Mic className="h-4 w-4" strokeWidth={2} />
+            )}
+          </span>
+          <span className="hidden sm:inline">{t(uiLang, mode)}</span>
         </button>
       ))}
     </div>

@@ -19,6 +19,7 @@ describe('settings service', () => {
       flashcardAudio: true,
       flashcardInputMode: 'keyboard',
       sentenceInputMode: 'keyboard',
+      dictionaryDefaultView: 'dictionary',
       cardLevel: 1,
     })
   })
@@ -42,6 +43,7 @@ describe('settings service', () => {
       flashcardAudio: false,
       flashcardInputMode: 'keyboard',
       sentenceInputMode: 'keyboard',
+      dictionaryDefaultView: 'dictionary',
     })
     expect('fontSize' in settings).toBe(false)
   })
@@ -59,6 +61,7 @@ describe('settings service', () => {
       flashcardAudio: false,
       flashcardInputMode: 'speak' as const,
       sentenceInputMode: 'speak' as const,
+      dictionaryDefaultView: 'translation' as const,
       cardLevel: 7,
     }
 

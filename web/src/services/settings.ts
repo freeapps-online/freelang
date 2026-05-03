@@ -7,6 +7,7 @@ export type FontSizePreference = 'small' | 'medium' | 'large' | 'xlarge'
 export type MotionPreference = 'full' | 'reduced'
 export type SurfacePreference = 'soft' | 'bold'
 export type PracticeInputMode = 'keyboard' | 'speak'
+export type DictionaryViewPreference = 'dictionary' | 'thesaurus' | 'translation'
 
 export interface Settings {
   interfaceLang: UiLocale
@@ -20,6 +21,7 @@ export interface Settings {
   flashcardAudio: boolean
   flashcardInputMode: PracticeInputMode
   sentenceInputMode: PracticeInputMode
+  dictionaryDefaultView: DictionaryViewPreference
   cardLevel: number
 }
 
@@ -35,6 +37,7 @@ const defaults: Settings = {
   flashcardAudio: true,
   flashcardInputMode: 'keyboard',
   sentenceInputMode: 'keyboard',
+  dictionaryDefaultView: 'dictionary',
   cardLevel: 1,
 }
 

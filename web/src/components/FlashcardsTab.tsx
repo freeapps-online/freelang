@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
+import { BookOpen, Headphones, X } from 'lucide-react'
 import { getFlashCardRound, getCardDisplay, loadLevel, getLoadedWords } from '../services/vocabulary.ts'
 import { loadScores, recordAnswer, loadWordStats, recordWordAnswer, pickWeightedCard, type WordStatsMap } from '../services/scores.ts'
 import { speech } from '../services/speech.ts'
@@ -7,18 +8,21 @@ import { reportCardScore } from '../services/cloud.ts'
 import { evaluateVoiceAttempt } from '../services/flashcardsVoice.ts'
 import { FlashcardModeSwitch } from './FlashcardModeSwitch.tsx'
 import { t } from '../services/i18n.ts'
-import type { PracticeInputMode } from '../services/settings.ts'
+import type { PracticeInputMode, DictionaryViewPreference } from '../services/settings.ts'
+import type { DictionaryLookupResult } from '../services/dictionary.ts'
 import type { FlashCard, FlashCardRound, FlashCardScore } from '../types.ts'
 
 type SwipeResult = 'correct' | 'wrong' | null
 type VoiceStep = 'repeat' | 'answer'
 type SpeakStatus = 'idle' | 'prompting' | 'listening-repeat' | 'listening-answer' | 'blocked' | 'unsupported'
+type DictionaryStatus = 'idle' | 'loading' | 'ready' | 'error'
 
 export function FlashcardsTab({
   nativeLang,
   targetLang,
   audioEnabled,
   inputMode,
+  dictionaryDefaultView,
   uiLang,
   onInputModeChange,
   level,
@@ -29,6 +33,7 @@ export function FlashcardsTab({
   targetLang: string
   audioEnabled: boolean
   inputMode: PracticeInputMode
+  dictionaryDefaultView: DictionaryViewPreference
   uiLang: string
   onInputModeChange: (mode: PracticeInputMode) => void
   level: number
@@ -49,17 +54,36 @@ export function FlashcardsTab({
   const [voiceStep, setVoiceStep] = useState<VoiceStep>('repeat')
   const [voiceAttempt, setVoiceAttempt] = useState<{ heardTarget: string; heardAnswer: string; repeatMatched: boolean } | null>(null)
   const [speakStatus, setSpeakStatus] = useState<SpeakStatus>('idle')
+  const [listenOnly, setListenOnly] = useState(false)
+  const [dictionaryOpen, setDictionaryOpen] = useState(false)
+  const [dictionaryStatus, setDictionaryStatus] = useState<DictionaryStatus>('idle')
+  const [dictionaryData, setDictionaryData] = useState<DictionaryLookupResult | null>(null)
+  const [dictionaryError, setDictionaryError] = useState<string | null>(null)
   const feedbackTimer = useRef<number>(0)
   const speakTimer = useRef<number>(0)
   const speakRunId = useRef(0)
   const heardTargetRef = useRef('')
+  const wordStatsRef = useRef(wordStats)
+  const dictionaryModuleRef = useRef<Promise<typeof import('../services/dictionary.ts')> | null>(null)
+
+  useEffect(() => {
+    wordStatsRef.current = wordStats
+  }, [wordStats])
+
+  const resetDictionary = useCallback(() => {
+    setDictionaryOpen(false)
+    setDictionaryStatus('idle')
+    setDictionaryData(null)
+    setDictionaryError(null)
+  }, [])
 
   useEffect(() => {
     let cancelled = false
     loadLevel(level).then((w) => {
       if (cancelled) return
       setWords(w)
-      const card = pickWeightedCard(w, wordStats)
+      const card = pickWeightedCard(w, wordStatsRef.current)
+      resetDictionary()
       setVoiceStep('repeat')
       setVoiceAttempt(null)
       heardTargetRef.current = ''
@@ -67,26 +91,56 @@ export function FlashcardsTab({
       setRound(getFlashCardRound(nativeLang, targetLang, w, undefined, card))
     })
     return () => { cancelled = true }
-  }, [level, nativeLang, targetLang])
+  }, [level, nativeLang, resetDictionary, targetLang])
 
   const display = round ? getCardDisplay(round.card, targetLang) : null
+  const displayText = display?.text ?? ''
   const correctAnswer = round ? (round.card.translations[nativeLang] ?? round.card.word) : ''
+
+  const openDictionary = useCallback(async () => {
+    if (!round || !displayText) return
+    setDictionaryOpen(true)
+    if (dictionaryStatus === 'ready' || dictionaryStatus === 'loading') return
+
+    setDictionaryStatus('loading')
+    setDictionaryError(null)
+
+    try {
+      dictionaryModuleRef.current ??= import('../services/dictionary.ts')
+      const { lookupCardDictionary } = await dictionaryModuleRef.current
+      const result = await lookupCardDictionary({
+        englishWord: round.card.word,
+        targetWord: displayText,
+        targetLang,
+      })
+      setDictionaryData(result)
+      setDictionaryStatus('ready')
+    } catch (error) {
+      setDictionaryStatus('error')
+      setDictionaryError(error instanceof Error ? error.message : 'Dictionary lookup failed.')
+    }
+  }, [dictionaryStatus, displayText, round, targetLang])
 
   const handleAnswer = useCallback((side: 'left' | 'right') => {
     if (transitioning || !round || words.length === 0) return
     const correct = side === round.correctSide
     const correctAnswer = round.correctSide === 'left' ? round.leftOption : round.rightOption
     const cardDisplay = getCardDisplay(round.card, targetLang)
+    let nextWordStats = wordStatsRef.current
     setResult(correct ? 'correct' : 'wrong')
     setLastFeedback({ nativeWord: cardDisplay.text, correctAnswer })
     setScores((prev) => recordAnswer(prev, correct))
-    setWordStats((prev) => recordWordAnswer(prev, round.card.word, correct))
+    setWordStats((prev) => {
+      nextWordStats = recordWordAnswer(prev, round.card.word, correct)
+      return nextWordStats
+    })
     void reportCardScore(round.card.word, correct)
     setTransitioning(true)
     setDragX(side === 'left' ? -420 : 420)
 
     window.setTimeout(() => {
-      const nextCard = pickWeightedCard(words, wordStats, round.card)
+      const nextCard = pickWeightedCard(words, nextWordStats, round.card)
+      resetDictionary()
       setVoiceStep('repeat')
       setVoiceAttempt(null)
       heardTargetRef.current = ''
@@ -101,23 +155,28 @@ export function FlashcardsTab({
       setResult(null)
       setLastFeedback(null)
     }, 3500)
-  }, [round, nativeLang, targetLang, transitioning, words, wordStats])
+  }, [resetDictionary, round, nativeLang, targetLang, transitioning, words])
 
   const handleVoiceAnswer = useCallback((heardTarget: string, heardAnswer: string) => {
     if (transitioning || !round || words.length === 0) return
 
-    const evaluation = evaluateVoiceAttempt(display?.text ?? '', heardTarget, correctAnswer, heardAnswer)
+    const evaluation = evaluateVoiceAttempt(displayText, heardTarget, correctAnswer, heardAnswer)
+    let nextWordStats = wordStatsRef.current
     setVoiceAttempt({ heardTarget, heardAnswer, repeatMatched: evaluation.repeatMatched })
     setVoiceStep('repeat')
     setResult(evaluation.answerMatched ? 'correct' : 'wrong')
-    setLastFeedback({ nativeWord: display?.text ?? '', correctAnswer })
+    setLastFeedback({ nativeWord: displayText, correctAnswer })
     setScores((prev) => recordAnswer(prev, evaluation.answerMatched))
-    setWordStats((prev) => recordWordAnswer(prev, round.card.word, evaluation.answerMatched))
+    setWordStats((prev) => {
+      nextWordStats = recordWordAnswer(prev, round.card.word, evaluation.answerMatched)
+      return nextWordStats
+    })
     void reportCardScore(round.card.word, evaluation.answerMatched)
     setTransitioning(true)
 
     window.setTimeout(() => {
-      const nextCard = pickWeightedCard(words, wordStats, round.card)
+      const nextCard = pickWeightedCard(words, nextWordStats, round.card)
+      resetDictionary()
       setVoiceStep('repeat')
       setVoiceAttempt(null)
       heardTargetRef.current = ''
@@ -132,12 +191,12 @@ export function FlashcardsTab({
       setLastFeedback(null)
       setVoiceAttempt(null)
     }, 4500)
-  }, [correctAnswer, display?.text, nativeLang, round, targetLang, transitioning, words, wordStats])
+  }, [correctAnswer, displayText, nativeLang, resetDictionary, round, targetLang, transitioning, words])
 
   useEffect(() => {
-    if (!audioEnabled || transitioning || !display) return
-    void speech.speak(display.text, targetLang)
-  }, [audioEnabled, display?.text, targetLang, round?.card.word, transitioning])
+    if (!audioEnabled || transitioning || !displayText) return
+    void speech.speak(displayText, targetLang)
+  }, [audioEnabled, displayText, targetLang, round?.card.word, transitioning])
 
   useEffect(() => {
     if (inputMode !== 'keyboard') return
@@ -150,11 +209,11 @@ export function FlashcardsTab({
       if (event.key === 'ArrowRight') { event.preventDefault(); handleAnswer('right') }
       if (event.key === 'ArrowUp' && round) { event.preventDefault(); void speech.speak(round.leftOption, nativeLang) }
       if (event.key === 'ArrowDown' && round) { event.preventDefault(); void speech.speak(round.rightOption, nativeLang) }
-      if ((event.key === 'Enter' || event.key === ' ') && display) { event.preventDefault(); void speech.speak(display.text, targetLang) }
+      if ((event.key === 'Enter' || event.key === ' ') && displayText) { event.preventDefault(); void speech.speak(displayText, targetLang) }
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [handleAnswer, inputMode, transitioning])
+  }, [displayText, handleAnswer, inputMode, nativeLang, round, targetLang, transitioning])
 
   useEffect(() => () => { speech.stopSpeaking(); speech.stopListening() }, [])
 
@@ -200,6 +259,7 @@ export function FlashcardsTab({
     speech.stopListening()
     speech.stopSpeaking()
     window.clearTimeout(feedbackTimer.current)
+    resetDictionary()
     setResult(null)
     setLastFeedback(null)
     setVoiceStep('repeat')
@@ -210,7 +270,7 @@ export function FlashcardsTab({
     setTransitioning(false)
     setRound(getFlashCardRound(nativeLang, targetLang, words, undefined, card))
     onShowStatsChange(false)
-  }, [nativeLang, onShowStatsChange, targetLang, words])
+  }, [nativeLang, onShowStatsChange, resetDictionary, targetLang, words])
 
   useEffect(() => {
     if (inputMode !== 'speak' || showStats || !round || transitioning) return
@@ -295,6 +355,7 @@ export function FlashcardsTab({
   }
 
   const pct = scores.total > 0 ? Math.round((scores.correct / scores.total) * 100) : 0
+  const promptVisible = !listenOnly || result !== null
 
   return (
     <div className="flex h-[calc(100dvh-80px)] flex-col lg:h-auto">
@@ -304,11 +365,35 @@ export function FlashcardsTab({
       >
         <div className="flex h-full flex-col gap-2">
           <div className="flex items-center justify-between gap-2">
-            <FlashcardModeSwitch value={inputMode} uiLang={uiLang} onChange={handleInputModeSwitch} />
-            <div className="flex items-center gap-2 text-xs font-bold">
-              <span className="text-[var(--success)]">{scores.correct}</span>
-              <span className="text-[var(--muted)]">/</span>
-              <span className="text-[var(--error)]">{scores.total - scores.correct}</span>
+            <div className="lg:hidden">
+              <FlashcardModeSwitch value={inputMode} uiLang={uiLang} onChange={handleInputModeSwitch} />
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                className={`flex h-9 items-center justify-center gap-2 rounded-full border px-3 text-xs font-bold shadow-[var(--shadow-soft)] ${
+                  listenOnly
+                    ? 'border-[var(--accent-soft)] bg-[var(--accent-gradient)] text-[var(--ink)]'
+                    : 'border-[var(--line)] bg-[var(--glass)] text-[var(--muted)]'
+                }`}
+                onClick={() => setListenOnly((value) => !value)}
+                title={t(uiLang, 'listenOnly')}
+              >
+                <Headphones className="h-4 w-4" strokeWidth={1.8} />
+                <span className="hidden sm:inline">{t(uiLang, 'listenOnly')}</span>
+              </button>
+              <button
+                className="flex h-9 items-center justify-center gap-2 rounded-full border border-[var(--line)] bg-[var(--glass)] px-3 text-xs font-bold text-[var(--muted)] shadow-[var(--shadow-soft)]"
+                onClick={() => { void openDictionary() }}
+                title={t(uiLang, 'openDictionary')}
+              >
+                <BookOpen className="h-4 w-4" strokeWidth={1.8} />
+                <span className="hidden sm:inline">{t(uiLang, 'meaning')}</span>
+              </button>
+              <div className="flex items-center gap-2 text-xs font-bold">
+                <span className="text-[var(--success)]">{scores.correct}</span>
+                <span className="text-[var(--muted)]">/</span>
+                <span className="text-[var(--error)]">{scores.total - scores.correct}</span>
+              </div>
             </div>
           </div>
 
@@ -334,7 +419,7 @@ export function FlashcardsTab({
                     title={`${t(uiLang, 'step1')}. ${t(uiLang, 'repeatWord')}`}
                     active={voiceStep === 'repeat'}
                     complete={voiceAttempt?.repeatMatched === true}
-                    detail={voiceAttempt?.heardTarget ? `Heard: ${voiceAttempt.heardTarget}` : `Say ${display.text}`}
+                    detail={voiceAttempt?.heardTarget ? `Heard: ${voiceAttempt.heardTarget}` : listenOnly ? t(uiLang, 'listenAndRepeat') : `Say ${display.text}`}
                   />
                   <VoiceStepCard
                     title={`${t(uiLang, 'step2')}. ${t(uiLang, 'sayMeaning')}`}
@@ -378,11 +463,24 @@ export function FlashcardsTab({
                   )}
 
                   <div className="drop-shadow-sm" style={{ fontSize: `calc(4.5rem * var(--content-scale))` }}>{display.emoji}</div>
-                  <div className="display-font leading-none text-[var(--ink)]" style={{ fontSize: `calc(2.25rem * var(--content-scale))` }}>{display.text}</div>
-                  {display.translit && <div className="italic text-[var(--muted)]" style={{ fontSize: `calc(1.5rem * var(--content-scale))` }}>{display.translit}</div>}
+                  {promptVisible ? (
+                    <>
+                      <div className="display-font leading-none text-[var(--ink)]" style={{ fontSize: `calc(2.25rem * var(--content-scale))` }}>{display.text}</div>
+                      {display.translit && <div className="italic text-[var(--muted)]" style={{ fontSize: `calc(1.5rem * var(--content-scale))` }}>{display.translit}</div>}
+                    </>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="rounded-full border border-[var(--line)] bg-[var(--glass)] px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-[var(--accent-deep)]">
+                        {t(uiLang, 'listenFirst')}
+                      </div>
+                      <div className="text-sm text-[var(--muted)]">{t(uiLang, 'hiddenUntilAnswer')}</div>
+                    </div>
+                  )}
                   {inputMode === 'speak' && (
                     <div className="mt-2 text-xs text-[var(--muted)]">
-                      {audioEnabled ? 'Tap the card to hear it again.' : 'Audio is off. Use the speaker toggle above if needed.'}
+                      {listenOnly
+                        ? t(uiLang, 'listenAndRepeat')
+                        : audioEnabled ? 'Tap the card to hear it again.' : 'Audio is off. Use the speaker toggle above if needed.'}
                     </div>
                   )}
                 </div>
@@ -393,8 +491,8 @@ export function FlashcardsTab({
                   <div className="rounded-[0.9rem] border border-[var(--line)] bg-[var(--glass)] px-3 py-2 text-xs text-[var(--muted)]">
                     {sp.isListening
                       ? `Listening: ${sp.transcript || 'speak now...'}` : {
-                        prompting: 'Playing the card. Repeat it, then say the meaning.',
-                        'listening-repeat': 'Step 1: repeat the card exactly as shown.',
+                        prompting: listenOnly ? 'Playing the card. Listen closely, then answer from audio only.' : 'Playing the card. Repeat it, then say the meaning.',
+                        'listening-repeat': listenOnly ? 'Step 1: repeat the card from audio only.' : 'Step 1: repeat the card exactly as shown.',
                         'listening-answer': 'Step 2: say the meaning in your native language.',
                         blocked: 'Microphone permission is blocked in this browser.',
                         unsupported: 'Speech recognition is not supported in this browser.',
@@ -422,6 +520,22 @@ export function FlashcardsTab({
           )}
         </div>
       </section>
+
+      {dictionaryOpen && (
+        <DictionarySheet
+          uiLang={uiLang}
+          displayText={display.text}
+          translit={display.translit}
+          targetLang={targetLang}
+          nativeMeaning={correctAnswer}
+          nativeLang={nativeLang}
+          defaultView={dictionaryDefaultView}
+          status={dictionaryStatus}
+          data={dictionaryData}
+          error={dictionaryError}
+          onClose={() => setDictionaryOpen(false)}
+        />
+      )}
 
       {/* Desktop: always-visible stats bar */}
       {!showStats && (
@@ -459,6 +573,215 @@ function VoiceStepCard({ title, detail, active, complete }: { title: string; det
     >
       <div className="text-[0.68rem] font-bold uppercase tracking-[0.16em] text-[var(--muted)]">{title}</div>
       <div className="mt-1 text-sm text-[var(--ink)]">{detail}</div>
+    </div>
+  )
+}
+
+function DictionarySheet({
+  uiLang,
+  displayText,
+  translit,
+  targetLang,
+  nativeMeaning,
+  nativeLang,
+  defaultView,
+  status,
+  data,
+  error,
+  onClose,
+}: {
+  uiLang: string
+  displayText: string
+  translit?: string
+  targetLang: string
+  nativeMeaning: string
+  nativeLang: string
+  defaultView: DictionaryViewPreference
+  status: DictionaryStatus
+  data: DictionaryLookupResult | null
+  error: string | null
+  onClose: () => void
+}) {
+  const [view, setView] = useState<DictionaryViewPreference>(defaultView)
+
+  const thesaurusItems = data?.entries.flatMap((entry) => entry.senses.flatMap((sense) => sense.synonyms)) ?? []
+  const uniqueSynonyms = [...new Set(thesaurusItems)].filter(Boolean).slice(0, 18)
+  const translationItems = data?.entries.flatMap((entry) =>
+    entry.senses.flatMap((sense) =>
+      sense.translations.filter((translation) =>
+        translation.languageCode === nativeLang || translation.languageCode === 'en',
+      ),
+    ),
+  ) ?? []
+  const uniqueTranslations = [...new Map(
+    translationItems.map((translation) => [`${translation.languageCode}:${translation.word}`, translation]),
+  ).values()]
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/35 p-2 sm:items-center sm:p-4" onClick={onClose}>
+      <div
+        className="w-full max-w-2xl rounded-[1.5rem] border border-[var(--line-strong)] bg-[var(--panel-strong)] shadow-[var(--shadow-soft)] backdrop-blur-xl"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-4 border-b border-[var(--line)] px-4 py-3 sm:px-5">
+          <div className="min-w-0">
+            <div className="display-font truncate text-2xl text-[var(--ink)]">{displayText}</div>
+            {translit && <div className="truncate text-sm italic text-[var(--muted)]">{translit}</div>}
+            <div className="mt-1 text-sm text-[var(--muted)]">{nativeMeaning}</div>
+          </div>
+          <button
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[var(--line)] bg-[var(--glass)] text-[var(--muted)]"
+            onClick={onClose}
+            aria-label="Close"
+          >
+            <X className="h-4 w-4" strokeWidth={2} />
+          </button>
+        </div>
+
+        <div className="max-h-[70dvh] space-y-4 overflow-y-auto px-4 py-4 sm:px-5">
+          <div className="inline-flex rounded-full border border-[var(--line)] bg-[var(--glass)] p-1">
+            {([
+              ['dictionary', t(uiLang, 'definitionView')],
+              ['thesaurus', t(uiLang, 'thesaurusView')],
+              ['translation', t(uiLang, 'translationView')],
+            ] as const).map(([key, label]) => (
+              <button
+                key={key}
+                className={`rounded-full px-3 py-1.5 text-xs font-bold uppercase tracking-[0.14em] ${
+                  view === key ? 'bg-[var(--ink)] text-[var(--paper)]' : 'text-[var(--muted)]'
+                }`}
+                onClick={() => setView(key)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {status === 'loading' && (
+            <div className="rounded-[1rem] border border-[var(--line)] bg-[var(--glass)] px-4 py-3 text-sm text-[var(--muted)]">
+              {t(uiLang, 'loadingMeaning')}
+            </div>
+          )}
+
+          {status === 'error' && (
+            <div className="rounded-[1rem] border border-[var(--error)]/20 bg-[var(--error)]/6 px-4 py-3 text-sm text-[var(--error)]">
+              {error ?? t(uiLang, 'meaningUnavailable')}
+            </div>
+          )}
+
+          {status === 'ready' && !data && (
+            <div className="rounded-[1rem] border border-[var(--line)] bg-[var(--glass)] px-4 py-3 text-sm text-[var(--muted)]">
+              {t(uiLang, 'meaningUnavailable')}
+            </div>
+          )}
+
+          {view === 'dictionary' && data?.entries.map((entry, index) => (
+            <div key={`${entry.languageCode}-${entry.partOfSpeech}-${index}`} className="rounded-[1.1rem] border border-[var(--line)] bg-[var(--glass)] p-4">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <span className="text-sm font-bold uppercase tracking-[0.14em] text-[var(--accent-deep)]">
+                  {entry.partOfSpeech || entry.languageName || data.queryWord}
+                </span>
+                {entry.pronunciation && (
+                  <span className="text-sm text-[var(--muted)]">{entry.pronunciation}</span>
+                )}
+                {entry.languageName && entry.languageCode !== targetLang && (
+                  <span className="rounded-full border border-[var(--line)] px-2 py-0.5 text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-[var(--muted)]">
+                    {entry.languageCode}
+                  </span>
+                )}
+              </div>
+
+              <div className="mt-3 space-y-3">
+                {entry.senses.map((sense, senseIndex) => (
+                  <div key={`${entry.partOfSpeech}-${senseIndex}`} className="space-y-1.5">
+                    <div className="text-sm leading-6 text-[var(--ink)]">
+                      <span className="mr-2 text-[var(--muted)]">{senseIndex + 1}.</span>
+                      {sense.definition}
+                    </div>
+                    {sense.examples.length > 0 && (
+                      <div className="rounded-[0.85rem] bg-[var(--panel-quiet)] px-3 py-2 text-xs text-[var(--muted)]">
+                        <span className="mr-2 font-semibold text-[var(--ink)]">{t(uiLang, 'examples')}:</span>
+                        {sense.examples.join('  ')}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+
+          {view === 'dictionary' && status === 'ready' && data && data.entries.length === 0 && (
+            <div className="rounded-[1rem] border border-[var(--line)] bg-[var(--glass)] px-4 py-3 text-sm text-[var(--muted)]">
+              {t(uiLang, 'dictionaryEmpty')}
+            </div>
+          )}
+
+          {view === 'thesaurus' && (
+            uniqueSynonyms.length > 0 ? (
+              <div className="rounded-[1.1rem] border border-[var(--line)] bg-[var(--glass)] p-4">
+                <div className="mb-3 text-sm font-bold uppercase tracking-[0.14em] text-[var(--accent-deep)]">{t(uiLang, 'synonyms')}</div>
+                <div className="flex flex-wrap gap-2">
+                  {uniqueSynonyms.map((synonym) => (
+                    <span key={synonym} className="rounded-full border border-[var(--line)] bg-[var(--panel-quiet)] px-3 py-1.5 text-sm text-[var(--ink)]">
+                      {synonym}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ) : status === 'ready' && (
+              <div className="rounded-[1rem] border border-[var(--line)] bg-[var(--glass)] px-4 py-3 text-sm text-[var(--muted)]">
+                {t(uiLang, 'thesaurusEmpty')}
+              </div>
+            )
+          )}
+
+          {view === 'translation' && (
+            <div className="space-y-3">
+              <div className="rounded-[1.1rem] border border-[var(--line)] bg-[var(--glass)] p-4">
+                <div className="text-sm font-bold uppercase tracking-[0.14em] text-[var(--accent-deep)]">{t(uiLang, 'translationView')}</div>
+                <div className="mt-3 flex items-center justify-between gap-4 rounded-[0.9rem] bg-[var(--panel-quiet)] px-4 py-3">
+                  <span className="display-font text-lg text-[var(--ink)]">{displayText}</span>
+                  <span className="text-sm font-semibold text-[var(--muted)]">{nativeMeaning}</span>
+                </div>
+              </div>
+              {uniqueTranslations.length > 0 ? (
+                <div className="rounded-[1.1rem] border border-[var(--line)] bg-[var(--glass)] p-4">
+                  <div className="mb-3 text-sm font-bold uppercase tracking-[0.14em] text-[var(--accent-deep)]">{t(uiLang, 'examples')}</div>
+                  <div className="space-y-2">
+                    {uniqueTranslations.map((translation) => (
+                      <div key={`${translation.languageCode}-${translation.word}`} className="flex items-center justify-between gap-3 rounded-[0.85rem] bg-[var(--panel-quiet)] px-3 py-2">
+                        <span className="text-sm text-[var(--ink)]">{translation.word}</span>
+                        <span className="text-[0.68rem] font-bold uppercase tracking-[0.14em] text-[var(--muted)]">
+                          {translation.languageName || translation.languageCode}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : status === 'ready' && (
+                <div className="rounded-[1rem] border border-[var(--line)] bg-[var(--glass)] px-4 py-3 text-sm text-[var(--muted)]">
+                  {t(uiLang, 'translationEmpty')}
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="text-xs text-[var(--muted)]">
+            {t(uiLang, 'dictionarySource')}:{' '}
+            <a className="font-semibold text-[var(--accent)] underline" href="https://freedictionaryapi.com/" target="_blank" rel="noreferrer">
+              FreeDictionaryAPI.com
+            </a>
+            {data?.sourceUrl && (
+              <>
+                {' · '}
+                <a className="font-semibold text-[var(--accent)] underline" href={data.sourceUrl} target="_blank" rel="noreferrer">
+                  Wiktionary
+                </a>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

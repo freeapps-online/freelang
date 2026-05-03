@@ -18,6 +18,7 @@ vi.mock('./hooks.ts', () => ({
       flashcardAudio: true,
       flashcardInputMode: 'keyboard',
       sentenceInputMode: 'keyboard',
+      dictionaryDefaultView: 'dictionary',
       cardLevel: 1,
     },
     update: updateMock,
@@ -43,7 +44,9 @@ vi.mock('./components/FlashcardsTab.tsx', () => ({
 }))
 
 vi.mock('./components/SpeakTab.tsx', () => ({
-  SentencesTab: ({ showStats }: { showStats: boolean }) => <div data-testid="sentences-tab">{showStats ? 'sentence-stats' : 'sentences'}</div>,
+  SentencesTab: ({ contentMode, showStats }: { contentMode: 'phrases' | 'sentences'; showStats: boolean }) => (
+    <div data-testid={`${contentMode}-tab`}>{showStats ? `${contentMode}-stats` : contentMode}</div>
+  ),
 }))
 
 vi.mock('./components/PreferencesTab.tsx', () => ({
@@ -78,6 +81,18 @@ describe('App', () => {
     expect(main.querySelector('section')).not.toBeInTheDocument()
   })
 
+  it('renders fullscreen phrases directly inside main on /phrases', () => {
+    window.history.pushState({}, '', '/phrases')
+
+    render(<App />)
+
+    const main = screen.getByRole('main')
+    const phrases = screen.getByTestId('phrases-tab')
+
+    expect(main.firstElementChild).toBe(phrases)
+    expect(main.querySelector('section')).not.toBeInTheDocument()
+  })
+
   it('wraps preferences content in a section on /preferences', () => {
     window.history.pushState({}, '', '/preferences')
 
@@ -93,10 +108,10 @@ describe('App', () => {
   it('navigates between modes with the tab buttons', () => {
     render(<App />)
 
-    fireEvent.click(screen.getAllByRole('button', { name: 'Sentences' })[0])
+    fireEvent.click(screen.getAllByRole('button', { name: 'Phrases' })[0])
 
-    expect(window.location.pathname).toBe('/sentences')
-    expect(screen.getByTestId('sentences-tab')).toBeInTheDocument()
+    expect(window.location.pathname).toBe('/phrases')
+    expect(screen.getByTestId('phrases-tab')).toBeInTheDocument()
   })
 
   it('surfaces the flashcard mode switch in app chrome', () => {
@@ -114,6 +129,6 @@ describe('App', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Sentence Stats' }))
 
-    expect(screen.getByTestId('sentences-tab')).toHaveTextContent('sentence-stats')
+    expect(screen.getByTestId('sentences-tab')).toHaveTextContent('sentences-stats')
   })
 })
