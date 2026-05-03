@@ -1,3 +1,5 @@
+import type { UiLocale } from './i18n.ts'
+
 const STORAGE_KEY = 'freelang-settings'
 
 export type ThemePreference = 'system' | 'light' | 'dark'
@@ -7,6 +9,7 @@ export type SurfacePreference = 'soft' | 'bold'
 export type PracticeInputMode = 'keyboard' | 'speak'
 
 export interface Settings {
+  interfaceLang: UiLocale
   nativeLang: string
   targetLang: string
   theme: ThemePreference
@@ -21,6 +24,7 @@ export interface Settings {
 }
 
 const defaults: Settings = {
+  interfaceLang: 'en',
   nativeLang: 'en',
   targetLang: 'es',
   theme: 'system',

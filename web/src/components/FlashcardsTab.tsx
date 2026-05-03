@@ -6,6 +6,7 @@ import { useSpeech } from '../hooks.ts'
 import { reportCardScore } from '../services/cloud.ts'
 import { evaluateVoiceAttempt } from '../services/flashcardsVoice.ts'
 import { FlashcardModeSwitch } from './FlashcardModeSwitch.tsx'
+import { t } from '../services/i18n.ts'
 import type { PracticeInputMode } from '../services/settings.ts'
 import type { FlashCard, FlashCardRound, FlashCardScore } from '../types.ts'
 
@@ -18,6 +19,7 @@ export function FlashcardsTab({
   targetLang,
   audioEnabled,
   inputMode,
+  uiLang,
   onInputModeChange,
   level,
   showStats,
@@ -27,6 +29,7 @@ export function FlashcardsTab({
   targetLang: string
   audioEnabled: boolean
   inputMode: PracticeInputMode
+  uiLang: string
   onInputModeChange: (mode: PracticeInputMode) => void
   level: number
   showStats: boolean
@@ -288,7 +291,7 @@ export function FlashcardsTab({
   }, [audioEnabled, handleVoiceAnswer, inputMode, nativeLang, round, showStats, targetLang, transitioning])
 
   if (!round || !display) {
-    return <div className="flex flex-1 items-center justify-center text-[var(--muted)]">Loading...</div>
+    return <div className="flex flex-1 items-center justify-center text-[var(--muted)]">{t(uiLang, 'loading')}</div>
   }
 
   const pct = scores.total > 0 ? Math.round((scores.correct / scores.total) * 100) : 0
@@ -301,7 +304,7 @@ export function FlashcardsTab({
       >
         <div className="flex h-full flex-col gap-2">
           <div className="flex items-center justify-between gap-2">
-            <FlashcardModeSwitch value={inputMode} onChange={handleInputModeSwitch} />
+            <FlashcardModeSwitch value={inputMode} uiLang={uiLang} onChange={handleInputModeSwitch} />
             <div className="flex items-center gap-2 text-xs font-bold">
               <span className="text-[var(--success)]">{scores.correct}</span>
               <span className="text-[var(--muted)]">/</span>
@@ -328,13 +331,13 @@ export function FlashcardsTab({
               ) : (
                 <div className="grid gap-2 sm:grid-cols-2">
                   <VoiceStepCard
-                    title="1. Repeat the card"
+                    title={`${t(uiLang, 'step1')}. ${t(uiLang, 'repeatWord')}`}
                     active={voiceStep === 'repeat'}
                     complete={voiceAttempt?.repeatMatched === true}
                     detail={voiceAttempt?.heardTarget ? `Heard: ${voiceAttempt.heardTarget}` : `Say ${display.text}`}
                   />
                   <VoiceStepCard
-                    title="2. Say the meaning"
+                    title={`${t(uiLang, 'step2')}. ${t(uiLang, 'sayMeaning')}`}
                     active={voiceStep === 'answer'}
                     complete={result === 'correct'}
                     detail={voiceAttempt?.heardAnswer ? `Heard: ${voiceAttempt.heardAnswer}` : `Say ${correctAnswer}`}
@@ -402,7 +405,7 @@ export function FlashcardsTab({
                     className="w-full rounded-[1.1rem] border border-[var(--line)] bg-[var(--glass)] px-4 py-3 text-sm font-semibold text-[var(--ink)]"
                     onClick={() => focusCard(round.card)}
                   >
-                    Restart this card
+                    {t(uiLang, 'restartCard')}
                   </button>
                 </div>
               )}

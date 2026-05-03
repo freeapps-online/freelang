@@ -7,6 +7,7 @@ const updateMock = vi.fn()
 vi.mock('./hooks.ts', () => ({
   useSettings: () => ({
     settings: {
+      interfaceLang: 'en',
       nativeLang: 'en',
       targetLang: 'es',
       theme: 'system',

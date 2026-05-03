@@ -3,6 +3,7 @@ import { speech } from '../services/speech.ts'
 import { useSpeech } from '../hooks.ts'
 import { reportSentenceScore } from '../services/cloud.ts'
 import { FlashcardModeSwitch } from './FlashcardModeSwitch.tsx'
+import { t } from '../services/i18n.ts'
 import { SENTENCE_PASS_SCORE, loadSentenceStats, recordSentenceAttempt, type SentenceStatsMap } from '../services/sentenceStats.ts'
 import type { PracticeInputMode } from '../services/settings.ts'
 import { getTranslit } from '../services/translit.ts'
@@ -71,6 +72,7 @@ export function SentencesTab({
   targetLang,
   level: rawLevel,
   inputMode,
+  uiLang,
   showStats: showStatsExternal,
   onShowStatsChange,
   onInputModeChange,
@@ -79,6 +81,7 @@ export function SentencesTab({
   targetLang: string
   level: number
   inputMode: PracticeInputMode
+  uiLang: string
   showStats: boolean
   onShowStatsChange: (show: boolean) => void
   onInputModeChange: (mode: PracticeInputMode) => void
@@ -263,7 +266,7 @@ export function SentencesTab({
     speech.stopListening()
   }, [])
 
-  if (!sentence) return <div className="flex flex-1 items-center justify-center text-[var(--muted)]">Loading...</div>
+  if (!sentence) return <div className="flex flex-1 items-center justify-center text-[var(--muted)]">{t(uiLang, 'loading')}</div>
 
   return (
     <div className="flex h-[calc(100dvh-80px)] flex-col gap-2 lg:h-auto">
@@ -272,10 +275,10 @@ export function SentencesTab({
       ) : (
         <>
           <div className="flex items-center justify-between gap-2">
-            <FlashcardModeSwitch value={inputMode} onChange={onInputModeChange} />
+            <FlashcardModeSwitch value={inputMode} uiLang={uiLang} onChange={onInputModeChange} />
             {inputMode === 'speak' && (
               <span className="text-xs font-semibold text-[var(--muted)]">
-                {sp.isListening ? 'Mic live' : speakStatus === 'prompting' ? 'Prompting' : 'Auto'}
+                {sp.isListening ? t(uiLang, 'micLive') : speakStatus === 'prompting' ? t(uiLang, 'prompting') : t(uiLang, 'auto')}
               </span>
             )}
           </div>
@@ -361,7 +364,7 @@ export function SentencesTab({
                 className="w-full rounded-[1.1rem] border border-[var(--line)] bg-[var(--glass)] px-4 py-3 text-sm font-semibold text-[var(--ink)]"
                 onClick={() => focusSentence(sentence)}
               >
-                Restart this sentence
+                {t(uiLang, 'restartSentence')}
               </button>
             </div>
           )}

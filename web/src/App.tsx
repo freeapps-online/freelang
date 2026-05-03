@@ -4,7 +4,9 @@ import { FlashcardsTab } from './components/FlashcardsTab.tsx'
 import { SentencesTab } from './components/SpeakTab.tsx'
 import { PreferencesTab } from './components/PreferencesTab.tsx'
 import { FlashcardModeSwitch } from './components/FlashcardModeSwitch.tsx'
+import { InterfaceLanguagePicker } from './components/InterfaceLanguagePicker.tsx'
 import { LanguagePicker } from './components/LanguagePicker.tsx'
+import { t } from './services/i18n.ts'
 import { LEVEL_LABELS, LEVELS } from './services/vocabulary.ts'
 import type { Mode } from './types.ts'
 
@@ -47,8 +49,9 @@ export default function App() {
   }, [])
 
   const isFullscreen = mode === 'flashcards' || mode === 'sentences'
-  const statsTitle = mode === 'flashcards' ? 'Word Stats' : 'Sentence Stats'
-  const statsReturnLabel = mode === 'flashcards' ? 'Back to Cards' : 'Back to Sentences'
+  const tt = (key: Parameters<typeof t>[1]) => t(settings.interfaceLang, key)
+  const statsTitle = mode === 'flashcards' ? tt('wordStats') : tt('sentenceStats')
+  const statsReturnLabel = mode === 'flashcards' ? tt('backToCards') : tt('backToSentences')
 
   return (
     <div className="relative min-h-[100dvh] overflow-hidden">
@@ -56,6 +59,13 @@ export default function App() {
         <div className="absolute left-[-18%] top-[-8%] h-72 w-72 rounded-full bg-[var(--accent-soft)]/35 blur-3xl lg:h-[34rem] lg:w-[34rem]" />
         <div className="absolute right-[-14%] top-[18%] h-72 w-72 rounded-full bg-[var(--sky-soft)]/30 blur-3xl lg:top-[-2%] lg:h-[28rem] lg:w-[28rem]" />
         <div className="absolute bottom-[-10%] left-[10%] h-80 w-80 rounded-full bg-[var(--mint-soft)]/25 blur-3xl lg:left-[45%] lg:h-[26rem] lg:w-[26rem]" />
+      </div>
+
+      <div className="absolute right-2 top-2 z-50 sm:right-4 lg:right-8 lg:top-8">
+        <InterfaceLanguagePicker
+          value={settings.interfaceLang}
+          onChange={(interfaceLang) => update({ interfaceLang })}
+        />
       </div>
 
       <div className={`relative mx-auto max-w-[1540px] px-1 pt-1 sm:px-4 lg:px-8 lg:py-8 ${isFullscreen ? '' : 'min-h-[100dvh] pb-14'}`}>
@@ -68,8 +78,8 @@ export default function App() {
             </div>
 
             <div className="grid gap-3">
-              <LanguagePicker label="Native" value={settings.nativeLang} onChange={(code) => update({ nativeLang: code })} />
-              <LanguagePicker label="Target" value={settings.targetLang} onChange={(code) => update({ targetLang: code })} />
+              <LanguagePicker label={tt('native')} value={settings.nativeLang} onChange={(code) => update({ nativeLang: code })} />
+              <LanguagePicker label={tt('target')} value={settings.targetLang} onChange={(code) => update({ targetLang: code })} />
             </div>
 
             <nav className="space-y-1">
@@ -83,7 +93,7 @@ export default function App() {
                   }`}
                   onClick={() => { navigate(item); setShowStats(false) }}
                 >
-                  {{ flashcards: 'Cards', sentences: 'Sentences', preferences: 'Preferences' }[item]}
+                  {{ flashcards: tt('cards'), sentences: tt('sentences'), preferences: tt('preferences') }[item]}
                 </button>
               ))}
               {isFullscreen && (
@@ -104,10 +114,11 @@ export default function App() {
               <div className="mt-auto space-y-3">
                 <div className="rounded-[1rem] border border-[var(--line)] bg-[var(--glass-soft)] p-3">
                   <div className="mb-2 text-[0.6rem] font-bold uppercase tracking-[0.15em] text-[var(--muted)]">
-                    {mode === 'flashcards' ? 'Card Input' : 'Sentence Input'}
+                    {mode === 'flashcards' ? tt('cardInput') : tt('sentenceInput')}
                   </div>
                   <FlashcardModeSwitch
                     value={mode === 'flashcards' ? settings.flashcardInputMode : settings.sentenceInputMode}
+                    uiLang={settings.interfaceLang}
                     onChange={(nextMode) => {
                       if (mode === 'flashcards') update({ flashcardInputMode: nextMode })
                       else update({ sentenceInputMode: nextMode })
@@ -117,22 +128,22 @@ export default function App() {
 
                 <div className="space-y-1 rounded-[1rem] border border-[var(--line)] bg-[var(--glass-soft)] p-3 text-[0.7rem] text-[var(--muted)]">
                   <div className="font-bold uppercase tracking-[0.15em]">
-                    {(mode === 'flashcards' ? settings.flashcardInputMode : settings.sentenceInputMode) === 'speak' ? 'Speak' : 'Keyboard'}
+                    {(mode === 'flashcards' ? settings.flashcardInputMode : settings.sentenceInputMode) === 'speak' ? tt('speak') : tt('keyboard')}
                   </div>
                   {(mode === 'flashcards' ? settings.flashcardInputMode : settings.sentenceInputMode) === 'speak' ? (
                     <>
                       {mode === 'flashcards' ? (
                         <>
-                          <div className="flex justify-between"><span>Step 1</span><span>Repeat the word</span></div>
-                          <div className="flex justify-between"><span>Step 2</span><span>Say the meaning</span></div>
+                          <div className="flex justify-between"><span>{tt('step1')}</span><span>{tt('repeatWord')}</span></div>
+                          <div className="flex justify-between"><span>{tt('step2')}</span><span>{tt('sayMeaning')}</span></div>
                         </>
                       ) : (
                         <>
-                          <div className="flex justify-between"><span>Prompt</span><span>Hear the sentence</span></div>
-                          <div className="flex justify-between"><span>Answer</span><span>Say it back aloud</span></div>
+                          <div className="flex justify-between"><span>{tt('prompt')}</span><span>{tt('hearSentence')}</span></div>
+                          <div className="flex justify-between"><span>{tt('answer')}</span><span>{tt('sayItBack')}</span></div>
                         </>
                       )}
-                      <div className="flex justify-between"><span>Auto</span><span>Listen and move on</span></div>
+                      <div className="flex justify-between"><span>{tt('auto')}</span><span>{tt('listenMoveOn')}</span></div>
                     </>
                   ) : (
                     <>
@@ -144,9 +155,9 @@ export default function App() {
                         </>
                       ) : (
                         <>
-                          <div className="flex justify-between"><span>Hold mic</span><span>Record sentence</span></div>
-                          <div className="flex justify-between"><span>← → / Enter</span><span>Next sentence</span></div>
-                          <div className="flex justify-between"><span>Speaker</span><span>Replay prompt</span></div>
+                          <div className="flex justify-between"><span>{tt('holdMic')}</span><span>{tt('recordSentence')}</span></div>
+                          <div className="flex justify-between"><span>← → / Enter</span><span>{tt('nextSentence')}</span></div>
+                          <div className="flex justify-between"><span>{tt('speaker')}</span><span>{tt('replayPrompt')}</span></div>
                         </>
                       )}
                     </>
@@ -203,7 +214,7 @@ export default function App() {
                   className={`rounded-full px-2 py-1.5 text-xs font-semibold ${showStats ? 'bg-[var(--sky)] text-[var(--paper)]' : 'text-[var(--muted)]'}`}
                   onClick={() => setShowStats(!showStats)}
                 >
-                  {showStats ? 'Play' : 'Stats'}
+                  {showStats ? tt('play') : tt('stats')}
                 </button>
               )}
               {mode === 'flashcards' && (
@@ -228,6 +239,7 @@ export default function App() {
               <div className="flex justify-center">
                 <FlashcardModeSwitch
                   value={mode === 'flashcards' ? settings.flashcardInputMode : settings.sentenceInputMode}
+                  uiLang={settings.interfaceLang}
                   onChange={(nextMode) => {
                     if (mode === 'flashcards') update({ flashcardInputMode: nextMode })
                     else update({ sentenceInputMode: nextMode })
@@ -246,6 +258,7 @@ export default function App() {
                 targetLang={settings.targetLang}
                 audioEnabled={settings.flashcardAudio}
                 inputMode={settings.flashcardInputMode}
+                uiLang={settings.interfaceLang}
                 onInputModeChange={(flashcardInputMode) => update({ flashcardInputMode })}
                 level={settings.cardLevel}
                 showStats={showStats}
@@ -258,6 +271,7 @@ export default function App() {
                 targetLang={settings.targetLang}
                 level={settings.cardLevel}
                 inputMode={settings.sentenceInputMode}
+                uiLang={settings.interfaceLang}
                 showStats={showStats}
                 onShowStatsChange={setShowStats}
                 onInputModeChange={(sentenceInputMode) => update({ sentenceInputMode })}
@@ -275,9 +289,9 @@ export default function App() {
       {/* Mobile dock */}
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--line)] bg-[var(--dock)]/92 px-2 pb-[calc(env(safe-area-inset-bottom)+0.25rem)] pt-1 backdrop-blur-2xl lg:hidden">
         <div className="mx-auto grid max-w-xs grid-cols-3">
-          <TabButton icon="flashcards" label="Cards" active={mode === 'flashcards'} onClick={() => navigate('flashcards')} />
-          <TabButton icon="speak" label="Sentences" active={mode === 'sentences'} onClick={() => navigate('sentences')} />
-          <TabButton icon="preferences" label="Prefs" active={mode === 'preferences'} onClick={() => navigate('preferences')} />
+          <TabButton icon="flashcards" label={tt('cards')} active={mode === 'flashcards'} onClick={() => navigate('flashcards')} />
+          <TabButton icon="speak" label={tt('sentences')} active={mode === 'sentences'} onClick={() => navigate('sentences')} />
+          <TabButton icon="preferences" label={tt('prefs')} active={mode === 'preferences'} onClick={() => navigate('preferences')} />
         </div>
       </nav>
     </div>

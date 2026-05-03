@@ -8,6 +8,7 @@ describe('settings service', () => {
 
   it('returns defaults when storage is empty', () => {
     expect(loadSettings()).toEqual({
+      interfaceLang: 'en',
       nativeLang: 'en',
       targetLang: 'es',
       theme: 'system',
@@ -33,6 +34,7 @@ describe('settings service', () => {
     const settings = loadSettings()
 
     expect(settings).toMatchObject({
+      interfaceLang: 'en',
       nativeLang: 'fr',
       targetLang: 'de',
       labelSize: 'large',
@@ -46,6 +48,7 @@ describe('settings service', () => {
 
   it('saves settings under the current storage key', () => {
     const next = {
+      interfaceLang: 'ru' as const,
       nativeLang: 'it',
       targetLang: 'ja',
       theme: 'dark' as const,

@@ -1,12 +1,15 @@
 import type { PracticeInputMode } from '../services/settings.ts'
+import { t } from '../services/i18n.ts'
 
 export function FlashcardModeSwitch({
   value,
   onChange,
+  uiLang,
   compact = false,
 }: {
   value: PracticeInputMode
   onChange: (mode: PracticeInputMode) => void
+  uiLang: string
   compact?: boolean
 }) {
   return (
@@ -19,7 +22,7 @@ export function FlashcardModeSwitch({
           }`}
           onClick={() => onChange(mode)}
         >
-          {mode}
+          {t(uiLang, mode)}
         </button>
       ))}
     </div>

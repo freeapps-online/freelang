@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { LanguagePicker } from './LanguagePicker.tsx'
+import { t } from '../services/i18n.ts'
 import type { Settings, ThemePreference, FontSizePreference, MotionPreference, SurfacePreference, PracticeInputMode } from '../services/settings.ts'
 
 export function PreferencesTab({
@@ -9,115 +10,117 @@ export function PreferencesTab({
   settings: Settings
   update: (patch: Partial<Settings>) => void
 }) {
+  const tt = (key: Parameters<typeof t>[1]) => t(settings.interfaceLang, key)
+
   return (
     <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_18rem]">
       <section className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--glass-strong)] p-4 shadow-[var(--shadow-card)] sm:p-5">
         <div className="space-y-5">
           <div>
-            <div className="text-[0.72rem] font-bold uppercase tracking-[0.22em] text-[var(--accent-deep)]">Preferences</div>
-            <h3 className="display-font mt-2 text-3xl leading-none text-[var(--ink)]">Tune the app to how you read and practice.</h3>
+            <div className="text-[0.72rem] font-bold uppercase tracking-[0.22em] text-[var(--accent-deep)]">{tt('preferences')}</div>
+            <h3 className="display-font mt-2 text-3xl leading-none text-[var(--ink)]">{tt('preferencesHeading')}</h3>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">
-              Appearance settings apply instantly and persist locally on this device. Language defaults stay here too, so the practice surface and the preferences live in one place.
+              {tt('preferencesBody')}
             </p>
           </div>
 
           <div className="grid gap-4 lg:grid-cols-2">
-            <SettingsPanel title="Language defaults" description="Choose the pair that opens across the app.">
+            <SettingsPanel title={tt('languageDefaults')} description={tt('languageDefaultsDesc')}>
               <div className="grid gap-3">
-                <LanguagePicker label="Native language" value={settings.nativeLang} onChange={(code) => update({ nativeLang: code })} />
-                <LanguagePicker label="Target language" value={settings.targetLang} onChange={(code) => update({ targetLang: code })} />
+                <LanguagePicker label={tt('nativeLanguage')} value={settings.nativeLang} onChange={(code) => update({ nativeLang: code })} />
+                <LanguagePicker label={tt('targetLanguage')} value={settings.targetLang} onChange={(code) => update({ targetLang: code })} />
               </div>
             </SettingsPanel>
 
-            <SettingsPanel title="Theme" description="Keep the warm paper look, go dark, or follow the system.">
+            <SettingsPanel title={tt('theme')} description={tt('themeDesc')}>
               <ChoiceGrid<ThemePreference>
                 value={settings.theme}
                 onChange={(theme) => update({ theme })}
                 options={[
-                  { value: 'system', label: 'System', detail: 'Match device appearance' },
-                  { value: 'light', label: 'Light', detail: 'Warm paper studio' },
-                  { value: 'dark', label: 'Dark', detail: 'Low-glare night mode' },
+                  { value: 'system', label: tt('system'), detail: tt('matchDeviceAppearance') },
+                  { value: 'light', label: tt('light'), detail: tt('warmPaperStudio') },
+                  { value: 'dark', label: tt('dark'), detail: tt('lowGlareNightMode') },
                 ]}
               />
             </SettingsPanel>
 
-            <SettingsPanel title="Label size" description="Size of navigation, buttons, and UI labels.">
+            <SettingsPanel title={tt('labelSize')} description={tt('labelSizeDesc')}>
               <ChoiceGrid<FontSizePreference>
                 value={settings.labelSize}
                 onChange={(labelSize) => update({ labelSize })}
                 options={[
-                  { value: 'small', label: 'Small', detail: 'Compact UI' },
-                  { value: 'medium', label: 'Medium', detail: 'Default' },
-                  { value: 'large', label: 'Large', detail: 'Bigger labels' },
-                  { value: 'xlarge', label: 'XL', detail: 'Maximum' },
+                  { value: 'small', label: tt('small'), detail: tt('compactUi') },
+                  { value: 'medium', label: tt('medium'), detail: tt('default') },
+                  { value: 'large', label: tt('large'), detail: tt('biggerLabels') },
+                  { value: 'xlarge', label: tt('xl'), detail: tt('maximum') },
                 ]}
               />
             </SettingsPanel>
 
-            <SettingsPanel title="Content size" description="Size of words, answers, and card text.">
+            <SettingsPanel title={tt('contentSize')} description={tt('contentSizeDesc')}>
               <ChoiceGrid<FontSizePreference>
                 value={settings.contentSize}
                 onChange={(contentSize) => update({ contentSize })}
                 options={[
-                  { value: 'small', label: 'Small', detail: 'More fits on screen' },
-                  { value: 'medium', label: 'Medium', detail: 'Default' },
-                  { value: 'large', label: 'Large', detail: 'Easier to read' },
-                  { value: 'xlarge', label: 'XL', detail: 'Maximum comfort' },
+                  { value: 'small', label: tt('small'), detail: tt('moreFitsOnScreen') },
+                  { value: 'medium', label: tt('medium'), detail: tt('default') },
+                  { value: 'large', label: tt('large'), detail: tt('easierToRead') },
+                  { value: 'xlarge', label: tt('xl'), detail: tt('maximumComfort') },
                 ]}
               />
             </SettingsPanel>
 
-            <SettingsPanel title="Motion" description="Reduce animated movement if you want a calmer interface.">
+            <SettingsPanel title={tt('motion')} description={tt('motionDesc')}>
               <ChoiceGrid<MotionPreference>
                 value={settings.motion}
                 onChange={(motion) => update({ motion })}
                 options={[
-                  { value: 'full', label: 'Full', detail: 'Standard motion and feedback' },
-                  { value: 'reduced', label: 'Reduced', detail: 'Less animation and pulse' },
+                  { value: 'full', label: tt('full'), detail: tt('standardMotionFeedback') },
+                  { value: 'reduced', label: tt('reduced'), detail: tt('lessAnimationPulse') },
                 ]}
               />
             </SettingsPanel>
 
-            <SettingsPanel title="Surface style" description="Adjust how bold the panels and contrast feel.">
+            <SettingsPanel title={tt('surfaceStyle')} description={tt('surfaceStyleDesc')}>
               <ChoiceGrid<SurfacePreference>
                 value={settings.surface}
                 onChange={(surface) => update({ surface })}
                 options={[
-                  { value: 'soft', label: 'Soft', detail: 'Gentler layers' },
-                  { value: 'bold', label: 'Bold', detail: 'Stronger panel separation' },
+                  { value: 'soft', label: tt('soft'), detail: tt('gentlerLayers') },
+                  { value: 'bold', label: tt('bold'), detail: tt('strongerPanelSeparation') },
                 ]}
               />
             </SettingsPanel>
 
-            <SettingsPanel title="Flashcard audio" description="Auto-pronounce each shown card and allow quick replay.">
+            <SettingsPanel title={tt('flashcardAudio')} description={tt('flashcardAudioDesc')}>
               <ChoiceGrid<'on' | 'off'>
                 value={settings.flashcardAudio ? 'on' : 'off'}
                 onChange={(flashcardAudio) => update({ flashcardAudio: flashcardAudio === 'on' })}
                 options={[
-                  { value: 'on', label: 'On', detail: 'Speak cards immediately' },
-                  { value: 'off', label: 'Off', detail: 'Keep cards silent by default' },
+                  { value: 'on', label: tt('on'), detail: tt('speakCardsImmediately') },
+                  { value: 'off', label: tt('off'), detail: tt('keepCardsSilent') },
                 ]}
               />
             </SettingsPanel>
 
-            <SettingsPanel title="Card mode" description="Choose between assisted multiple-choice practice and hands-free speaking practice.">
+            <SettingsPanel title={tt('cardMode')} description={tt('cardModeDesc')}>
               <ChoiceGrid<PracticeInputMode>
                 value={settings.flashcardInputMode}
                 onChange={(flashcardInputMode) => update({ flashcardInputMode })}
                 options={[
-                  { value: 'keyboard', label: 'Keyboard', detail: 'Swipe, tap, or use arrow keys' },
-                  { value: 'speak', label: 'Speak', detail: 'Repeat and answer aloud, then auto-advance' },
+                  { value: 'keyboard', label: tt('keyboard'), detail: tt('swipeTapArrowKeys') },
+                  { value: 'speak', label: tt('speak'), detail: tt('repeatAnswerAutoAdvance') },
                 ]}
               />
             </SettingsPanel>
 
-            <SettingsPanel title="Sentence mode" description="Use buttons and hold-to-talk, or run the sentence deck hands-free.">
+            <SettingsPanel title={tt('sentenceMode')} description={tt('sentenceModeDesc')}>
               <ChoiceGrid<PracticeInputMode>
                 value={settings.sentenceInputMode}
                 onChange={(sentenceInputMode) => update({ sentenceInputMode })}
                 options={[
-                  { value: 'keyboard', label: 'Keyboard', detail: 'Tap next and hold to record' },
-                  { value: 'speak', label: 'Speak', detail: 'Prompt, listen, score, and move on automatically' },
+                  { value: 'keyboard', label: tt('keyboard'), detail: tt('tapNextHoldRecord') },
+                  { value: 'speak', label: tt('speak'), detail: tt('promptListenScoreMoveOn') },
                 ]}
               />
             </SettingsPanel>
@@ -127,14 +130,14 @@ export function PreferencesTab({
 
       <aside className="space-y-4">
         <div className="rounded-[1.5rem] border border-[var(--line)] p-4 shadow-[var(--shadow-card)]" style={{ background: 'var(--panel-gradient)' }}>
-          <div className="text-[0.72rem] font-bold uppercase tracking-[0.22em] text-[var(--muted)]">Live summary</div>
+          <div className="text-[0.72rem] font-bold uppercase tracking-[0.22em] text-[var(--muted)]">{tt('liveSummary')}</div>
           <div className="mt-4 space-y-3">
-            <PreferenceStat label="Theme" value={settings.theme} />
-            <PreferenceStat label="Labels" value={settings.labelSize} />
-            <PreferenceStat label="Content" value={settings.contentSize} />
-            <PreferenceStat label="Card audio" value={settings.flashcardAudio ? 'on' : 'off'} />
-            <PreferenceStat label="Card mode" value={settings.flashcardInputMode} />
-            <PreferenceStat label="Sentence mode" value={settings.sentenceInputMode} />
+            <PreferenceStat label={tt('theme')} value={settings.theme} />
+            <PreferenceStat label={tt('labels')} value={settings.labelSize} />
+            <PreferenceStat label={tt('contentSize')} value={settings.contentSize} />
+            <PreferenceStat label={tt('flashcardAudio')} value={settings.flashcardAudio ? tt('on') : tt('off')} />
+            <PreferenceStat label={tt('cardMode')} value={settings.flashcardInputMode === 'speak' ? tt('speak') : tt('keyboard')} />
+            <PreferenceStat label={tt('sentenceMode')} value={settings.sentenceInputMode === 'speak' ? tt('speak') : tt('keyboard')} />
           </div>
         </div>
 
@@ -145,8 +148,8 @@ export function PreferencesTab({
           className="block rounded-[1.5rem] border border-[var(--accent-soft)] p-4 shadow-[var(--shadow-card)]"
           style={{ background: 'var(--accent-gradient)' }}
         >
-          <div className="text-[0.72rem] font-bold uppercase tracking-[0.22em] text-[var(--accent-deep)]">Upgrade to Pro</div>
-          <div className="mt-2 text-sm font-semibold text-[var(--ink)]">AI Translation, Conversation & Kokoro TTS</div>
+          <div className="text-[0.72rem] font-bold uppercase tracking-[0.22em] text-[var(--accent-deep)]">{tt('upgradeToPro')}</div>
+          <div className="mt-2 text-sm font-semibold text-[var(--ink)]">{tt('aiTranslationConversationTts')}</div>
           <div className="mt-1 text-xs text-[var(--muted)]">prolanguageapp.online</div>
         </a>
       </aside>
