@@ -227,7 +227,7 @@ export default function App() {
   }
 
   return (
-    <div className="relative min-h-[100dvh] overflow-hidden">
+    <div className={`relative ${isFullscreen ? 'h-[100dvh] overflow-hidden' : 'min-h-[100dvh] overflow-hidden'}`}>
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute left-[-18%] top-[-8%] h-72 w-72 rounded-full bg-[var(--accent-soft)]/35 blur-3xl lg:h-[34rem] lg:w-[34rem]" />
         <div className="absolute right-[-14%] top-[18%] h-72 w-72 rounded-full bg-[var(--sky-soft)]/30 blur-3xl lg:top-[-2%] lg:h-[28rem] lg:w-[28rem]" />
