@@ -117,8 +117,10 @@ class SpeechService {
 
   speak(text: string, lang: string): Promise<void> {
     const doSpeak = () => new Promise<void>((resolve) => {
-      this.synthesis.cancel()
-      this.synthesis.resume() // Chrome workaround: cancel() can stall the queue
+      // Only cancel if something is pending/speaking — avoids Chrome stalling bug
+      if (this.synthesis.speaking || this.synthesis.pending) {
+        this.synthesis.cancel()
+      }
       const utterance = new SpeechSynthesisUtterance(text)
       utterance.lang = lang
       utterance.rate = 0.9
@@ -137,9 +139,12 @@ class SpeechService {
         this.notify()
         resolve()
       }
-      utterance.onerror = () => {
-        this.state.isSpeaking = false
-        this.notify()
+      utterance.onerror = (e) => {
+        // Chrome sometimes fires 'interrupted' error when cancel() is called — ignore it
+        if (e.error !== 'interrupted') {
+          this.state.isSpeaking = false
+          this.notify()
+        }
         resolve()
       }
 
