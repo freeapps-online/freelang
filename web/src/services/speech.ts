@@ -118,6 +118,7 @@ class SpeechService {
   speak(text: string, lang: string): Promise<void> {
     const doSpeak = () => new Promise<void>((resolve) => {
       this.synthesis.cancel()
+      this.synthesis.resume() // Chrome workaround: cancel() can stall the queue
       const utterance = new SpeechSynthesisUtterance(text)
       utterance.lang = lang
       utterance.rate = 0.9
