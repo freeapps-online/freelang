@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { BookOpen, Headphones, X } from 'lucide-react'
+import { X } from 'lucide-react'
 import { getFlashCardRound, getCardDisplay, loadLevel, getLoadedWords } from '../services/vocabulary.ts'
 import { loadScores, recordAnswer, loadWordStats, recordWordAnswer, pickWeightedCard, type WordStatsMap } from '../services/scores.ts'
 import { speech } from '../services/speech.ts'
@@ -55,16 +55,9 @@ export function FlashcardsTab({
   const [voiceStep, setVoiceStep] = useState<VoiceStep>('repeat')
   const [voiceAttempt, setVoiceAttempt] = useState<{ heardTarget: string; heardAnswer: string; repeatMatched: boolean } | null>(null)
   const [speakStatus, setSpeakStatus] = useState<SpeakStatus>('idle')
-  const [listenOnly, setListenOnly] = useState(() => {
+  const [listenOnly] = useState(() => {
     try { return localStorage.getItem('freelang-listen-only') === '1' } catch { return false }
   })
-  const toggleListenOnly = useCallback(() => {
-    setListenOnly(prev => {
-      const next = !prev
-      localStorage.setItem('freelang-listen-only', next ? '1' : '0')
-      return next
-    })
-  }, [])
   const [dictionaryOpen, setDictionaryOpen] = useState(false)
   const [dictionaryStatus, setDictionaryStatus] = useState<DictionaryStatus>('idle')
   const [dictionaryData, setDictionaryData] = useState<DictionaryLookupResult | null>(null)
@@ -363,31 +356,6 @@ export function FlashcardsTab({
         style={{ background: 'var(--warm-gradient)' }}
       >
         <div className="flex h-full flex-col gap-2">
-          <div className="flex items-center justify-end gap-1">
-            <button
-              className={`flex h-7 w-7 items-center justify-center rounded-full ${listenOnly ? 'bg-[var(--accent)]/20 text-[var(--accent)]' : 'text-[var(--muted)]'}`}
-              onClick={toggleListenOnly}
-              title={t(uiLang, 'listenOnly')}
-            >
-              <Headphones className="h-4 w-4" strokeWidth={2} />
-            </button>
-            <button
-              className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--muted)]"
-              onClick={() => { void openDictionary() }}
-              title={t(uiLang, 'openDictionary')}
-            >
-              <BookOpen className="h-4 w-4" strokeWidth={2} />
-            </button>
-            <button
-              className="flex items-center gap-1 rounded-full px-2 py-1 text-[0.65rem] font-bold"
-              onClick={() => onShowStatsChange(!showStats)}
-            >
-              <span className="text-[var(--success)]">{scores.correct}</span>
-              <span className="text-[var(--muted)]">/</span>
-              <span className="text-[var(--error)]">{scores.total - scores.correct}</span>
-            </button>
-          </div>
-
           {showStats ? (
             <WordStatsPanel
               words={words}
@@ -449,7 +417,7 @@ export function FlashcardsTab({
                     </div>
                   )}
 
-                  <div className="drop-shadow-sm" style={{ fontSize: `calc(4.5rem * var(--content-scale))` }}>{display.emoji}</div>
+                  <button className="drop-shadow-sm" style={{ fontSize: `calc(4.5rem * var(--content-scale))` }} onClick={(e) => { e.stopPropagation(); void openDictionary() }}>{display.emoji}</button>
                   {promptVisible ? (
                     <>
                       <div className="display-font leading-none text-[var(--ink)]" style={{ fontSize: `calc(2.25rem * var(--content-scale))` }}>{display.text}</div>
