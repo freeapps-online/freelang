@@ -35,6 +35,8 @@ type TranslationKey =
   | 'clozeInput'
   | 'phraseInput'
   | 'sentenceInput'
+  | 'shortLength'
+  | 'longLength'
   | 'speak'
   | 'keyboard'
   | 'touch'
@@ -191,6 +193,8 @@ const EN_MESSAGES: Record<TranslationKey, string> = {
     clozeInput: 'Cloze Input',
     phraseInput: 'Phrase Input',
     sentenceInput: 'Sentence Input',
+    shortLength: 'Short',
+    longLength: 'Long',
     speak: 'Speak',
     keyboard: 'Keyboard',
     touch: 'Touch',

@@ -231,7 +231,7 @@ export function ClozeTab({
 
   useEffect(() => {
     let cancelled = false
-    loadPracticeDeck('sentences', level).then((loadedSentences) => {
+    loadPracticeDeck(level).then((loadedSentences) => {
       if (cancelled) return
       setSentences(loadedSentences)
       const pickedSentence = pickWeightedSentence(loadedSentences, statsRef.current)

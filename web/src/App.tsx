@@ -6,10 +6,10 @@ import { InterfaceLanguagePicker } from './components/InterfaceLanguagePicker.ts
 import { LanguagePicker } from './components/LanguagePicker.tsx'
 import { t } from './services/i18n.ts'
 import { LEVEL_LABELS, LEVELS } from './services/levelMetadata.ts'
-import { MAX_PHRASE_LEVEL, MAX_SENTENCE_LEVEL, PHRASE_LEVEL_LABELS } from './services/practiceContent.ts'
+import { MAX_SENTENCE_LEVEL, type SentenceLengthFilter } from './services/practiceContent.ts'
 import type { Mode } from './types.ts'
 
-const MODES: Mode[] = ['flashcards', 'spelling', 'cloze', 'phrases', 'sentences', 'preferences']
+const MODES: Mode[] = ['flashcards', 'spelling', 'cloze', 'sentences', 'preferences']
 
 const loadFlashcardsTab = () => import('./components/FlashcardsTab.tsx')
 const loadMissingLetterTab = () => import('./components/MissingLetterTab.tsx')
@@ -29,7 +29,7 @@ const PATH_TO_MODE: Record<string, Mode> = {
   '/spelling': 'spelling',
   '/missing-letters': 'spelling',
   '/cloze': 'cloze',
-  '/phrases': 'phrases',
+  '/phrases': 'sentences',
   '/speak': 'sentences',
   '/sentences': 'sentences',
   '/preferences': 'preferences',
@@ -39,13 +39,24 @@ const MODE_TO_PATH: Record<Mode, string> = {
   flashcards: '/cards',
   spelling: '/spelling',
   cloze: '/cloze',
-  phrases: '/phrases',
   sentences: '/sentences',
   preferences: '/preferences',
 }
 
 function getModeFromPath(): Mode {
   return PATH_TO_MODE[window.location.pathname] ?? 'flashcards'
+}
+
+function getSentenceLengthFilterFromLocation(): SentenceLengthFilter {
+  const params = new URLSearchParams(window.location.search)
+  if (params.get('length') === 'short') return 'short'
+  if (window.location.pathname === '/phrases') return 'short'
+  return 'long'
+}
+
+function getPathForMode(mode: Mode, sentenceLengthFilter: SentenceLengthFilter) {
+  if (mode !== 'sentences') return MODE_TO_PATH[mode]
+  return sentenceLengthFilter === 'short' ? '/sentences?length=short' : '/sentences'
 }
 
 function preloadMode(mode: Mode) {
@@ -59,7 +70,6 @@ function preloadMode(mode: Mode) {
     case 'cloze':
       void loadClozeTab()
       return
-    case 'phrases':
     case 'sentences':
       void loadSentencesTab()
       return
@@ -70,6 +80,7 @@ function preloadMode(mode: Mode) {
 
 export default function App() {
   const [mode, setMode] = useState<Mode>(getModeFromPath)
+  const [sentenceLengthFilter, setSentenceLengthFilter] = useState<SentenceLengthFilter>(getSentenceLengthFilterFromLocation)
   const { settings, update } = useSettings()
   useApplySettings(settings)
   const [levelOpen, setLevelOpen] = useState(false)
@@ -77,60 +88,56 @@ export default function App() {
 
   const navigate = useCallback((m: Mode) => {
     startTransition(() => setMode(m))
-    window.history.pushState(null, '', MODE_TO_PATH[m])
-  }, [])
+    window.history.pushState(null, '', getPathForMode(m, sentenceLengthFilter))
+  }, [sentenceLengthFilter])
+
+  const handleSentenceLengthFilterChange = useCallback((nextFilter: SentenceLengthFilter) => {
+    setSentenceLengthFilter(nextFilter)
+    if (mode === 'sentences') {
+      window.history.replaceState(null, '', getPathForMode('sentences', nextFilter))
+    }
+  }, [mode])
 
   useEffect(() => {
     const onPop = () => {
       startTransition(() => setMode(getModeFromPath()))
+      setSentenceLengthFilter(getSentenceLengthFilterFromLocation())
     }
     window.addEventListener('popstate', onPop)
     return () => window.removeEventListener('popstate', onPop)
   }, [])
 
   const isWordPracticeMode = mode === 'flashcards' || mode === 'spelling'
-  const isSentencePracticeMode = mode === 'cloze' || mode === 'phrases' || mode === 'sentences'
+  const isSentencePracticeMode = mode === 'cloze' || mode === 'sentences'
   const isPracticeMode = isWordPracticeMode || isSentencePracticeMode
   const isFullscreen = isPracticeMode
-  const maxLevel = mode === 'phrases'
-    ? MAX_PHRASE_LEVEL
-    : mode === 'cloze' || mode === 'sentences'
-      ? MAX_SENTENCE_LEVEL
-      : LEVELS[LEVELS.length - 1]
+  const maxLevel = mode === 'cloze' || mode === 'sentences'
+    ? MAX_SENTENCE_LEVEL
+    : LEVELS[LEVELS.length - 1]
   const currentLevel = Math.min(settings.cardLevel, maxLevel)
-  const levelOptions = mode === 'phrases'
-    ? Array.from({ length: MAX_PHRASE_LEVEL }, (_, index) => index + 1)
-    : LEVELS.filter((level) => level <= maxLevel)
-  const currentLevelLabel = mode === 'phrases'
-    ? PHRASE_LEVEL_LABELS[currentLevel] ?? `Level ${currentLevel}`
-    : LEVEL_LABELS[currentLevel] ?? `Level ${currentLevel}`
+  const levelOptions = LEVELS.filter((level) => level <= maxLevel)
+  const currentLevelLabel = LEVEL_LABELS[currentLevel] ?? `Level ${currentLevel}`
   const activeInputMode = isWordPracticeMode ? settings.flashcardInputMode : settings.sentenceInputMode
   const tt = (key: Parameters<typeof t>[1]) => t(settings.interfaceLang, key)
   const statsTitle = isWordPracticeMode
     ? tt('wordStats')
     : mode === 'cloze'
       ? tt('clozeStats')
-      : mode === 'phrases'
-        ? tt('phraseStats')
-        : tt('sentenceStats')
+      : tt('sentenceStats')
   const statsReturnLabel = mode === 'flashcards'
     ? tt('backToCards')
     : mode === 'spelling'
       ? tt('backToSpelling')
       : mode === 'cloze'
         ? tt('backToCloze')
-      : mode === 'phrases'
-        ? tt('backToPhrases')
-        : tt('backToSentences')
+      : tt('backToSentences')
   const inputTitle = mode === 'flashcards'
     ? tt('cardInput')
     : mode === 'spelling'
       ? tt('spellingInput')
       : mode === 'cloze'
         ? tt('clozeInput')
-      : mode === 'phrases'
-        ? tt('phraseInput')
-        : tt('sentenceInput')
+      : tt('sentenceInput')
 
   const preloadModeButton = useCallback((nextMode: Mode) => {
     preloadMode(nextMode)
@@ -183,34 +190,20 @@ export default function App() {
             onInputModeChange={(sentenceInputMode) => update({ sentenceInputMode })}
           />
         )
-      case 'phrases':
-        return (
-          <SentencesTab
-            contentMode="phrases"
-            nativeLang={settings.nativeLang}
-            targetLang={settings.targetLang}
-            level={currentLevel}
-            levelLabel={currentLevelLabel}
-            inputMode={settings.sentenceInputMode}
-            uiLang={settings.interfaceLang}
-            showStats={showStats}
-            onShowStatsChange={setShowStats}
-            onInputModeChange={(sentenceInputMode) => update({ sentenceInputMode })}
-          />
-        )
       case 'sentences':
         return (
           <SentencesTab
-            contentMode="sentences"
             nativeLang={settings.nativeLang}
             targetLang={settings.targetLang}
             level={currentLevel}
             levelLabel={currentLevelLabel}
+            lengthFilter={sentenceLengthFilter}
             inputMode={settings.sentenceInputMode}
             uiLang={settings.interfaceLang}
             showStats={showStats}
             onShowStatsChange={setShowStats}
             onInputModeChange={(sentenceInputMode) => update({ sentenceInputMode })}
+            onLengthFilterChange={handleSentenceLengthFilterChange}
           />
         )
       case 'preferences':
@@ -264,7 +257,7 @@ export default function App() {
                   onMouseEnter={() => preloadModeButton(item)}
                   onFocus={() => preloadModeButton(item)}
                 >
-                  {{ flashcards: tt('cards'), spelling: tt('spelling'), cloze: tt('cloze'), phrases: tt('phrases'), sentences: tt('sentences'), preferences: tt('preferences') }[item]}
+                  {{ flashcards: tt('cards'), spelling: tt('spelling'), cloze: tt('cloze'), sentences: tt('sentences'), preferences: tt('preferences') }[item]}
                 </button>
               ))}
               {isPracticeMode && (
@@ -303,7 +296,7 @@ export default function App() {
                         onClick={() => update({ cardLevel: l })}
                       >
                         <div className="text-[0.7rem] font-bold uppercase tracking-[0.12em]">Lv {l}</div>
-                        <div className="mt-0.5 text-[0.7rem]">{mode === 'phrases' ? PHRASE_LEVEL_LABELS[l] : LEVEL_LABELS[l]}</div>
+                        <div className="mt-0.5 text-[0.7rem]">{LEVEL_LABELS[l]}</div>
                       </button>
                     ))}
                   </div>
@@ -346,7 +339,7 @@ export default function App() {
                         </>
                       ) : (
                         <>
-                          <div className="flex justify-between"><span>{tt('prompt')}</span><span>{mode === 'phrases' ? tt('hearPhrase') : tt('hearSentence')}</span></div>
+                          <div className="flex justify-between"><span>{tt('prompt')}</span><span>{tt('hearSentence')}</span></div>
                           <div className="flex justify-between"><span>{tt('answer')}</span><span>{tt('sayItBack')}</span></div>
                         </>
                       )}
@@ -374,8 +367,8 @@ export default function App() {
                         </>
                       ) : (
                         <>
-                          <div className="flex justify-between"><span>{tt('holdMic')}</span><span>{mode === 'phrases' ? tt('recordPhrase') : tt('recordSentence')}</span></div>
-                          <div className="flex justify-between"><span>← → / Enter</span><span>{mode === 'phrases' ? tt('nextPhrase') : tt('nextSentence')}</span></div>
+                          <div className="flex justify-between"><span>{tt('holdMic')}</span><span>{tt('recordSentence')}</span></div>
+                          <div className="flex justify-between"><span>← → / Enter</span><span>{tt('nextSentence')}</span></div>
                           <div className="flex justify-between"><span>{tt('speaker')}</span><span>{tt('replayPrompt')}</span></div>
                         </>
                       )}
@@ -418,7 +411,7 @@ export default function App() {
                             onClick={() => { update({ cardLevel: l }); setLevelOpen(false) }}
                           >
                             <span className="font-bold">{l}</span>
-                            <span>{mode === 'phrases' ? PHRASE_LEVEL_LABELS[l] : LEVEL_LABELS[l]}</span>
+                            <span>{LEVEL_LABELS[l]}</span>
                           </button>
                         ))}
                       </div>
@@ -475,11 +468,10 @@ export default function App() {
 
       {/* Mobile dock */}
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--line)] bg-[var(--dock)]/92 px-2 pb-[calc(env(safe-area-inset-bottom)+0.25rem)] pt-1 backdrop-blur-2xl lg:hidden">
-        <div className="mx-auto grid max-w-xl grid-cols-6">
+        <div className="mx-auto grid max-w-md grid-cols-5">
           <TabButton icon="flashcards" label={tt('cards')} active={mode === 'flashcards'} onClick={() => { navigate('flashcards'); setShowStats(false) }} onPreload={() => preloadModeButton('flashcards')} />
           <TabButton icon="spelling" label={tt('spelling')} active={mode === 'spelling'} onClick={() => { navigate('spelling'); setShowStats(false) }} onPreload={() => preloadModeButton('spelling')} />
           <TabButton icon="cloze" label={tt('cloze')} active={mode === 'cloze'} onClick={() => { navigate('cloze'); setShowStats(false) }} onPreload={() => preloadModeButton('cloze')} />
-          <TabButton icon="phrases" label={tt('phrases')} active={mode === 'phrases'} onClick={() => { navigate('phrases'); setShowStats(false) }} onPreload={() => preloadModeButton('phrases')} />
           <TabButton icon="speak" label={tt('sentences')} active={mode === 'sentences'} onClick={() => { navigate('sentences'); setShowStats(false) }} onPreload={() => preloadModeButton('sentences')} />
           <TabButton icon="preferences" label={tt('prefs')} active={mode === 'preferences'} onClick={() => { navigate('preferences'); setShowStats(false) }} onPreload={() => preloadModeButton('preferences')} />
         </div>
@@ -517,8 +509,6 @@ function TabIcon({ name }: { name: string }) {
       return <MessageSquare className="h-5 w-5" strokeWidth={1.7} />
     case 'speak':
       return <Mic className="h-5 w-5" strokeWidth={1.7} />
-    case 'phrases':
-      return <MessageSquare className="h-5 w-5" strokeWidth={1.7} />
     case 'preferences':
       return <Settings2 className="h-5 w-5" strokeWidth={1.7} />
     default:

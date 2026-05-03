@@ -1,11 +1,11 @@
-import { useState, useCallback, useRef, useEffect } from 'react'
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { ArrowRight, Headphones, Mic, Volume2 } from 'lucide-react'
 import { speech } from '../services/speech.ts'
 import { useSpeech } from '../useSpeech.ts'
 import { reportSentenceScore } from '../services/cloud.ts'
 import { FlashcardModeSwitch } from './FlashcardModeSwitch.tsx'
 import { t } from '../services/i18n.ts'
-import { loadPracticeDeck, type SentenceContentMode } from '../services/practiceContent.ts'
+import { filterSentencesByLength, loadPracticeDeck, type SentenceLengthFilter } from '../services/practiceContent.ts'
 import { SENTENCE_PASS_SCORE, loadSentenceStats, recordSentenceAttempt, type SentenceStatsMap } from '../services/sentenceStats.ts'
 import type { PracticeInputMode } from '../services/settings.ts'
 import { getTranslit } from '../services/translit.ts'
@@ -49,30 +49,32 @@ function scoreAttempt(expected: string, attempt: string): AttemptResult {
 }
 
 export function SentencesTab({
-  contentMode,
   nativeLang,
   targetLang,
   level,
   levelLabel,
+  lengthFilter,
   inputMode,
   uiLang,
   showStats: showStatsExternal,
   onShowStatsChange,
   onInputModeChange,
+  onLengthFilterChange,
 }: {
-  contentMode: SentenceContentMode
   nativeLang: string
   targetLang: string
   level: number
   levelLabel: string
+  lengthFilter: SentenceLengthFilter
   inputMode: PracticeInputMode
   uiLang: string
   showStats: boolean
   onShowStatsChange: (show: boolean) => void
   onInputModeChange: (mode: PracticeInputMode) => void
+  onLengthFilterChange: (filter: SentenceLengthFilter) => void
 }) {
   const sp = useSpeech()
-  const [sentences, setSentences] = useState<Sentence[]>([])
+  const [allSentences, setAllSentences] = useState<Sentence[]>([])
   const [sentence, setSentence] = useState<Sentence | null>(null)
   const [attempt, setAttempt] = useState<AttemptResult | null>(null)
   const [sentenceStats, setSentenceStats] = useState<SentenceStatsMap>(loadSentenceStats)
@@ -92,21 +94,38 @@ export function SentencesTab({
     sentenceStatsRef.current = sentenceStats
   }, [sentenceStats])
 
+  const shortSentences = useMemo(() => filterSentencesByLength(allSentences, 'short'), [allSentences])
+  const longSentences = useMemo(() => filterSentencesByLength(allSentences, 'long'), [allSentences])
+  const sentences = useMemo(
+    () => (lengthFilter === 'short' ? shortSentences : longSentences),
+    [lengthFilter, longSentences, shortSentences],
+  )
+
   useEffect(() => {
     let cancelled = false
-    loadPracticeDeck(contentMode, level).then((s) => {
+    loadPracticeDeck(level).then((s) => {
       if (cancelled) return
-      setSentences(s)
-      setSentence(pickWeightedSentence(s, sentenceStatsRef.current))
+      const nextShort = filterSentencesByLength(s, 'short')
+      const nextLong = filterSentencesByLength(s, 'long')
+      if (lengthFilter === 'short' && nextShort.length === 0 && nextLong.length > 0) {
+        onLengthFilterChange('long')
+        return
+      }
+      if (lengthFilter === 'long' && nextLong.length === 0 && nextShort.length > 0) {
+        onLengthFilterChange('short')
+        return
+      }
+      const nextPool = lengthFilter === 'short' ? nextShort : nextLong
+      setAllSentences(s)
+      setSentence(nextPool.length > 0 ? pickWeightedSentence(nextPool, sentenceStatsRef.current) : null)
       setAttempt(null)
       setSpeakStatus('idle')
     })
     return () => { cancelled = true }
-  }, [contentMode, level])
+  }, [lengthFilter, level, onLengthFilterChange])
 
   const targetText = sentence?.text[targetLang] ?? sentence?.text.en ?? ''
   const nativeText = sentence?.text[nativeLang] ?? sentence?.text.en ?? ''
-  const restartKey = contentMode === 'phrases' ? 'restartPhrase' : 'restartSentence'
   const promptVisible = !listenOnly || attempt !== null
 
   const playAudio = useCallback(() => {
@@ -275,7 +294,8 @@ export function SentencesTab({
           onPracticeSentence={focusSentence}
           level={level}
           levelLabel={levelLabel}
-          contentMode={contentMode}
+          lengthFilter={lengthFilter}
+          uiLang={uiLang}
         />
       ) : (
         <>
@@ -304,6 +324,28 @@ export function SentencesTab({
                   {sp.isListening ? t(uiLang, 'micLive') : speakStatus === 'prompting' ? t(uiLang, 'prompting') : t(uiLang, 'auto')}
                 </span>
               )}
+            </div>
+          </div>
+
+          <div className="flex justify-center">
+            <div className="inline-flex rounded-full border border-[var(--line)] bg-[var(--glass)] p-1">
+              {([
+                ['short', t(uiLang, 'shortLength'), shortSentences.length === 0],
+                ['long', t(uiLang, 'longLength'), longSentences.length === 0],
+              ] as const).map(([filter, label, disabled]) => (
+                <button
+                  key={filter}
+                  className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+                    filter === lengthFilter
+                      ? 'bg-[var(--ink)] text-[var(--paper)]'
+                      : 'text-[var(--muted)] hover:bg-[var(--glass-hover)] hover:text-[var(--ink)]'
+                  } ${disabled ? 'cursor-not-allowed opacity-40 hover:bg-transparent hover:text-[var(--muted)]' : ''}`}
+                  onClick={() => !disabled && onLengthFilterChange(filter)}
+                  disabled={disabled}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
           </div>
 
@@ -390,21 +432,21 @@ export function SentencesTab({
                 {sp.isListening
                   ? `Listening: ${sp.transcript || 'speak now...'}` : {
                     prompting: listenOnly
-                      ? `Playing the ${contentMode === 'phrases' ? 'phrase' : 'sentence'}. Answer from audio only.`
-                      : `Playing the ${contentMode === 'phrases' ? 'phrase' : 'sentence'}. Say it back exactly as shown.`,
+                      ? 'Playing the sentence. Answer from audio only.'
+                      : 'Playing the sentence. Say it back exactly as shown.',
                     listening: listenOnly
                       ? t(uiLang, 'listenAndSayItBack')
-                      : `Listening for your ${contentMode === 'phrases' ? 'phrase' : 'sentence'} now.`,
+                      : 'Listening for your sentence now.',
                     blocked: 'Microphone permission is blocked in this browser.',
                     unsupported: 'Speech recognition is not supported in this browser.',
-                    idle: `Preparing the next ${contentMode === 'phrases' ? 'phrase' : 'sentence'}...`,
+                    idle: 'Preparing the next sentence...',
                   }[speakStatus]}
               </div>
               <button
                 className="w-full rounded-[1.1rem] border border-[var(--line)] bg-[var(--glass)] px-4 py-3 text-sm font-semibold text-[var(--ink)]"
                 onClick={() => focusSentence(sentence)}
               >
-                {t(uiLang, restartKey)}
+                {t(uiLang, 'restartSentence')}
               </button>
             </div>
           )}
@@ -414,7 +456,7 @@ export function SentencesTab({
   )
 }
 
-function SentenceStatsPanel({ sentences, stats, targetLang, nativeLang, onPracticeSentence, level, levelLabel, contentMode }: {
+function SentenceStatsPanel({ sentences, stats, targetLang, nativeLang, onPracticeSentence, level, levelLabel, lengthFilter, uiLang }: {
   sentences: Sentence[]
   stats: SentenceStatsMap
   targetLang: string
@@ -422,7 +464,8 @@ function SentenceStatsPanel({ sentences, stats, targetLang, nativeLang, onPracti
   onPracticeSentence: (sentence: Sentence) => void
   level: number
   levelLabel: string
-  contentMode: SentenceContentMode
+  lengthFilter: SentenceLengthFilter
+  uiLang: string
 }) {
   const [sort, setSort] = useState<'worst' | 'best' | 'mostWrong' | 'most' | 'unseen'>('worst')
 
@@ -464,10 +507,11 @@ function SentenceStatsPanel({ sentences, stats, targetLang, nativeLang, onPracti
     <div className="flex min-h-0 flex-1 flex-col gap-3">
       <div className="rounded-[0.9rem] border border-[var(--line)] bg-[var(--glass)] px-3 py-2">
         <div className="text-[0.6rem] font-bold uppercase tracking-[0.15em] text-[var(--muted)]">Current scope</div>
-        <div className="mt-1 text-sm font-semibold text-[var(--ink)]">
-          {contentMode === 'phrases' ? `Phrase set ${level}` : `Level ${level}`}
-        </div>
+        <div className="mt-1 text-sm font-semibold text-[var(--ink)]">Level {level}</div>
         <div className="text-xs text-[var(--muted)]">{levelLabel}</div>
+        <div className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--accent-deep)]">
+          {lengthFilter === 'short' ? t(uiLang, 'shortLength') : t(uiLang, 'longLength')}
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-2 lg:grid-cols-5">

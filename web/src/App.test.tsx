@@ -52,8 +52,8 @@ vi.mock('./components/ClozeTab.tsx', () => ({
 }))
 
 vi.mock('./components/SpeakTab.tsx', () => ({
-  SentencesTab: ({ contentMode, showStats }: { contentMode: 'phrases' | 'sentences'; showStats: boolean }) => (
-    <div data-testid={`${contentMode}-tab`}>{showStats ? `${contentMode}-stats` : contentMode}</div>
+  SentencesTab: ({ lengthFilter, showStats }: { lengthFilter: 'short' | 'long'; showStats: boolean }) => (
+    <div data-testid="sentences-tab">{showStats ? `sentences-stats-${lengthFilter}` : `sentences-${lengthFilter}`}</div>
   ),
 }))
 
@@ -89,15 +89,16 @@ describe('App', () => {
     expect(main.querySelector('section')).not.toBeInTheDocument()
   })
 
-  it('renders fullscreen phrases directly inside main on /phrases', async () => {
+  it('aliases /phrases to the merged sentences mode with the short filter', async () => {
     window.history.pushState({}, '', '/phrases')
 
     render(<App />)
 
     const main = screen.getByRole('main')
-    const phrases = await screen.findByTestId('phrases-tab')
+    const sentences = await screen.findByTestId('sentences-tab')
 
-    expect(main.firstElementChild).toBe(phrases)
+    expect(main.firstElementChild).toBe(sentences)
+    expect(sentences).toHaveTextContent('sentences-short')
     expect(main.querySelector('section')).not.toBeInTheDocument()
   })
 
@@ -161,6 +162,6 @@ describe('App', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Sentence Stats' }))
 
-    expect(await screen.findByTestId('sentences-tab')).toHaveTextContent('sentences-stats')
+    expect(await screen.findByTestId('sentences-tab')).toHaveTextContent('sentences-stats-long')
   })
 })

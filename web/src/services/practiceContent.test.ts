@@ -1,23 +1,17 @@
 import { describe, expect, it } from 'vitest'
-import { MAX_PHRASE_LEVEL, loadPracticeDeck } from './practiceContent.ts'
-
-function countWords(text: string) {
-  return text
-    .toLowerCase()
-    .replace(/[^\p{L}\p{N}\s']/gu, ' ')
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean)
-    .length
-}
+import { MAX_SENTENCE_LEVEL, SHORT_SENTENCE_WORD_LIMIT, countEnglishWords, filterSentencesByLength, loadPracticeDeck } from './practiceContent.ts'
 
 describe('practice content', () => {
-  it('builds phrase decks from short sentence content only', async () => {
-    const levelOne = await loadPracticeDeck('phrases', 1)
-    const levelThree = await loadPracticeDeck('phrases', MAX_PHRASE_LEVEL)
+  it('filters a level into short and long sentence practice', async () => {
+    const levelOne = await loadPracticeDeck(1)
+    const highestLevel = await loadPracticeDeck(MAX_SENTENCE_LEVEL)
 
-    expect(levelOne.length).toBeGreaterThan(0)
-    expect(levelThree.length).toBeGreaterThan(0)
-    expect([...levelOne, ...levelThree].every((sentence) => countWords(sentence.text.en) <= 3)).toBe(true)
+    const short = filterSentencesByLength(levelOne, 'short')
+    const long = filterSentencesByLength(highestLevel, 'long')
+
+    expect(short.length).toBeGreaterThan(0)
+    expect(long.length).toBeGreaterThan(0)
+    expect(short.every((sentence) => countEnglishWords(sentence.text.en) <= SHORT_SENTENCE_WORD_LIMIT)).toBe(true)
+    expect(long.every((sentence) => countEnglishWords(sentence.text.en) > SHORT_SENTENCE_WORD_LIMIT)).toBe(true)
   })
 })
