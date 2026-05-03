@@ -55,7 +55,16 @@ export function FlashcardsTab({
   const [voiceStep, setVoiceStep] = useState<VoiceStep>('repeat')
   const [voiceAttempt, setVoiceAttempt] = useState<{ heardTarget: string; heardAnswer: string; repeatMatched: boolean } | null>(null)
   const [speakStatus, setSpeakStatus] = useState<SpeakStatus>('idle')
-  const [listenOnly, setListenOnly] = useState(false)
+  const [listenOnly, setListenOnly] = useState(() => {
+    try { return localStorage.getItem('freelang-listen-only') === '1' } catch { return false }
+  })
+  const toggleListenOnly = useCallback(() => {
+    setListenOnly(prev => {
+      const next = !prev
+      localStorage.setItem('freelang-listen-only', next ? '1' : '0')
+      return next
+    })
+  }, [])
   const [dictionaryOpen, setDictionaryOpen] = useState(false)
   const [dictionaryStatus, setDictionaryStatus] = useState<DictionaryStatus>('idle')
   const [dictionaryData, setDictionaryData] = useState<DictionaryLookupResult | null>(null)
@@ -354,37 +363,29 @@ export function FlashcardsTab({
         style={{ background: 'var(--warm-gradient)' }}
       >
         <div className="flex h-full flex-col gap-2">
-          <div className="flex items-center justify-end gap-2">
-            <div className="flex items-center gap-2">
-              <button
-                className={`flex h-9 items-center justify-center gap-2 rounded-full border px-3 text-xs font-bold shadow-[var(--shadow-soft)] ${
-                  listenOnly
-                    ? 'border-[var(--accent-soft)] bg-[var(--accent-gradient)] text-[var(--ink)]'
-                    : 'border-[var(--line)] bg-[var(--glass)] text-[var(--muted)]'
-                }`}
-                onClick={() => setListenOnly((value) => !value)}
-                title={t(uiLang, 'listenOnly')}
-              >
-                <Headphones className="h-4 w-4" strokeWidth={1.8} />
-                <span className="hidden sm:inline">{t(uiLang, 'listenOnly')}</span>
-              </button>
-              <button
-                className="flex h-9 items-center justify-center gap-2 rounded-full border border-[var(--line)] bg-[var(--glass)] px-3 text-xs font-bold text-[var(--muted)] shadow-[var(--shadow-soft)]"
-                onClick={() => { void openDictionary() }}
-                title={t(uiLang, 'openDictionary')}
-              >
-                <BookOpen className="h-4 w-4" strokeWidth={1.8} />
-                <span className="hidden sm:inline">{t(uiLang, 'meaning')}</span>
-              </button>
-              <button
-                className="flex items-center gap-1 rounded-full border border-[var(--line)] bg-[var(--glass)] px-2 py-1 text-xs font-bold"
-                onClick={() => onShowStatsChange(!showStats)}
-              >
-                <span className="text-[var(--success)]">{scores.correct}</span>
-                <span className="text-[var(--muted)]">/</span>
-                <span className="text-[var(--error)]">{scores.total - scores.correct}</span>
-              </button>
-            </div>
+          <div className="flex items-center justify-end gap-1">
+            <button
+              className={`flex h-7 w-7 items-center justify-center rounded-full ${listenOnly ? 'bg-[var(--accent)]/20 text-[var(--accent)]' : 'text-[var(--muted)]'}`}
+              onClick={toggleListenOnly}
+              title={t(uiLang, 'listenOnly')}
+            >
+              <Headphones className="h-4 w-4" strokeWidth={2} />
+            </button>
+            <button
+              className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--muted)]"
+              onClick={() => { void openDictionary() }}
+              title={t(uiLang, 'openDictionary')}
+            >
+              <BookOpen className="h-4 w-4" strokeWidth={2} />
+            </button>
+            <button
+              className="flex items-center gap-1 rounded-full px-2 py-1 text-[0.65rem] font-bold"
+              onClick={() => onShowStatsChange(!showStats)}
+            >
+              <span className="text-[var(--success)]">{scores.correct}</span>
+              <span className="text-[var(--muted)]">/</span>
+              <span className="text-[var(--error)]">{scores.total - scores.correct}</span>
+            </button>
           </div>
 
           {showStats ? (
@@ -480,23 +481,6 @@ export function FlashcardsTab({
                       </button>
                     </div>
                   )}
-                  {result && lastFeedback && (
-                    <div className="mt-1 w-full rounded-[1rem] border border-[var(--line)] bg-[var(--glass)] px-3 py-2">
-                      <div className="text-sm font-semibold" style={{ color: result === 'correct' ? 'var(--success)' : 'var(--error)' }}>
-                        {lastFeedback.nativeWord} = {lastFeedback.correctAnswer}
-                      </div>
-                      {voiceAttempt?.heardTarget && voiceAttempt.repeatMatched === false && (
-                        <div className="mt-1 text-xs text-[var(--muted)]">
-                          Repeat: <span className="text-[var(--error)]">{voiceAttempt.heardTarget}</span>
-                        </div>
-                      )}
-                      {voiceAttempt?.heardAnswer && result === 'wrong' && (
-                        <div className="mt-1 text-xs text-[var(--muted)]">
-                          {t(uiLang, 'answer')}: <span className="text-[var(--error)]">{voiceAttempt.heardAnswer}</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
                   {inputMode === 'speak' && (
                     <div className="mt-2 text-xs text-[var(--muted)]">
                       {listenOnly
@@ -530,6 +514,13 @@ export function FlashcardsTab({
               )}
 
             </>
+          )}
+
+          {/* Feedback below card */}
+          {result && lastFeedback && (
+            <div className="text-center text-sm font-semibold" style={{ color: result === 'correct' ? 'var(--success)' : 'var(--error)' }}>
+              {lastFeedback.nativeWord} = {lastFeedback.correctAnswer}
+            </div>
           )}
         </div>
       </section>
