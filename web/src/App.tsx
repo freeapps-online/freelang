@@ -381,8 +381,6 @@ export default function App() {
 
           {/* Mobile header — single line */}
           <header className="mb-1 flex items-center gap-1.5 lg:hidden">
-            <LanguagePicker compact label="" value={settings.nativeLang} onChange={(code) => update({ nativeLang: code })} />
-            <span className="text-[0.6rem] text-[var(--muted)]">→</span>
             <LanguagePicker compact label="" value={settings.targetLang} onChange={(code) => update({ targetLang: code })} />
 
             <div className="flex-1" />
