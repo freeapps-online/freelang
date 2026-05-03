@@ -77,7 +77,7 @@ export function DesktopShell({ state }: { state: AppState }) {
         )
       case 'preferences':
         return (
-          <section className="rounded-[1.5rem] bg-[var(--panel-quiet)] p-5">
+          <section className="overflow-y-auto rounded-[1.5rem] bg-[var(--panel-quiet)] p-5">
             <PreferencesTab settings={settings} update={update} />
           </section>
         )
@@ -85,7 +85,7 @@ export function DesktopShell({ state }: { state: AppState }) {
   }
 
   return (
-    <div className="relative min-h-[100dvh]">
+    <div className="relative h-[100dvh] overflow-hidden">
       {/* Background */}
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute left-[-18%] top-[-8%] h-[34rem] w-[34rem] rounded-full bg-[var(--accent-soft)]/35 blur-3xl" />
@@ -93,10 +93,10 @@ export function DesktopShell({ state }: { state: AppState }) {
         <div className="absolute bottom-[-10%] left-[45%] h-[26rem] w-[26rem] rounded-full bg-[var(--mint-soft)]/25 blur-3xl" />
       </div>
 
-      <div className="relative mx-auto max-w-[1540px] px-8 py-8">
-        <div className="grid grid-cols-[17rem_minmax(0,1fr)] gap-7">
+      <div className="relative mx-auto h-full max-w-[1540px] overflow-hidden px-8 py-8">
+        <div className="grid h-full grid-cols-[17rem_minmax(0,1fr)] gap-7">
           {/* Sidebar */}
-          <aside className="flex min-h-[calc(100dvh-4rem)] flex-col gap-5 rounded-[2rem] border border-[var(--line)] bg-[var(--glass-strong)] p-6 shadow-[var(--shadow-soft)] backdrop-blur-xl">
+          <aside className="flex flex-col gap-5 overflow-y-auto rounded-[2rem] border border-[var(--line)] bg-[var(--glass-strong)] p-6 shadow-[var(--shadow-soft)] backdrop-blur-xl">
             <div className="inline-flex items-center gap-2 rounded-full border border-[var(--line-strong)] bg-[var(--glass)] px-3 py-1 text-[0.65rem] font-bold uppercase tracking-[0.22em] text-[var(--accent-deep)]">
               <img src="/logo.svg" alt="" className="h-4 w-4 rounded-[0.35rem]" />
               FreeLanguageApp.online
@@ -179,8 +179,8 @@ export function DesktopShell({ state }: { state: AppState }) {
           </aside>
 
           {/* Main content */}
-          <main className="min-w-0">
-            <Suspense fallback={<div className="flex h-96 items-center justify-center rounded-[1.5rem] border border-[var(--line)] bg-[var(--glass)] text-sm text-[var(--muted)]">Loading...</div>}>
+          <main className="flex min-h-0 min-w-0 flex-col overflow-hidden">
+            <Suspense fallback={<div className="flex flex-1 items-center justify-center rounded-[1.5rem] border border-[var(--line)] bg-[var(--glass)] text-sm text-[var(--muted)]">Loading...</div>}>
               {renderContent()}
             </Suspense>
           </main>

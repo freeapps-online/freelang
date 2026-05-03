@@ -102,13 +102,15 @@
 
 
 html {
-  min-height: 100%;
+  height: 100dvh;
+  overflow: hidden;
   -webkit-text-size-adjust: 100%;
   touch-action: manipulation;
 }
 
 body {
-  min-height: 100dvh;
+  height: 100dvh;
+  overflow: hidden;
   -webkit-user-select: none;
   user-select: none;
   background:
@@ -151,9 +153,9 @@ body::after {
 }
 
 #root {
-  min-height: 100dvh;
+  height: 100dvh;
+  overflow: hidden;
   padding-top: env(safe-area-inset-top);
-  padding-bottom: env(safe-area-inset-bottom);
   isolation: isolate;
 }
 
