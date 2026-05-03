@@ -23,6 +23,7 @@ export function useCardRound({ level, nativeLang, targetLang, onTransitionStart 
   const [transitioning, setTransitioning] = useState(false)
   const [feedback, setFeedback] = useState<Feedback | null>(null)
   const feedbackTimer = useRef<number>(0)
+  const advanceTimers = useRef<number[]>([])
   const wordStatsRef = useRef(wordStats)
 
   useEffect(() => { wordStatsRef.current = wordStats }, [wordStats])
@@ -40,6 +41,12 @@ export function useCardRound({ level, nativeLang, targetLang, onTransitionStart 
     })
     return () => { cancelled = true }
   }, [level, nativeLang, targetLang])
+
+  // Cleanup all timers on unmount
+  useEffect(() => () => {
+    advanceTimers.current.forEach(t => window.clearTimeout(t))
+    window.clearTimeout(feedbackTimer.current)
+  }, [])
 
   const advanceToNext = useCallback((excludeCard?: FlashCard, statsOverride?: WordStatsMap) => {
     const stats = statsOverride ?? wordStatsRef.current
@@ -67,16 +74,19 @@ export function useCardRound({ level, nativeLang, targetLang, onTransitionStart 
 
     onTransitionStart?.(correct, side)
 
+    advanceTimers.current.forEach(t => window.clearTimeout(t))
+    advanceTimers.current = []
+
     if (correct) {
       setTransitioning(true)
-      window.setTimeout(() => {
+      advanceTimers.current.push(window.setTimeout(() => {
         advanceToNext(round.card, nextWordStats)
-      }, 400)
+      }, 400))
     } else {
-      window.setTimeout(() => setTransitioning(true), 800)
-      window.setTimeout(() => {
+      advanceTimers.current.push(window.setTimeout(() => setTransitioning(true), 800))
+      advanceTimers.current.push(window.setTimeout(() => {
         advanceToNext(round.card, nextWordStats)
-      }, 1100)
+      }, 1100))
     }
 
     window.clearTimeout(feedbackTimer.current)

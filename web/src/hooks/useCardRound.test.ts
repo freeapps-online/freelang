@@ -173,4 +173,38 @@ describe('useCardRound', () => {
     act(() => { vi.advanceTimersByTime(3500) })
     expect(result.current.feedback).toBeNull()
   })
+
+  it('cleans up timers on unmount (no state updates after unmount)', async () => {
+    const { result, unmount } = renderHook(() => useCardRound({
+      level: 1,
+      nativeLang: 'en',
+      targetLang: 'ru',
+    }))
+
+    await act(async () => { await vi.runAllTimersAsync() })
+
+    // Answer triggers timers
+    act(() => { result.current.answer('left') })
+
+    // Unmount before timers fire
+    unmount()
+
+    // Advance past all timers — should not throw
+    act(() => { vi.advanceTimersByTime(5000) })
+  })
+
+  it('calls onTransitionStart callback', async () => {
+    const onTransitionStart = vi.fn()
+    const { result } = renderHook(() => useCardRound({
+      level: 1,
+      nativeLang: 'en',
+      targetLang: 'ru',
+      onTransitionStart,
+    }))
+
+    await act(async () => { await vi.runAllTimersAsync() })
+
+    act(() => { result.current.answer('left') })
+    expect(onTransitionStart).toHaveBeenCalledWith(true, 'left')
+  })
 })

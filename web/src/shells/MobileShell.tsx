@@ -1,17 +1,12 @@
-import { Suspense, lazy, useState } from 'react'
+import { useState } from 'react'
 import { ChevronDown, Headphones, Layers3, MessageSquare, Mic, Settings2, Type, Volume2, VolumeX } from 'lucide-react'
 import { FlashcardModeSwitch } from '../components/FlashcardModeSwitch.tsx'
+import { TabContent } from '../components/TabContent.tsx'
 import { LanguagePicker } from '../components/LanguagePicker.tsx'
 import { LEVEL_LABELS } from '../services/levelMetadata.ts'
-import { preloadMode, loadFlashcardsTab, loadMissingLetterTab, loadClozeTab, loadSentencesTab, loadPreferencesTab } from '../useAppState.ts'
+import { preloadMode } from '../useAppState.ts'
 import type { useAppState } from '../useAppState.ts'
 import type { Mode } from '../types.ts'
-
-const FlashcardsTab = lazy(async () => ({ default: (await loadFlashcardsTab()).FlashcardsTab }))
-const MissingLetterTab = lazy(async () => ({ default: (await loadMissingLetterTab()).MissingLetterTab }))
-const ClozeTab = lazy(async () => ({ default: (await loadClozeTab()).ClozeTab }))
-const SentencesTab = lazy(async () => ({ default: (await loadSentencesTab()).SentencesTab }))
-const PreferencesTab = lazy(async () => ({ default: (await loadPreferencesTab()).PreferencesTab }))
 
 type AppState = ReturnType<typeof useAppState>
 
@@ -26,59 +21,6 @@ export function MobileShell({ state }: { state: AppState }) {
   const [levelOpen, setLevelOpen] = useState(false)
   const currentLevelLabel = LEVEL_LABELS[currentLevel] ?? `Level ${currentLevel}`
 
-  const renderContent = () => {
-    switch (mode) {
-      case 'flashcards':
-        return (
-          <FlashcardsTab
-            nativeLang={settings.nativeLang} targetLang={settings.targetLang}
-            audioEnabled={settings.flashcardAudio} inputMode={settings.flashcardInputMode}
-            dictionaryDefaultView={settings.dictionaryDefaultView} uiLang={settings.interfaceLang}
-            level={currentLevel} levelLabel={currentLevelLabel} listenOnly={listenOnly}
-            onInputModeChange={(m) => update({ flashcardInputMode: m })}
-            showStats={showStats} onShowStatsChange={setShowStats}
-          />
-        )
-      case 'spelling':
-        return (
-          <MissingLetterTab
-            nativeLang={settings.nativeLang} targetLang={settings.targetLang}
-            audioEnabled={settings.flashcardAudio} inputMode={settings.flashcardInputMode}
-            uiLang={settings.interfaceLang} level={currentLevel} levelLabel={currentLevelLabel}
-            onInputModeChange={(m) => update({ flashcardInputMode: m })}
-            showStats={showStats} onShowStatsChange={setShowStats}
-          />
-        )
-      case 'cloze':
-        return (
-          <ClozeTab
-            nativeLang={settings.nativeLang} targetLang={settings.targetLang}
-            level={currentLevel} levelLabel={currentLevelLabel}
-            inputMode={settings.sentenceInputMode} uiLang={settings.interfaceLang}
-            showStats={showStats} onShowStatsChange={setShowStats}
-            onInputModeChange={(m) => update({ sentenceInputMode: m })}
-          />
-        )
-      case 'sentences':
-        return (
-          <SentencesTab
-            nativeLang={settings.nativeLang} targetLang={settings.targetLang}
-            level={currentLevel} levelLabel={currentLevelLabel}
-            lengthFilter={sentenceLengthFilter} inputMode={settings.sentenceInputMode}
-            uiLang={settings.interfaceLang} showStats={showStats}
-            onShowStatsChange={setShowStats}
-            onInputModeChange={(m) => update({ sentenceInputMode: m })}
-            onLengthFilterChange={handleSentenceLengthFilterChange}
-          />
-        )
-      case 'preferences':
-        return (
-          <div className="overflow-y-auto p-2">
-            <PreferencesTab settings={settings} update={update} />
-          </div>
-        )
-    }
-  }
 
   return (
     <div className="flex h-[100dvh] flex-col">
@@ -178,9 +120,14 @@ export function MobileShell({ state }: { state: AppState }) {
 
       {/* Content — fills space between header and dock */}
       <main className="relative z-10 flex min-h-0 flex-1 flex-col overflow-hidden">
-        <Suspense fallback={<div className="flex flex-1 items-center justify-center text-sm text-[var(--muted)]">Loading...</div>}>
-          {renderContent()}
-        </Suspense>
+        <TabContent
+          mode={mode} settings={settings} update={update}
+          currentLevel={currentLevel} currentLevelLabel={currentLevelLabel}
+          listenOnly={listenOnly} showStats={showStats} setShowStats={setShowStats}
+          sentenceLengthFilter={sentenceLengthFilter}
+          handleSentenceLengthFilterChange={handleSentenceLengthFilterChange}
+          prefsWrapper="overflow-y-auto p-2"
+        />
       </main>
 
       {/* Bottom dock — practice modes only */}
@@ -210,7 +157,6 @@ function TabIcon({ name }: { name: string }) {
     case 'spelling': return <Type className="h-5 w-5" strokeWidth={1.7} />
     case 'cloze': return <MessageSquare className="h-5 w-5" strokeWidth={1.7} />
     case 'sentences': return <Mic className="h-5 w-5" strokeWidth={1.7} />
-    case 'preferences': return <Settings2 className="h-5 w-5" strokeWidth={1.7} />
     default: return null
   }
 }
