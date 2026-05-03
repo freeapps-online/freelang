@@ -1,0 +1,191 @@
+import { Suspense, lazy } from 'react'
+import { FlashcardModeSwitch } from '../components/FlashcardModeSwitch.tsx'
+import { LanguagePicker } from '../components/LanguagePicker.tsx'
+import { t } from '../services/i18n.ts'
+import { LEVEL_LABELS } from '../services/levelMetadata.ts'
+import { preloadMode, loadFlashcardsTab, loadMissingLetterTab, loadClozeTab, loadSentencesTab, loadPreferencesTab } from '../useAppState.ts'
+import type { useAppState } from '../useAppState.ts'
+import type { Mode } from '../types.ts'
+
+const MODES: Mode[] = ['flashcards', 'spelling', 'cloze', 'sentences', 'preferences']
+
+const FlashcardsTab = lazy(async () => ({ default: (await loadFlashcardsTab()).FlashcardsTab }))
+const MissingLetterTab = lazy(async () => ({ default: (await loadMissingLetterTab()).MissingLetterTab }))
+const ClozeTab = lazy(async () => ({ default: (await loadClozeTab()).ClozeTab }))
+const SentencesTab = lazy(async () => ({ default: (await loadSentencesTab()).SentencesTab }))
+const PreferencesTab = lazy(async () => ({ default: (await loadPreferencesTab()).PreferencesTab }))
+
+type AppState = ReturnType<typeof useAppState>
+
+export function DesktopShell({ state }: { state: AppState }) {
+  const {
+    mode, settings, update, navigate, showStats, setShowStats,
+    listenOnly, sentenceLengthFilter, handleSentenceLengthFilterChange,
+    isPracticeMode, isWordPracticeMode, currentLevel, levelOptions, activeInputMode,
+  } = state
+
+  const tt = (key: Parameters<typeof t>[1]) => t(settings.interfaceLang, key)
+  const currentLevelLabel = LEVEL_LABELS[currentLevel] ?? `Level ${currentLevel}`
+  const statsTitle = isWordPracticeMode ? tt('wordStats') : mode === 'cloze' ? tt('clozeStats') : tt('sentenceStats')
+  const statsReturnLabel = mode === 'flashcards' ? tt('backToCards') : mode === 'spelling' ? tt('backToSpelling') : mode === 'cloze' ? tt('backToCloze') : tt('backToSentences')
+  const inputTitle = mode === 'flashcards' ? tt('cardInput') : mode === 'spelling' ? tt('spellingInput') : mode === 'cloze' ? tt('clozeInput') : tt('sentenceInput')
+
+  const renderContent = () => {
+    switch (mode) {
+      case 'flashcards':
+        return (
+          <FlashcardsTab
+            nativeLang={settings.nativeLang} targetLang={settings.targetLang}
+            audioEnabled={settings.flashcardAudio} inputMode={settings.flashcardInputMode}
+            dictionaryDefaultView={settings.dictionaryDefaultView} uiLang={settings.interfaceLang}
+            level={currentLevel} levelLabel={currentLevelLabel} listenOnly={listenOnly}
+            onInputModeChange={(m) => update({ flashcardInputMode: m })}
+            showStats={showStats} onShowStatsChange={setShowStats}
+          />
+        )
+      case 'spelling':
+        return (
+          <MissingLetterTab
+            nativeLang={settings.nativeLang} targetLang={settings.targetLang}
+            audioEnabled={settings.flashcardAudio} inputMode={settings.flashcardInputMode}
+            uiLang={settings.interfaceLang} level={currentLevel} levelLabel={currentLevelLabel}
+            onInputModeChange={(m) => update({ flashcardInputMode: m })}
+            showStats={showStats} onShowStatsChange={setShowStats}
+          />
+        )
+      case 'cloze':
+        return (
+          <ClozeTab
+            nativeLang={settings.nativeLang} targetLang={settings.targetLang}
+            level={currentLevel} levelLabel={currentLevelLabel}
+            inputMode={settings.sentenceInputMode} uiLang={settings.interfaceLang}
+            showStats={showStats} onShowStatsChange={setShowStats}
+            onInputModeChange={(m) => update({ sentenceInputMode: m })}
+          />
+        )
+      case 'sentences':
+        return (
+          <SentencesTab
+            nativeLang={settings.nativeLang} targetLang={settings.targetLang}
+            level={currentLevel} levelLabel={currentLevelLabel}
+            lengthFilter={sentenceLengthFilter} inputMode={settings.sentenceInputMode}
+            uiLang={settings.interfaceLang} showStats={showStats}
+            onShowStatsChange={setShowStats}
+            onInputModeChange={(m) => update({ sentenceInputMode: m })}
+            onLengthFilterChange={handleSentenceLengthFilterChange}
+          />
+        )
+      case 'preferences':
+        return (
+          <section className="rounded-[1.5rem] bg-[var(--panel-quiet)] p-5">
+            <PreferencesTab settings={settings} update={update} />
+          </section>
+        )
+    }
+  }
+
+  return (
+    <div className="relative min-h-[100dvh]">
+      {/* Background */}
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute left-[-18%] top-[-8%] h-[34rem] w-[34rem] rounded-full bg-[var(--accent-soft)]/35 blur-3xl" />
+        <div className="absolute right-[-14%] top-[-2%] h-[28rem] w-[28rem] rounded-full bg-[var(--sky-soft)]/30 blur-3xl" />
+        <div className="absolute bottom-[-10%] left-[45%] h-[26rem] w-[26rem] rounded-full bg-[var(--mint-soft)]/25 blur-3xl" />
+      </div>
+
+      <div className="relative mx-auto max-w-[1540px] px-8 py-8">
+        <div className="grid grid-cols-[17rem_minmax(0,1fr)] gap-7">
+          {/* Sidebar */}
+          <aside className="flex min-h-[calc(100dvh-4rem)] flex-col gap-5 rounded-[2rem] border border-[var(--line)] bg-[var(--glass-strong)] p-6 shadow-[var(--shadow-soft)] backdrop-blur-xl">
+            <div className="inline-flex items-center gap-2 rounded-full border border-[var(--line-strong)] bg-[var(--glass)] px-3 py-1 text-[0.65rem] font-bold uppercase tracking-[0.22em] text-[var(--accent-deep)]">
+              <img src="/logo.svg" alt="" className="h-4 w-4 rounded-[0.35rem]" />
+              FreeLanguageApp.online
+            </div>
+
+            <div className="grid gap-3">
+              <LanguagePicker label={tt('native')} value={settings.nativeLang} onChange={(code) => update({ nativeLang: code })} />
+              <LanguagePicker label={tt('target')} value={settings.targetLang} onChange={(code) => update({ targetLang: code })} />
+            </div>
+
+            <nav className="space-y-1">
+              {MODES.map((item) => (
+                <button
+                  key={item}
+                  className={`w-full rounded-[1rem] px-4 py-3 text-left text-sm font-semibold transition duration-200 ${
+                    mode === item
+                      ? 'border border-[var(--accent-soft)] bg-[var(--accent-gradient)] text-[var(--ink)] shadow-[var(--shadow-card)]'
+                      : 'border border-transparent text-[var(--muted)] hover:bg-[var(--glass-hover)] hover:text-[var(--ink)]'
+                  }`}
+                  onClick={() => { navigate(item); setShowStats(false) }}
+                  onMouseEnter={() => preloadMode(item)}
+                  onFocus={() => preloadMode(item)}
+                >
+                  {{ flashcards: tt('cards'), spelling: tt('spelling'), cloze: tt('cloze'), sentences: tt('sentences'), preferences: tt('preferences') }[item]}
+                </button>
+              ))}
+              {isPracticeMode && (
+                <button
+                  className={`w-full rounded-[1rem] px-4 py-3 text-left text-sm font-semibold transition duration-200 ${
+                    showStats
+                      ? 'border border-[var(--sky-soft)] bg-[var(--cool-gradient)] text-[var(--ink)] shadow-[var(--shadow-card)]'
+                      : 'border border-transparent text-[var(--muted)] hover:bg-[var(--glass-hover)] hover:text-[var(--ink)]'
+                  }`}
+                  onClick={() => setShowStats(!showStats)}
+                >
+                  {showStats ? statsReturnLabel : statsTitle}
+                </button>
+              )}
+            </nav>
+
+            {isPracticeMode && (
+              <div className="mt-auto space-y-3">
+                <div className="rounded-[1rem] border border-[var(--line)] bg-[var(--glass-soft)] p-3">
+                  <div className="mb-2 text-[0.6rem] font-bold uppercase tracking-[0.15em] text-[var(--muted)]">Level</div>
+                  <div className="rounded-[0.9rem] border border-[var(--line)] bg-[var(--glass)] px-3 py-2">
+                    <div className="text-sm font-semibold text-[var(--ink)]">Level {currentLevel}</div>
+                    <div className="text-xs text-[var(--muted)]">{currentLevelLabel}</div>
+                  </div>
+                  <div className="mt-3 grid max-h-52 grid-cols-2 gap-1 overflow-y-auto rounded-[0.9rem] border border-[var(--line)] bg-[var(--glass)] p-1">
+                    {levelOptions.map((l) => (
+                      <button
+                        key={l}
+                        className={`rounded-[0.75rem] px-2 py-2 text-left ${
+                          l === currentLevel
+                            ? 'bg-[var(--accent-gradient)] font-semibold text-[var(--ink)]'
+                            : 'text-[var(--muted)] hover:bg-[var(--glass-hover)] hover:text-[var(--ink)]'
+                        }`}
+                        onClick={() => update({ cardLevel: l })}
+                      >
+                        <div className="text-[0.7rem] font-bold uppercase tracking-[0.12em]">Lv {l}</div>
+                        <div className="mt-0.5 text-[0.7rem]">{LEVEL_LABELS[l]}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="rounded-[1rem] border border-[var(--line)] bg-[var(--glass-soft)] p-3">
+                  <div className="mb-2 text-[0.6rem] font-bold uppercase tracking-[0.15em] text-[var(--muted)]">{inputTitle}</div>
+                  <FlashcardModeSwitch
+                    value={activeInputMode}
+                    uiLang={settings.interfaceLang}
+                    onChange={(nextMode) => {
+                      if (isWordPracticeMode) update({ flashcardInputMode: nextMode })
+                      else update({ sentenceInputMode: nextMode })
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+          </aside>
+
+          {/* Main content */}
+          <main className="min-w-0">
+            <Suspense fallback={<div className="flex h-96 items-center justify-center rounded-[1.5rem] border border-[var(--line)] bg-[var(--glass)] text-sm text-[var(--muted)]">Loading...</div>}>
+              {renderContent()}
+            </Suspense>
+          </main>
+        </div>
+      </div>
+    </div>
+  )
+}

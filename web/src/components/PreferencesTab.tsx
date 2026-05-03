@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { InterfaceLanguagePicker } from './InterfaceLanguagePicker.tsx'
 import { LanguagePicker } from './LanguagePicker.tsx'
 import { t } from '../services/i18n.ts'
 import type { Settings, ThemePreference, FontSizePreference, MotionPreference, SurfacePreference, PracticeInputMode, DictionaryViewPreference } from '../services/settings.ts'
@@ -34,6 +35,10 @@ export function PreferencesTab({
               <div className="grid gap-3">
                 <LanguagePicker label={tt('nativeLanguage')} value={settings.nativeLang} onChange={(code) => update({ nativeLang: code })} />
                 <LanguagePicker label={tt('targetLanguage')} value={settings.targetLang} onChange={(code) => update({ targetLang: code })} />
+                <div className="flex items-center justify-between pt-1">
+                  <span className="text-xs font-medium text-[var(--muted)]">{tt('interfaceLanguage')}</span>
+                  <InterfaceLanguagePicker value={settings.interfaceLang} onChange={(interfaceLang) => update({ interfaceLang })} />
+                </div>
               </div>
             </SettingsPanel>
 
