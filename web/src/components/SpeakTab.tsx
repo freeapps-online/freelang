@@ -9,6 +9,7 @@ import { filterSentencesByLength, loadPracticeDeck, type SentenceLengthFilter } 
 import { SENTENCE_PASS_SCORE, loadSentenceStats, recordSentenceAttempt, type SentenceStatsMap } from '../services/sentenceStats.ts'
 import type { PracticeInputMode } from '../services/settings.ts'
 import { getTranslit } from '../services/translit.ts'
+import { tokensMatch } from '../services/numberWords.ts'
 import type { Sentence } from '../types.ts'
 
 function pickWeightedSentence(pool: Sentence[], stats: SentenceStatsMap, exclude?: Sentence): Sentence {
@@ -41,7 +42,7 @@ function scoreAttempt(expected: string, attempt: string): AttemptResult {
   const words = expectedWords.map((w, i) => ({
     expected: w,
     got: i < attemptWords.length ? attemptWords[i] : '',
-    ok: i < attemptWords.length && attemptWords[i] === w,
+    ok: i < attemptWords.length && tokensMatch(attemptWords[i], w),
   }))
 
   const correct = words.filter(r => r.ok).length
