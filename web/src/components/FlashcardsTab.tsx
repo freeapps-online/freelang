@@ -9,8 +9,7 @@ import { t } from '../services/i18n.ts'
 import type { PracticeInputMode, DictionaryViewPreference } from '../services/settings.ts'
 import type { DictionaryLookupResult } from '../services/dictionary.ts'
 import type { FlashCard, FlashCardRound, FlashCardScore } from '../types.ts'
-import { DictionarySheet } from './practice/DictionarySheet.tsx'
-import { WordStatsPanel } from './practice/WordStatsPanel.tsx'
+import { PracticeLayout, CardShell, SwipeHint, FeedbackToast, DictionarySheet, WordStatsPanel } from './practice/index.ts'
 
 type SwipeResult = 'correct' | 'wrong' | null
 type VoiceStep = 'repeat' | 'answer'
@@ -349,127 +348,59 @@ export function FlashcardsTab({
   const promptVisible = !listenOnly || result !== null
 
   return (
-    <div className="flex h-[calc(100dvh-80px)] flex-col lg:h-auto">
-      <section
-        className="flex flex-1 flex-col p-2 sm:p-3 lg:p-4"
-        style={{ background: 'var(--warm-gradient)' }}
-      >
-        <div className="flex h-full flex-col gap-2">
-          {showStats ? (
-            <WordStatsPanel
-              words={words}
-              wordStats={wordStats}
-              targetLang={targetLang}
-              nativeLang={nativeLang}
-              onPracticeWord={focusCard}
-              level={level}
-              levelLabel={levelLabel}
-            />
-          ) : (
-            <>
-              {/* Card */}
-              <div className="flex flex-1 items-center justify-center overflow-hidden">
-                <div
-                  className={`relative flex w-full max-w-[24rem] flex-col items-center justify-center gap-2 rounded-[1.25rem] border border-[var(--line-strong)] px-3 py-4 text-center shadow-[var(--shadow-soft)] select-none touch-none sm:gap-3 sm:rounded-[2rem] sm:px-5 sm:py-8 ${
-                    inputMode === 'keyboard' ? 'cursor-grab active:cursor-grabbing' : ''
-                  }`}
-                  style={{
-                    background: 'var(--card-gradient)',
-                    transform: inputMode === 'keyboard' ? `translateX(${dragX}px) rotate(${dragX * 0.08}deg)` : 'none',
-                    transition: transitioning ? 'transform 0.35s ease-out, opacity 0.35s ease-out' : 'none',
-                    opacity: transitioning ? 0 : 1,
-                  }}
-                  onPointerDown={inputMode === 'keyboard' ? onPointerDown : undefined}
-                  onPointerMove={inputMode === 'keyboard' ? onPointerMove : undefined}
-                  onPointerUp={inputMode === 'keyboard' ? onPointerUp : undefined}
-                  onClick={inputMode === 'speak' && audioEnabled ? () => { void speech.speak(display.text, targetLang) } : undefined}
-                >
-                  {inputMode === 'keyboard' && Math.abs(dragX) > 30 && !transitioning && (
-                    <div
-                      className="absolute top-4 rounded-full px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-[var(--paper)] sm:top-5"
-                      style={{
-                        left: dragX < 0 ? 18 : 'auto',
-                        right: dragX > 0 ? 18 : 'auto',
-                        background: dragX < 0
-                          ? (round.correctSide === 'left' ? 'var(--success)' : 'var(--error)')
-                          : (round.correctSide === 'right' ? 'var(--success)' : 'var(--error)'),
-                      }}
-                    >
-                      {dragX < 0 ? round.leftOption : round.rightOption}
-                    </div>
-                  )}
+    <PracticeLayout>
+      {showStats ? (
+        <WordStatsPanel words={words} wordStats={wordStats} targetLang={targetLang} nativeLang={nativeLang} onPracticeWord={focusCard} level={level} levelLabel={levelLabel} />
+      ) : (
+        <>
+          <div className="flex flex-1 items-center justify-center overflow-hidden">
+            <CardShell
+              dragX={inputMode === 'keyboard' ? dragX : 0}
+              transitioning={transitioning}
+              swipeable={inputMode === 'keyboard'}
+              onPointerDown={onPointerDown}
+              onPointerMove={onPointerMove}
+              onPointerUp={onPointerUp}
+              onClick={inputMode === 'speak' && audioEnabled ? () => { void speech.speak(display.text, targetLang) } : undefined}
+            >
+              {inputMode === 'keyboard' && (
+                <SwipeHint dragX={dragX} transitioning={transitioning} leftOption={round.leftOption} rightOption={round.rightOption} correctSide={round.correctSide} />
+              )}
 
-                  <button className="drop-shadow-sm" style={{ fontSize: `calc(4.5rem * var(--content-scale))` }} onClick={(e) => { e.stopPropagation(); void openDictionary() }}>{display.emoji}</button>
-                  {promptVisible ? (
-                    <>
-                      <div className="display-font leading-none text-[var(--ink)]" style={{ fontSize: `calc(2.25rem * var(--content-scale))` }}>{display.text}</div>
-                      {display.translit && <div className="italic text-[var(--muted)]" style={{ fontSize: `calc(1.5rem * var(--content-scale))` }}>{display.translit}</div>}
-                    </>
-                  ) : (
-                    <div className="space-y-2">
-                      <div className="rounded-full border border-[var(--line)] bg-[var(--glass)] px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-[var(--accent-deep)]">
-                        {t(uiLang, 'listenFirst')}
-                      </div>
-                      <div className="text-sm text-[var(--muted)]">{t(uiLang, 'hiddenUntilAnswer')}</div>
-                    </div>
-                  )}
-                  {inputMode === 'keyboard' && (
-                    <div className="mt-1 grid w-full grid-cols-2 gap-2">
-                      <button
-                        className="rounded-full border border-[var(--line)] bg-[var(--glass)] px-3 py-2 text-center transition hover:border-[var(--line-strong)] hover:bg-[var(--glass-hover)]"
-                        onClick={() => handleAnswer('left')}
-                        disabled={transitioning}
-                      >
-                        <div className="font-semibold text-[var(--ink)]" style={{ fontSize: 'calc(0.875rem * var(--content-scale))' }}>← {round.leftOption}</div>
-                      </button>
-                      <button
-                        className="rounded-full border border-[var(--line)] bg-[var(--glass)] px-3 py-2 text-center transition hover:border-[var(--line-strong)] hover:bg-[var(--glass-hover)]"
-                        onClick={() => handleAnswer('right')}
-                        disabled={transitioning}
-                      >
-                        <div className="font-semibold text-[var(--ink)]" style={{ fontSize: 'calc(0.875rem * var(--content-scale))' }}>{round.rightOption} →</div>
-                      </button>
-                    </div>
-                  )}
-                  {inputMode === 'speak' && (
-                    <div className="mt-2 text-xs text-[var(--muted)]">
-                      {listenOnly
-                        ? t(uiLang, 'listenAndRepeat')
-                        : audioEnabled ? 'Tap the card to hear it again.' : 'Audio is off. Use the speaker toggle above if needed.'}
-                    </div>
-                  )}
+              <button className="drop-shadow-sm" style={{ fontSize: 'calc(4.5rem * var(--content-scale))' }} onClick={(e) => { e.stopPropagation(); void openDictionary() }}>{display.emoji}</button>
+
+              {promptVisible ? (
+                <>
+                  <div className="display-font leading-none text-[var(--ink)]" style={{ fontSize: 'calc(2.25rem * var(--content-scale))' }}>{display.text}</div>
+                  {display.translit && <div className="italic text-[var(--muted)]" style={{ fontSize: 'calc(1.5rem * var(--content-scale))' }}>{display.translit}</div>}
+                </>
+              ) : (
+                <div className="space-y-2">
+                  <div className="rounded-full border border-[var(--line)] bg-[var(--glass)] px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-[var(--accent-deep)]">{t(uiLang, 'listenFirst')}</div>
+                  <div className="text-sm text-[var(--muted)]">{t(uiLang, 'hiddenUntilAnswer')}</div>
                 </div>
-              </div>
+              )}
 
-              {/* Feedback below card */}
-              <div className="shrink-0 text-center text-sm font-semibold" style={{ minHeight: '1.5em' }}>
-                {result && lastFeedback && (
-                  <span style={{ color: result === 'correct' ? 'var(--success)' : 'var(--error)' }}>
-                    {lastFeedback.nativeWord} = {lastFeedback.correctAnswer}
-                  </span>
-                )}
-              </div>
-            </>
-          )}
-        </div>
-      </section>
+              {inputMode === 'keyboard' && (
+                <div className="mt-1 grid w-full grid-cols-2 gap-2">
+                  <button className="rounded-full border border-[var(--line)] bg-[var(--glass)] px-3 py-2 text-center transition hover:border-[var(--line-strong)] hover:bg-[var(--glass-hover)]" onClick={() => handleAnswer('left')} disabled={transitioning}>
+                    <div className="font-semibold text-[var(--ink)]" style={{ fontSize: 'calc(0.875rem * var(--content-scale))' }}>← {round.leftOption}</div>
+                  </button>
+                  <button className="rounded-full border border-[var(--line)] bg-[var(--glass)] px-3 py-2 text-center transition hover:border-[var(--line-strong)] hover:bg-[var(--glass-hover)]" onClick={() => handleAnswer('right')} disabled={transitioning}>
+                    <div className="font-semibold text-[var(--ink)]" style={{ fontSize: 'calc(0.875rem * var(--content-scale))' }}>{round.rightOption} →</div>
+                  </button>
+                </div>
+              )}
+            </CardShell>
+          </div>
 
-      {dictionaryOpen && (
-        <DictionarySheet
-          uiLang={uiLang}
-          displayText={display.text}
-          translit={display.translit}
-          targetLang={targetLang}
-          nativeMeaning={correctAnswer}
-          nativeLang={nativeLang}
-          defaultView={dictionaryDefaultView}
-          status={dictionaryStatus}
-          data={dictionaryData}
-          error={dictionaryError}
-          onClose={() => setDictionaryOpen(false)}
-        />
+          <FeedbackToast result={result} targetWord={lastFeedback?.nativeWord ?? ''} correctAnswer={lastFeedback?.correctAnswer ?? ''} />
+        </>
       )}
 
-    </div>
+      {dictionaryOpen && (
+        <DictionarySheet uiLang={uiLang} displayText={display.text} translit={display.translit} targetLang={targetLang} nativeMeaning={correctAnswer} nativeLang={nativeLang} defaultView={dictionaryDefaultView} status={dictionaryStatus} data={dictionaryData} error={dictionaryError} onClose={() => setDictionaryOpen(false)} />
+      )}
+    </PracticeLayout>
   )
 }

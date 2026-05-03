@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Volume2, Mic, ArrowRight } from 'lucide-react'
+
 
 import { speech } from '../services/speech.ts'
 import { useSpeech } from '../useSpeech.ts'
@@ -10,6 +10,7 @@ import { loadClozeStats, recordClozeAttempt, CLOZE_PASS_SCORE, type ClozeStatsMa
 import { isSpeechMatch } from '../services/flashcardsVoice.ts'
 import type { PracticeInputMode } from '../services/settings.ts'
 import type { Sentence } from '../types.ts'
+import { PracticeLayout, CardShell, FeedbackToast, VoiceControls } from './practice/index.ts'
 
 type SwipeResult = 'correct' | 'wrong' | null
 type SpeakStatus = 'idle' | 'prompting' | 'listening-answer' | 'blocked' | 'unsupported'
@@ -197,10 +198,10 @@ export function ClozeTab({
   const [round, setRound] = useState<ClozeRound | null>(null)
   const [stats, setStats] = useState<ClozeStatsMap>(loadClozeStats)
   const [result, setResult] = useState<SwipeResult>(null)
-  const [heardAnswer, setHeardAnswer] = useState('')
+  const [, setHeardAnswer] = useState('')
   const [dragX, setDragX] = useState(0)
   const [transitioning, setTransitioning] = useState(false)
-  const [speakStatus, setSpeakStatus] = useState<SpeakStatus>('idle')
+  const [, setSpeakStatus] = useState<SpeakStatus>('idle')
   const showStats = showStatsExternal
   const startXRef = useRef(0)
   const dragging = useRef(false)
@@ -379,121 +380,55 @@ export function ClozeTab({
   const nativeText = round.sentence.text[nativeLang] ?? round.sentence.text.en ?? ''
 
   return (
-    <div className="flex h-[calc(100dvh-80px)] flex-col gap-2 lg:h-auto">
+    <PracticeLayout>
       {showStats ? (
-        <ClozeStatsPanel
-          sentences={sentences}
-          stats={stats}
-          targetLang={targetLang}
-          nativeLang={nativeLang}
-          onPracticeSentence={focusSentence}
-          level={level}
-          levelLabel={levelLabel}
-        />
+        <ClozeStatsPanel sentences={sentences} stats={stats} targetLang={targetLang} nativeLang={nativeLang} onPracticeSentence={focusSentence} level={level} levelLabel={levelLabel} />
       ) : (
         <>
           <div className="flex flex-1 items-center justify-center overflow-hidden">
-            <div
-              className={`relative flex w-full max-w-2xl flex-col items-center gap-2.5 rounded-[1.5rem] border border-[var(--line-strong)] px-4 py-4 text-center shadow-[var(--shadow-soft)] select-none touch-none sm:gap-3 sm:rounded-[2rem] sm:px-6 sm:py-8 ${inputMode === 'keyboard' ? 'cursor-grab active:cursor-grabbing' : ''}`}
-              style={{
-                background: 'var(--card-gradient)',
-                transform: inputMode === 'keyboard' ? `translateX(${dragX}px) rotate(${dragX * 0.05}deg)` : 'none',
-                transition: transitioning ? 'transform 0.3s ease-out, opacity 0.3s ease-out' : 'none',
-                opacity: transitioning ? 0 : 1,
-              }}
-              onPointerDown={inputMode === 'keyboard' ? onPointerDown : undefined}
-              onPointerMove={inputMode === 'keyboard' ? onPointerMove : undefined}
-              onPointerUp={inputMode === 'keyboard' ? onPointerUp : undefined}
+            <CardShell
+              dragX={inputMode === 'keyboard' ? dragX : 0}
+              transitioning={transitioning}
+              swipeable={inputMode === 'keyboard'}
+              onPointerDown={onPointerDown}
+              onPointerMove={onPointerMove}
+              onPointerUp={onPointerUp}
               onClick={inputMode === 'speak' ? playAudio : undefined}
             >
               <div className="drop-shadow-sm" style={{ fontSize: 'calc(3rem * var(--content-scale))' }}>{round.sentence.emoji}</div>
-              <button className="display-font leading-snug text-[var(--ink)]" style={{ fontSize: 'calc(1.5rem * var(--content-scale))' }} onClick={playAudio}>
-                {round.maskedText}
-              </button>
+              <button className="display-font leading-snug text-[var(--ink)]" style={{ fontSize: 'calc(1.5rem * var(--content-scale))' }} onClick={playAudio}>{round.maskedText}</button>
               <div className="text-sm text-[var(--muted)]">{nativeText}</div>
 
-              {inputMode === 'keyboard' ? (
+              {inputMode === 'keyboard' && (
                 <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
-                  <button
-                    className="rounded-full border border-[var(--line)] bg-[var(--glass)] px-3 py-2 text-sm font-semibold text-[var(--ink)] transition hover:border-[var(--line-strong)] hover:bg-[var(--glass-hover)]"
-                    onClick={() => handleAnswer('left')}
-                    disabled={transitioning}
-                  >
-                    ← {round.leftOption}
-                  </button>
-                  <button
-                    className="rounded-full border border-[var(--line)] bg-[var(--glass)] px-3 py-2 text-sm font-semibold text-[var(--ink)] transition hover:border-[var(--line-strong)] hover:bg-[var(--glass-hover)]"
-                    onClick={() => handleAnswer('right')}
-                    disabled={transitioning}
-                  >
-                    {round.rightOption} →
-                  </button>
-                </div>
-              ) : (
-                <div className="rounded-[0.9rem] border border-[var(--line)] bg-[var(--glass)] px-3 py-2 text-xs text-[var(--muted)]">
-                  {heardAnswer ? `${t(uiLang, 'answer')}: ${heardAnswer}` : t(uiLang, 'sayMissingWordHelp')}
+                  <button className="rounded-full border border-[var(--line)] bg-[var(--glass)] px-3 py-2 text-sm font-semibold text-[var(--ink)] transition hover:border-[var(--line-strong)] hover:bg-[var(--glass-hover)]" onClick={() => handleAnswer('left')} disabled={transitioning}>← {round.leftOption}</button>
+                  <button className="rounded-full border border-[var(--line)] bg-[var(--glass)] px-3 py-2 text-sm font-semibold text-[var(--ink)] transition hover:border-[var(--line-strong)] hover:bg-[var(--glass-hover)]" onClick={() => handleAnswer('right')} disabled={transitioning}>{round.rightOption} →</button>
                 </div>
               )}
-
-              {result !== null && (
-                <div className="space-y-2">
-                  <div className="text-sm font-semibold" style={{ color: result === 'correct' ? 'var(--success)' : 'var(--error)' }}>
-                    {round.missingWord}
-                  </div>
-                  <div className="text-xs text-[var(--muted)]">{round.fullText}</div>
-                </div>
-              )}
-            </div>
+            </CardShell>
           </div>
 
-          {inputMode === 'keyboard' ? (
-            <div className="flex items-center justify-center gap-3 py-1">
-              <button className="flex h-10 w-10 items-center justify-center rounded-full border border-[var(--line)] bg-[var(--glass)] text-[var(--muted)]" onClick={playAudio} disabled={sp.isSpeaking}>
-                <Volume2 className="h-5 w-5" strokeWidth={2} />
-              </button>
-              <button
-                className={`flex h-14 w-14 items-center justify-center rounded-full border-2 transition ${sp.isListening ? 'border-[var(--error)] bg-[var(--error)] text-white pulse-ring' : 'border-[var(--accent)] bg-[var(--accent)] text-white'}`}
-                onPointerDown={() => {
-                  if (inputMode !== 'keyboard') return
-                  setHeardAnswer('')
-                  speech.startListening(targetLang, (transcript) => {
-                    setHeardAnswer(transcript)
-                    if (!round) return
-                    commitAnswer(isSpeechMatch(round.missingWord, transcript))
-                  })
-                }}
-                onPointerUp={() => speech.stopListening()}
-                onPointerLeave={() => speech.stopListening()}
-              >
-                <Mic className="h-6 w-6" strokeWidth={2.2} />
-              </button>
-              <button className="flex h-10 w-10 items-center justify-center rounded-full border border-[var(--line)] bg-[var(--glass)] text-[var(--muted)]" onClick={() => selectNextRound(round.sentence)}>
-                <ArrowRight className="h-5 w-5" strokeWidth={2} />
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              <div className="rounded-[0.9rem] border border-[var(--line)] bg-[var(--glass)] px-3 py-2 text-xs text-[var(--muted)]">
-                {sp.isListening
-                  ? `Listening: ${sp.transcript || 'speak now...'}`
-                  : {
-                      prompting: t(uiLang, 'playingClozePrompt'),
-                      'listening-answer': t(uiLang, 'sayMissingWordNow'),
-                      blocked: 'Microphone permission is blocked in this browser.',
-                      unsupported: 'Speech recognition is not supported in this browser.',
-                      idle: t(uiLang, 'preparingClozePrompt'),
-                    }[speakStatus]}
-              </div>
-              <button
-                className="w-full rounded-[1.1rem] border border-[var(--line)] bg-[var(--glass)] px-4 py-3 text-sm font-semibold text-[var(--ink)]"
-                onClick={() => focusSentence(round.sentence)}
-              >
-                {t(uiLang, 'restartCloze')}
-              </button>
-            </div>
+          <FeedbackToast result={result} targetWord={round.missingWord} correctAnswer={round.fullText} />
+
+          {inputMode === 'keyboard' && (
+            <VoiceControls
+              isListening={sp.isListening}
+              isSpeaking={sp.isSpeaking}
+              onPlayAudio={playAudio}
+              onStartRecording={() => {
+                setHeardAnswer('')
+                speech.startListening(targetLang, (transcript) => {
+                  setHeardAnswer(transcript)
+                  if (!round) return
+                  commitAnswer(isSpeechMatch(round.missingWord, transcript))
+                })
+              }}
+              onStopRecording={() => speech.stopListening()}
+              onNext={() => selectNextRound(round.sentence)}
+            />
           )}
         </>
       )}
-    </div>
+    </PracticeLayout>
   )
 }
