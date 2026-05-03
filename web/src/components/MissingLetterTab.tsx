@@ -336,24 +336,7 @@ export function MissingLetterTab({
             />
           ) : (
             <>
-              {inputMode === 'keyboard' ? (
-                <div className="flex items-center justify-between gap-2">
-                  <button
-                    className="rounded-full border border-[var(--line)] bg-[var(--glass)] px-3 py-2 text-center transition hover:border-[var(--line-strong)] hover:bg-[var(--glass-hover)]"
-                    onClick={() => handleAnswer('left')}
-                    disabled={transitioning}
-                  >
-                    <div className="font-semibold text-[var(--ink)]" style={{ fontSize: 'calc(0.875rem * var(--content-scale))' }}>← {round.leftOption}</div>
-                  </button>
-                  <button
-                    className="rounded-full border border-[var(--line)] bg-[var(--glass)] px-3 py-2 text-center transition hover:border-[var(--line-strong)] hover:bg-[var(--glass-hover)]"
-                    onClick={() => handleAnswer('right')}
-                    disabled={transitioning}
-                  >
-                    <div className="font-semibold text-[var(--ink)]" style={{ fontSize: 'calc(0.875rem * var(--content-scale))' }}>{round.rightOption} →</div>
-                  </button>
-                </div>
-              ) : (
+              {inputMode === 'keyboard' ? null : (
                 <div className="rounded-[1rem] border border-[var(--line)] bg-[var(--glass)] px-4 py-3 text-sm text-[var(--muted)]">
                   {voiceAttempt
                     ? `${t(uiLang, 'answer')}: ${voiceAttempt}`
@@ -400,9 +383,40 @@ export function MissingLetterTab({
                   <div className="display-font leading-none text-[var(--ink)]" style={{ fontSize: `calc(2.4rem * var(--content-scale))` }}>
                     {round.maskedText}
                   </div>
-                  <div className="text-sm text-[var(--muted)]">
-                    {inputMode === 'keyboard' ? t(uiLang, 'swipeForLetter') : t(uiLang, 'sayMissingLetterHelp')}
-                  </div>
+                  {inputMode === 'keyboard' ? (
+                    <div className="mt-1 grid w-full grid-cols-2 gap-2">
+                      <button
+                        className="rounded-full border border-[var(--line)] bg-[var(--glass)] px-3 py-2 text-center transition hover:border-[var(--line-strong)] hover:bg-[var(--glass-hover)]"
+                        onClick={() => handleAnswer('left')}
+                        disabled={transitioning}
+                      >
+                        <div className="font-semibold text-[var(--ink)]" style={{ fontSize: 'calc(0.875rem * var(--content-scale))' }}>← {round.leftOption}</div>
+                      </button>
+                      <button
+                        className="rounded-full border border-[var(--line)] bg-[var(--glass)] px-3 py-2 text-center transition hover:border-[var(--line-strong)] hover:bg-[var(--glass-hover)]"
+                        onClick={() => handleAnswer('right')}
+                        disabled={transitioning}
+                      >
+                        <div className="font-semibold text-[var(--ink)]" style={{ fontSize: 'calc(0.875rem * var(--content-scale))' }}>{round.rightOption} →</div>
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="text-sm text-[var(--muted)]">
+                      {t(uiLang, 'sayMissingLetterHelp')}
+                    </div>
+                  )}
+                  {result && lastFeedback && (
+                    <div className="mt-1 w-full rounded-[1rem] border border-[var(--line)] bg-[var(--glass)] px-3 py-2">
+                      <div className="text-sm font-semibold" style={{ color: result === 'correct' ? 'var(--success)' : 'var(--error)' }}>
+                        {lastFeedback.maskedWord} → {lastFeedback.correctWord}
+                      </div>
+                      {voiceAttempt && result === 'wrong' && (
+                        <div className="mt-1 text-xs text-[var(--muted)]">
+                          {t(uiLang, 'answer')}: <span className="text-[var(--error)]">{voiceAttempt}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -427,14 +441,6 @@ export function MissingLetterTab({
                   </button>
                 </div>
               )}
-
-              <div className="pb-2 text-center font-semibold" style={{ fontSize: 'calc(0.875rem * var(--content-scale))' }}>
-                {result && lastFeedback && (
-                  <span style={{ color: result === 'correct' ? 'var(--success)' : 'var(--error)' }}>
-                    {lastFeedback.maskedWord} → {lastFeedback.correctWord} ({lastFeedback.missingLetter})
-                  </span>
-                )}
-              </div>
             </>
           )}
         </div>
@@ -451,11 +457,6 @@ export function MissingLetterTab({
           <span className="text-xs font-semibold text-[var(--muted)]">
             Best: <span className="text-[var(--ink)]">{scores.bestStreak}</span>
           </span>
-          {result && lastFeedback && (
-            <span className="ml-auto text-sm font-semibold" style={{ color: result === 'correct' ? 'var(--success)' : 'var(--error)' }}>
-              {lastFeedback.maskedWord} → {lastFeedback.correctWord}
-            </span>
-          )}
         </div>
       )}
     </div>
