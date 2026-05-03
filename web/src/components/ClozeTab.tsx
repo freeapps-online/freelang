@@ -244,7 +244,7 @@ export function ClozeTab({
   const nativeText = round.sentence.text[nativeLang] ?? round.sentence.text.en ?? ''
 
   return (
-    <div className="flex h-[calc(100dvh-80px)] flex-col gap-2 lg:h-auto">
+    <div className="flex h-[calc(100dvh-80px-env(safe-area-inset-bottom,0px))] flex-col gap-2 lg:h-auto">
       {showStats ? (
         <SentenceStatsPanel
           sentences={sentences}

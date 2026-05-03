@@ -284,7 +284,7 @@ export function SentencesTab({
   if (!sentence) return <div className="flex flex-1 items-center justify-center text-[var(--muted)]">{t(uiLang, 'loading')}</div>
 
   return (
-    <div className="flex h-[calc(100dvh-80px)] flex-col gap-2 lg:h-auto">
+    <div className="flex h-[calc(100dvh-80px-env(safe-area-inset-bottom,0px))] flex-col gap-2 lg:h-auto">
       {showStats ? (
         <SentenceStatsPanel
           sentences={sentences}

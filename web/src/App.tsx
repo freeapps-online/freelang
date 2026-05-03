@@ -557,7 +557,7 @@ function ModeLoading({ mode }: { mode: Mode }) {
   }
 
   return (
-    <div className="flex h-[calc(100dvh-80px)] items-center justify-center rounded-[1.5rem] border border-[var(--line)] bg-[var(--glass)] text-sm text-[var(--muted)]">
+    <div className="flex h-[calc(100dvh-80px-env(safe-area-inset-bottom,0px))] items-center justify-center rounded-[1.5rem] border border-[var(--line)] bg-[var(--glass)] text-sm text-[var(--muted)]">
       Loading…
     </div>
   )

@@ -350,7 +350,7 @@ export function FlashcardsTab({
   const promptVisible = !listenOnly || result !== null
 
   return (
-    <div className="flex h-[calc(100dvh-80px)] flex-col lg:h-auto">
+    <div className="flex h-[calc(100dvh-80px-env(safe-area-inset-bottom,0px))] flex-col lg:h-auto">
       <section
         className="flex flex-1 flex-col p-2 sm:p-3 lg:p-4"
         style={{ background: 'var(--warm-gradient)' }}
