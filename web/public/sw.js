@@ -1,4 +1,4 @@
-const CACHE = 'freelang-v2'
+const CACHE = 'freelang-v3'
 
 self.addEventListener('install', (e) => {
   e.waitUntil(
