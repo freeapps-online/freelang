@@ -6,7 +6,6 @@ import { speech } from '../services/speech.ts'
 import { useSpeech } from '../useSpeech.ts'
 import { evaluateVoiceAttempt } from '../services/flashcardsVoice.ts'
 import { t } from '../services/i18n.ts'
-import { useCardAudio } from '../hooks/useCardAudio.ts'
 import { useSwipeGesture } from '../hooks/useSwipeGesture.ts'
 import { useCardRound } from '../hooks/useCardRound.ts'
 import { useVoiceCycle } from '../hooks/useVoiceCycle.ts'
@@ -60,7 +59,11 @@ export function FlashcardsTab({
   const displayText = display?.text ?? ''
 
   // --- Audio: speak word on new card ---
-  useCardAudio(displayText, targetLang, audioEnabled, transitioning)
+  // Inline effect (not hook) — must depend on round?.card.word to catch all card changes
+  useEffect(() => {
+    if (!audioEnabled || transitioning || !displayText) return
+    void speech.speak(displayText, targetLang)
+  }, [audioEnabled, displayText, targetLang, round?.card.word, transitioning])
 
   // --- Swipe gesture ---
   const swipe = useSwipeGesture({
