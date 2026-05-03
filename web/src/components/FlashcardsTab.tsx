@@ -43,10 +43,10 @@ export function FlashcardsTab({
   showStats: boolean
   onShowStatsChange: (show: boolean) => void
 }) {
-  const sp = useSpeech()
+  useSpeech()
   const [words, setWords] = useState<FlashCard[]>(getLoadedWords(level))
   const [round, setRound] = useState<FlashCardRound | null>(null)
-  const [scores, setScores] = useState<FlashCardScore>(loadScores)
+  const [, setScores] = useState<FlashCardScore>(loadScores)
   const [wordStats, setWordStats] = useState<WordStatsMap>(loadWordStats)
   const [result, setResult] = useState<SwipeResult>(null)
   const [dragX, setDragX] = useState(0)
@@ -54,9 +54,9 @@ export function FlashcardsTab({
   const startX = useRef(0)
   const dragging = useRef(false)
   const [lastFeedback, setLastFeedback] = useState<{ nativeWord: string; correctAnswer: string } | null>(null)
-  const [voiceStep, setVoiceStep] = useState<VoiceStep>('repeat')
-  const [voiceAttempt, setVoiceAttempt] = useState<{ heardTarget: string; heardAnswer: string; repeatMatched: boolean } | null>(null)
-  const [speakStatus, setSpeakStatus] = useState<SpeakStatus>('idle')
+  const [, setVoiceStep] = useState<VoiceStep>('repeat')
+  const [, setVoiceAttempt] = useState<{ heardTarget: string; heardAnswer: string; repeatMatched: boolean } | null>(null)
+  const [, setSpeakStatus] = useState<SpeakStatus>('idle')
   const [dictionaryOpen, setDictionaryOpen] = useState(false)
   const [dictionaryStatus, setDictionaryStatus] = useState<DictionaryStatus>('idle')
   const [dictionaryData, setDictionaryData] = useState<DictionaryLookupResult | null>(null)
@@ -345,7 +345,6 @@ export function FlashcardsTab({
     return <div className="flex flex-1 items-center justify-center text-[var(--muted)]">{t(uiLang, 'loading')}</div>
   }
 
-  const pct = scores.total > 0 ? Math.round((scores.correct / scores.total) * 100) : 0
   const promptVisible = !listenOnly || result !== null
 
   return (
@@ -367,23 +366,6 @@ export function FlashcardsTab({
             />
           ) : (
             <>
-              {inputMode === 'keyboard' ? null : (
-                <div className="grid gap-2 sm:grid-cols-2">
-                  <VoiceStepCard
-                    title={`${t(uiLang, 'step1')}. ${t(uiLang, 'repeatWord')}`}
-                    active={voiceStep === 'repeat'}
-                    complete={voiceAttempt?.repeatMatched === true}
-                    detail={voiceAttempt?.heardTarget ? `Heard: ${voiceAttempt.heardTarget}` : listenOnly ? t(uiLang, 'listenAndRepeat') : `Say ${display.text}`}
-                  />
-                  <VoiceStepCard
-                    title={`${t(uiLang, 'step2')}. ${t(uiLang, 'sayMeaning')}`}
-                    active={voiceStep === 'answer'}
-                    complete={result === 'correct'}
-                    detail={voiceAttempt?.heardAnswer ? `Heard: ${voiceAttempt.heardAnswer}` : `Say ${correctAnswer}`}
-                  />
-                </div>
-              )}
-
               {/* Card */}
               <div className="flex flex-1 items-center justify-center overflow-hidden">
                 <div
@@ -458,28 +440,6 @@ export function FlashcardsTab({
                 </div>
               </div>
 
-              {inputMode === 'speak' && (
-                <div className="space-y-2">
-                  <div className="rounded-[0.9rem] border border-[var(--line)] bg-[var(--glass)] px-3 py-2 text-xs text-[var(--muted)]">
-                    {sp.isListening
-                      ? `Listening: ${sp.transcript || 'speak now...'}` : {
-                        prompting: listenOnly ? 'Playing the card. Listen closely, then answer from audio only.' : 'Playing the card. Repeat it, then say the meaning.',
-                        'listening-repeat': listenOnly ? 'Step 1: repeat the card from audio only.' : 'Step 1: repeat the card exactly as shown.',
-                        'listening-answer': 'Step 2: say the meaning in your native language.',
-                        blocked: 'Microphone permission is blocked in this browser.',
-                        unsupported: 'Speech recognition is not supported in this browser.',
-                        idle: 'Preparing the next card...',
-                      }[speakStatus]}
-                  </div>
-                  <button
-                    className="w-full rounded-[1.1rem] border border-[var(--line)] bg-[var(--glass)] px-4 py-3 text-sm font-semibold text-[var(--ink)]"
-                    onClick={() => focusCard(round.card)}
-                  >
-                    {t(uiLang, 'restartCard')}
-                  </button>
-                </div>
-              )}
-
             </>
           )}
 
@@ -508,40 +468,10 @@ export function FlashcardsTab({
         />
       )}
 
-      {/* Desktop: always-visible stats bar */}
-      {!showStats && (
-        <div className="hidden border-t border-[var(--line)] bg-[var(--glass)] px-4 py-2 lg:flex lg:items-center lg:gap-6">
-          <span className="text-xs font-semibold text-[var(--muted)]">
-            Accuracy: <span className="text-[var(--ink)]">{pct}%</span> ({scores.correct}/{scores.total})
-          </span>
-          <span className="text-xs font-semibold text-[var(--muted)]">
-            Streak: <span className="text-[var(--ink)]">{scores.streak}</span>
-          </span>
-          <span className="text-xs font-semibold text-[var(--muted)]">
-            Best: <span className="text-[var(--ink)]">{scores.bestStreak}</span>
-          </span>
-        </div>
-      )}
     </div>
   )
 }
 
-function VoiceStepCard({ title, detail, active, complete }: { title: string; detail: string; active: boolean; complete: boolean }) {
-  return (
-    <div
-      className={`rounded-[1rem] border px-3 py-2.5 ${
-        complete
-          ? 'border-[var(--success)]/30 bg-[var(--success)]/8'
-          : active
-            ? 'border-[var(--accent-soft)] bg-[var(--accent-gradient)]'
-            : 'border-[var(--line)] bg-[var(--glass)]'
-      }`}
-    >
-      <div className="text-[0.68rem] font-bold uppercase tracking-[0.16em] text-[var(--muted)]">{title}</div>
-      <div className="mt-1 text-sm text-[var(--ink)]">{detail}</div>
-    </div>
-  )
-}
 
 function DictionarySheet({
   uiLang,

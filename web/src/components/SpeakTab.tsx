@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
-import { ArrowRight, Headphones, Mic, Volume2 } from 'lucide-react'
+import { ArrowRight, Mic, Volume2 } from 'lucide-react'
 import { speech } from '../services/speech.ts'
 import { useSpeech } from '../useSpeech.ts'
 import { reportSentenceScore } from '../services/cloud.ts'
@@ -78,10 +78,10 @@ export function SentencesTab({
   const [attempt, setAttempt] = useState<AttemptResult | null>(null)
   const [sentenceStats, setSentenceStats] = useState<SentenceStatsMap>(loadSentenceStats)
   const showStats = showStatsExternal
-  const [listenOnly, setListenOnly] = useState(false)
+  const [listenOnly] = useState(false)
   const [dragX, setDragX] = useState(0)
   const [transitioning, setTransitioning] = useState(false)
-  const [speakStatus, setSpeakStatus] = useState<SpeakStatus>('idle')
+  const [, setSpeakStatus] = useState<SpeakStatus>('idle')
   const startXRef = useRef(0)
   const dragging = useRef(false)
   const advanceTimer = useRef<number>(0)
@@ -298,50 +298,6 @@ export function SentencesTab({
         />
       ) : (
         <>
-          <div className="flex items-center justify-end gap-2">
-            <div className="flex items-center gap-2">
-              <button
-                className={`flex h-9 items-center justify-center gap-2 rounded-full border px-3 text-xs font-bold shadow-[var(--shadow-soft)] ${
-                  listenOnly
-                    ? 'border-[var(--accent-soft)] bg-[var(--accent-gradient)] text-[var(--ink)]'
-                    : 'border-[var(--line)] bg-[var(--glass)] text-[var(--muted)]'
-                }`}
-                onClick={() => setListenOnly((value) => !value)}
-                title={t(uiLang, 'listenOnly')}
-              >
-                <Headphones className="h-4 w-4" strokeWidth={1.8} />
-                <span className="hidden sm:inline">{t(uiLang, 'listenOnly')}</span>
-              </button>
-              {inputMode === 'speak' && (
-                <span className="text-xs font-semibold text-[var(--muted)]">
-                  {sp.isListening ? t(uiLang, 'micLive') : speakStatus === 'prompting' ? t(uiLang, 'prompting') : t(uiLang, 'auto')}
-                </span>
-              )}
-            </div>
-          </div>
-
-          <div className="flex justify-center">
-            <div className="inline-flex rounded-full border border-[var(--line)] bg-[var(--glass)] p-1">
-              {([
-                ['short', t(uiLang, 'shortLength'), shortSentences.length === 0],
-                ['long', t(uiLang, 'longLength'), longSentences.length === 0],
-              ] as const).map(([filter, label, disabled]) => (
-                <button
-                  key={filter}
-                  className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
-                    filter === lengthFilter
-                      ? 'bg-[var(--ink)] text-[var(--paper)]'
-                      : 'text-[var(--muted)] hover:bg-[var(--glass-hover)] hover:text-[var(--ink)]'
-                  } ${disabled ? 'cursor-not-allowed opacity-40 hover:bg-transparent hover:text-[var(--muted)]' : ''}`}
-                  onClick={() => !disabled && onLengthFilterChange(filter)}
-                  disabled={disabled}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
-
           {/* Card */}
           <div className="flex flex-1 items-center justify-center overflow-hidden">
             <div
@@ -419,30 +375,7 @@ export function SentencesTab({
                 <ArrowRight className="h-5 w-5" strokeWidth={2} />
               </button>
             </div>
-          ) : (
-            <div className="space-y-2">
-              <div className="rounded-[0.9rem] border border-[var(--line)] bg-[var(--glass)] px-3 py-2 text-xs text-[var(--muted)]">
-                {sp.isListening
-                  ? `Listening: ${sp.transcript || 'speak now...'}` : {
-                    prompting: listenOnly
-                      ? 'Playing the sentence. Answer from audio only.'
-                      : 'Playing the sentence. Say it back exactly as shown.',
-                    listening: listenOnly
-                      ? t(uiLang, 'listenAndSayItBack')
-                      : 'Listening for your sentence now.',
-                    blocked: 'Microphone permission is blocked in this browser.',
-                    unsupported: 'Speech recognition is not supported in this browser.',
-                    idle: 'Preparing the next sentence...',
-                  }[speakStatus]}
-              </div>
-              <button
-                className="w-full rounded-[1.1rem] border border-[var(--line)] bg-[var(--glass)] px-4 py-3 text-sm font-semibold text-[var(--ink)]"
-                onClick={() => focusSentence(sentence)}
-              >
-                {t(uiLang, 'restartSentence')}
-              </button>
-            </div>
-          )}
+          ) : null}
         </>
       )}
     </div>
