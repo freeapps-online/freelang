@@ -8,6 +8,21 @@ export type MotionPreference = 'full' | 'reduced'
 export type SurfacePreference = 'soft' | 'bold'
 export type PracticeInputMode = 'keyboard' | 'speak'
 export type DictionaryViewPreference = 'dictionary' | 'thesaurus' | 'translation'
+export type SpeechSpeedPreference = 'slow' | 'normal' | 'fast'
+export type CardDelayPreference = 'none' | 'short' | 'medium' | 'long'
+
+export const SPEECH_SPEED_VALUES: Record<SpeechSpeedPreference, number> = {
+  slow: 0.7,
+  normal: 0.9,
+  fast: 1.1,
+}
+
+export const CARD_DELAY_VALUES: Record<CardDelayPreference, { correct: number; wrong: number }> = {
+  none: { correct: 200, wrong: 500 },
+  short: { correct: 400, wrong: 1100 },
+  medium: { correct: 700, wrong: 1600 },
+  long: { correct: 1200, wrong: 2200 },
+}
 
 export interface Settings {
   interfaceLang: UiLocale
@@ -23,6 +38,8 @@ export interface Settings {
   sentenceInputMode: PracticeInputMode
   dictionaryDefaultView: DictionaryViewPreference
   cardLevel: number
+  speechSpeed: SpeechSpeedPreference
+  cardDelay: CardDelayPreference
 }
 
 const defaults: Settings = {
@@ -39,6 +56,8 @@ const defaults: Settings = {
   sentenceInputMode: 'keyboard',
   dictionaryDefaultView: 'dictionary',
   cardLevel: 1,
+  speechSpeed: 'normal',
+  cardDelay: 'short',
 }
 
 export function loadSettings(): Settings {

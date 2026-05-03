@@ -139,6 +139,16 @@ type TranslationKey =
   | 'strongerPanelSeparation'
   | 'flashcardAudio'
   | 'flashcardAudioDesc'
+  | 'speechSpeed'
+  | 'speechSpeedDesc'
+  | 'slow'
+  | 'normal'
+  | 'fast'
+  | 'cardDelay'
+  | 'cardDelayDesc'
+  | 'none'
+  | 'short'
+  | 'long'
   | 'on'
   | 'off'
   | 'speakCardsImmediately'
@@ -297,6 +307,16 @@ const EN_MESSAGES: Record<TranslationKey, string> = {
     strongerPanelSeparation: 'Stronger panel separation',
     flashcardAudio: 'Word audio',
     flashcardAudioDesc: 'Auto-pronounce each shown word and allow quick replay.',
+    speechSpeed: 'Speech speed',
+    speechSpeedDesc: 'How fast words are pronounced.',
+    slow: 'Slow',
+    normal: 'Normal',
+    fast: 'Fast',
+    cardDelay: 'Card delay',
+    cardDelayDesc: 'Time before the next card appears after answering.',
+    none: 'None',
+    short: 'Short',
+    long: 'Long',
     on: 'On',
     off: 'Off',
     speakCardsImmediately: 'Speak words immediately',

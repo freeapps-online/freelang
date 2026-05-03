@@ -21,6 +21,8 @@ describe('settings service', () => {
       sentenceInputMode: 'keyboard',
       dictionaryDefaultView: 'dictionary',
       cardLevel: 1,
+      speechSpeed: 'normal',
+      cardDelay: 'short',
     })
   })
 
@@ -63,6 +65,8 @@ describe('settings service', () => {
       sentenceInputMode: 'speak' as const,
       dictionaryDefaultView: 'translation' as const,
       cardLevel: 7,
+      speechSpeed: 'fast' as const,
+      cardDelay: 'long' as const,
     }
 
     saveSettings(next)

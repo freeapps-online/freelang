@@ -11,10 +11,12 @@ interface UseCardRoundOptions {
   level: number
   nativeLang: string
   targetLang: string
+  correctDelay?: number
+  wrongDelay?: number
   onTransitionStart?: (correct: boolean, side: 'left' | 'right') => void
 }
 
-export function useCardRound({ level, nativeLang, targetLang, onTransitionStart }: UseCardRoundOptions) {
+export function useCardRound({ level, nativeLang, targetLang, correctDelay = 400, wrongDelay = 1100, onTransitionStart }: UseCardRoundOptions) {
   const [words, setWords] = useState<FlashCard[]>(getLoadedWords(level))
   const [round, setRound] = useState<FlashCardRound | null>(null)
   const scoresRef = useRef(loadScores())
@@ -81,12 +83,13 @@ export function useCardRound({ level, nativeLang, targetLang, onTransitionStart 
       setTransitioning(true)
       advanceTimers.current.push(window.setTimeout(() => {
         advanceToNext(round.card, nextWordStats)
-      }, 400))
+      }, correctDelay))
     } else {
-      advanceTimers.current.push(window.setTimeout(() => setTransitioning(true), 800))
+      const wrongShowDelay = Math.max(wrongDelay - 300, 200)
+      advanceTimers.current.push(window.setTimeout(() => setTransitioning(true), wrongShowDelay))
       advanceTimers.current.push(window.setTimeout(() => {
         advanceToNext(round.card, nextWordStats)
-      }, 1100))
+      }, wrongDelay))
     }
 
     window.clearTimeout(feedbackTimer.current)

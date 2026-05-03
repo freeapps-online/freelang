@@ -27,6 +27,9 @@ export function FlashcardsTab({
   listenOnly,
   showStats,
   onShowStatsChange,
+  speechRate = 0.9,
+  correctDelay = 400,
+  wrongDelay = 1100,
 }: {
   nativeLang: string
   targetLang: string
@@ -40,6 +43,9 @@ export function FlashcardsTab({
   listenOnly: boolean
   showStats: boolean
   onShowStatsChange: (show: boolean) => void
+  speechRate?: number
+  correctDelay?: number
+  wrongDelay?: number
 }) {
   useSpeech()
 
@@ -50,6 +56,8 @@ export function FlashcardsTab({
     level,
     nativeLang,
     targetLang,
+    correctDelay,
+    wrongDelay,
     onTransitionStart: (correct, side) => {
       if (correct) swipe.flyOff(side)
       else swipe.resetDrag()
@@ -62,7 +70,7 @@ export function FlashcardsTab({
   const swipe = useSwipeGesture({
     disabled: !!result || transitioning || inputMode !== 'keyboard',
     onSwipe: answer,
-    onTap: () => { if (audioEnabled && displayText) void speech.speak(displayText, targetLang) },
+    onTap: () => { if (audioEnabled && displayText) void speech.speak(displayText, targetLang, speechRate) },
   })
 
   // Reset card position when new card appears (transitioning ends)
@@ -73,9 +81,8 @@ export function FlashcardsTab({
   // --- Audio: speak word on new card ---
   useEffect(() => {
     if (!audioEnabled || transitioning || !displayText) return
-    console.log('[audio] speaking:', displayText)
-    void speech.speak(displayText, targetLang)
-  }, [audioEnabled, displayText, targetLang, round?.card.word, transitioning])
+    void speech.speak(displayText, targetLang, speechRate)
+  }, [audioEnabled, displayText, speechRate, targetLang, round?.card.word, transitioning])
 
   // --- Voice recognition cycle (speak mode) ---
   const handleVoiceAnswer = useCallback((heardTarget: string, heardAnswer: string) => {
@@ -104,9 +111,9 @@ export function FlashcardsTab({
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
       if (event.key === 'ArrowLeft') { event.preventDefault(); answer('left') }
       if (event.key === 'ArrowRight') { event.preventDefault(); answer('right') }
-      if (event.key === 'ArrowUp' && round) { event.preventDefault(); void speech.speak(round.leftOption, nativeLang) }
-      if (event.key === 'ArrowDown' && round) { event.preventDefault(); void speech.speak(round.rightOption, nativeLang) }
-      if ((event.key === 'Enter' || event.key === ' ') && displayText) { event.preventDefault(); void speech.speak(displayText, targetLang) }
+      if (event.key === 'ArrowUp' && round) { event.preventDefault(); void speech.speak(round.leftOption, nativeLang, speechRate) }
+      if (event.key === 'ArrowDown' && round) { event.preventDefault(); void speech.speak(round.rightOption, nativeLang, speechRate) }
+      if ((event.key === 'Enter' || event.key === ' ') && displayText) { event.preventDefault(); void speech.speak(displayText, targetLang, speechRate) }
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
@@ -205,7 +212,7 @@ export function FlashcardsTab({
                   onPointerDown={inputMode === 'keyboard' && !result && !transitioning ? swipe.handlers.onPointerDown : undefined}
                   onPointerMove={inputMode === 'keyboard' && !result && !transitioning ? swipe.handlers.onPointerMove : undefined}
                   onPointerUp={inputMode === 'keyboard' && !result && !transitioning ? swipe.handlers.onPointerUp : undefined}
-                  onClick={inputMode === 'speak' && audioEnabled ? () => { void speech.speak(display.text, targetLang) } : undefined}
+                  onClick={inputMode === 'speak' && audioEnabled ? () => { void speech.speak(display.text, targetLang, speechRate) } : undefined}
                 >
                   <button className="drop-shadow-sm" style={{ fontSize: `calc(4.5rem * var(--content-scale))` }} onClick={(e) => { e.stopPropagation(); void openDictionary() }}>{display.emoji}</button>
                   {promptVisible ? (

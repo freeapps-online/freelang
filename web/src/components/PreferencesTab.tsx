@@ -112,6 +112,31 @@ export function PreferencesTab({
               />
             </SettingsPanel>
 
+            <SettingsPanel title={tt('speechSpeed')} description={tt('speechSpeedDesc')}>
+              <ChoiceGrid<Settings['speechSpeed']>
+                value={settings.speechSpeed}
+                onChange={(speechSpeed) => update({ speechSpeed })}
+                options={[
+                  { value: 'slow', label: tt('slow'), detail: '0.7x' },
+                  { value: 'normal', label: tt('normal'), detail: '0.9x' },
+                  { value: 'fast', label: tt('fast'), detail: '1.1x' },
+                ]}
+              />
+            </SettingsPanel>
+
+            <SettingsPanel title={tt('cardDelay')} description={tt('cardDelayDesc')}>
+              <ChoiceGrid<Settings['cardDelay']>
+                value={settings.cardDelay}
+                onChange={(cardDelay) => update({ cardDelay })}
+                options={[
+                  { value: 'none', label: tt('none'), detail: '0.2s' },
+                  { value: 'short', label: tt('short'), detail: '0.4s' },
+                  { value: 'medium', label: tt('medium'), detail: '0.7s' },
+                  { value: 'long', label: tt('long'), detail: '1.2s' },
+                ]}
+              />
+            </SettingsPanel>
+
             <SettingsPanel title={tt('cardMode')} description={tt('cardModeDesc')}>
               <ChoiceGrid<PracticeInputMode>
                 value={settings.flashcardInputMode}

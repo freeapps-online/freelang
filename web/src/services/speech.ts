@@ -21,7 +21,7 @@ class SpeechService {
   private synthesis = window.speechSynthesis
   private voicesLoaded = false
   private unlocked = false
-  private pendingText: { text: string; lang: string } | null = null
+  private pendingText: { text: string; lang: string; rate: number } | null = null
 
   state: SpeechState = {
     isListening: false,
@@ -51,9 +51,9 @@ class SpeechService {
         this.unlocked = true
         console.log('[speech] unlocked by user gesture')
         if (this.pendingText) {
-          const { text, lang } = this.pendingText
+          const { text, lang, rate } = this.pendingText
           this.pendingText = null
-          void this.speak(text, lang)
+          void this.speak(text, lang, rate)
         }
         window.removeEventListener('pointerdown', unlock)
         window.removeEventListener('keydown', unlock)
@@ -139,11 +139,11 @@ class SpeechService {
     }
   }
 
-  speak(text: string, lang: string): Promise<void> {
+  speak(text: string, lang: string, rate = 0.9): Promise<void> {
     // If Chrome hasn't been unlocked yet, save for replay after first gesture
     if (!this.unlocked) {
       console.log('[speech] blocked (no user gesture yet), queuing:', text)
-      this.pendingText = { text, lang }
+      this.pendingText = { text, lang, rate }
       return Promise.resolve()
     }
 
@@ -154,7 +154,7 @@ class SpeechService {
       }
       const utterance = new SpeechSynthesisUtterance(text)
       utterance.lang = lang
-      utterance.rate = 0.9
+      utterance.rate = rate
 
       // Pick the best voice matching the language
       const voices = this.synthesis.getVoices()

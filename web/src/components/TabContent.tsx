@@ -1,6 +1,6 @@
 import { Suspense, lazy } from 'react'
 import { loadFlashcardsTab, loadMissingLetterTab, loadClozeTab, loadSentencesTab, loadPreferencesTab } from '../useAppState.ts'
-import type { Settings, PracticeInputMode } from '../services/settings.ts'
+import { SPEECH_SPEED_VALUES, CARD_DELAY_VALUES, type Settings, type PracticeInputMode } from '../services/settings.ts'
 import type { SentenceLengthFilter } from '../services/practiceContent.ts'
 import type { Mode } from '../types.ts'
 
@@ -40,6 +40,9 @@ export function TabContent({
             level={currentLevel} levelLabel={currentLevelLabel} listenOnly={listenOnly}
             onInputModeChange={(m: PracticeInputMode) => update({ flashcardInputMode: m })}
             showStats={showStats} onShowStatsChange={setShowStats}
+            speechRate={SPEECH_SPEED_VALUES[settings.speechSpeed]}
+            correctDelay={CARD_DELAY_VALUES[settings.cardDelay].correct}
+            wrongDelay={CARD_DELAY_VALUES[settings.cardDelay].wrong}
           />
         )
       case 'spelling':
