@@ -310,7 +310,7 @@ export function SentencesTab({
           {/* Card */}
           <div className="flex flex-1 items-center justify-center overflow-hidden">
             <div
-              className={`relative flex w-full max-w-md flex-col items-center gap-3 rounded-[1.5rem] border border-[var(--line-strong)] p-5 text-center shadow-[var(--shadow-soft)] select-none touch-none sm:rounded-[2rem] sm:p-8 ${inputMode === 'keyboard' ? 'cursor-grab active:cursor-grabbing' : ''}`}
+              className={`relative flex w-full max-w-md flex-col items-center gap-2.5 rounded-[1.5rem] border border-[var(--line-strong)] px-4 py-4 text-center shadow-[var(--shadow-soft)] select-none touch-none sm:gap-3 sm:rounded-[2rem] sm:px-6 sm:py-8 ${inputMode === 'keyboard' ? 'cursor-grab active:cursor-grabbing' : ''}`}
               style={{
                 background: 'var(--card-gradient)',
                 transform: inputMode === 'keyboard' ? `translateX(${dragX}px) rotate(${dragX * 0.05}deg)` : 'none',

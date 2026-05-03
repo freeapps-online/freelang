@@ -414,27 +414,7 @@ export function FlashcardsTab({
             />
           ) : (
             <>
-              {inputMode === 'keyboard' ? (
-                <>
-                  {/* Answer options */}
-                  <div className="flex items-center justify-between gap-2">
-                    <button
-                      className="rounded-full border border-[var(--line)] bg-[var(--glass)] px-3 py-2 text-center transition hover:border-[var(--line-strong)] hover:bg-[var(--glass-hover)]"
-                      onClick={() => handleAnswer('left')}
-                      disabled={transitioning}
-                    >
-                      <div className="font-semibold text-[var(--ink)]" style={{ fontSize: 'calc(0.875rem * var(--content-scale))' }}>← {round.leftOption}</div>
-                    </button>
-                    <button
-                      className="rounded-full border border-[var(--line)] bg-[var(--glass)] px-3 py-2 text-center transition hover:border-[var(--line-strong)] hover:bg-[var(--glass-hover)]"
-                      onClick={() => handleAnswer('right')}
-                      disabled={transitioning}
-                    >
-                      <div className="font-semibold text-[var(--ink)]" style={{ fontSize: 'calc(0.875rem * var(--content-scale))' }}>{round.rightOption} →</div>
-                    </button>
-                  </div>
-                </>
-              ) : (
+              {inputMode === 'keyboard' ? null : (
                 <div className="grid gap-2 sm:grid-cols-2">
                   <VoiceStepCard
                     title={`${t(uiLang, 'step1')}. ${t(uiLang, 'repeatWord')}`}
@@ -454,7 +434,7 @@ export function FlashcardsTab({
               {/* Card */}
               <div className="flex flex-1 items-center justify-center overflow-hidden">
                 <div
-                  className={`relative flex w-full max-w-[24rem] flex-col items-center justify-center gap-3 rounded-[1.5rem] border border-[var(--line-strong)] px-5 py-8 text-center shadow-[var(--shadow-soft)] select-none touch-none sm:rounded-[2rem] sm:py-10 ${
+                  className={`relative flex w-full max-w-[24rem] flex-col items-center justify-center gap-3 rounded-[1.5rem] border border-[var(--line-strong)] px-4 py-6 text-center shadow-[var(--shadow-soft)] select-none touch-none sm:rounded-[2rem] sm:px-5 sm:py-10 ${
                     inputMode === 'keyboard' ? 'cursor-grab active:cursor-grabbing' : ''
                   }`}
                   style={{
@@ -470,7 +450,7 @@ export function FlashcardsTab({
                 >
                   {inputMode === 'keyboard' && Math.abs(dragX) > 30 && !transitioning && (
                     <div
-                      className="absolute top-5 rounded-full px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-[var(--paper)]"
+                      className="absolute top-4 rounded-full px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-[var(--paper)] sm:top-5"
                       style={{
                         left: dragX < 0 ? 18 : 'auto',
                         right: dragX > 0 ? 18 : 'auto',
@@ -495,6 +475,41 @@ export function FlashcardsTab({
                         {t(uiLang, 'listenFirst')}
                       </div>
                       <div className="text-sm text-[var(--muted)]">{t(uiLang, 'hiddenUntilAnswer')}</div>
+                    </div>
+                  )}
+                  {inputMode === 'keyboard' && (
+                    <div className="mt-1 grid w-full grid-cols-2 gap-2">
+                      <button
+                        className="rounded-full border border-[var(--line)] bg-[var(--glass)] px-3 py-2 text-center transition hover:border-[var(--line-strong)] hover:bg-[var(--glass-hover)]"
+                        onClick={() => handleAnswer('left')}
+                        disabled={transitioning}
+                      >
+                        <div className="font-semibold text-[var(--ink)]" style={{ fontSize: 'calc(0.875rem * var(--content-scale))' }}>← {round.leftOption}</div>
+                      </button>
+                      <button
+                        className="rounded-full border border-[var(--line)] bg-[var(--glass)] px-3 py-2 text-center transition hover:border-[var(--line-strong)] hover:bg-[var(--glass-hover)]"
+                        onClick={() => handleAnswer('right')}
+                        disabled={transitioning}
+                      >
+                        <div className="font-semibold text-[var(--ink)]" style={{ fontSize: 'calc(0.875rem * var(--content-scale))' }}>{round.rightOption} →</div>
+                      </button>
+                    </div>
+                  )}
+                  {result && lastFeedback && (
+                    <div className="mt-1 w-full rounded-[1rem] border border-[var(--line)] bg-[var(--glass)] px-3 py-2">
+                      <div className="text-sm font-semibold" style={{ color: result === 'correct' ? 'var(--success)' : 'var(--error)' }}>
+                        {lastFeedback.nativeWord} = {lastFeedback.correctAnswer}
+                      </div>
+                      {voiceAttempt?.heardTarget && voiceAttempt.repeatMatched === false && (
+                        <div className="mt-1 text-xs text-[var(--muted)]">
+                          Repeat: <span className="text-[var(--error)]">{voiceAttempt.heardTarget}</span>
+                        </div>
+                      )}
+                      {voiceAttempt?.heardAnswer && result === 'wrong' && (
+                        <div className="mt-1 text-xs text-[var(--muted)]">
+                          {t(uiLang, 'answer')}: <span className="text-[var(--error)]">{voiceAttempt.heardAnswer}</span>
+                        </div>
+                      )}
                     </div>
                   )}
                   {inputMode === 'speak' && (
@@ -529,14 +544,6 @@ export function FlashcardsTab({
                 </div>
               )}
 
-              {/* Feedback */}
-              <div className="pb-2 text-center font-semibold" style={{ fontSize: 'calc(0.875rem * var(--content-scale))' }}>
-                {result && lastFeedback && (
-                  <span style={{ color: result === 'correct' ? 'var(--success)' : 'var(--error)' }}>
-                    {lastFeedback.nativeWord} = {lastFeedback.correctAnswer}
-                  </span>
-                )}
-              </div>
             </>
           )}
         </div>
@@ -570,11 +577,6 @@ export function FlashcardsTab({
           <span className="text-xs font-semibold text-[var(--muted)]">
             Best: <span className="text-[var(--ink)]">{scores.bestStreak}</span>
           </span>
-          {result && lastFeedback && (
-            <span className="ml-auto text-sm font-semibold" style={{ color: result === 'correct' ? 'var(--success)' : 'var(--error)' }}>
-              {lastFeedback.nativeWord} = {lastFeedback.correctAnswer}
-            </span>
-          )}
         </div>
       )}
     </div>
