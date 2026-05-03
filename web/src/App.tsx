@@ -379,81 +379,71 @@ export default function App() {
             )}
           </aside>
 
-          {/* Mobile header */}
-          <header className="mb-2 flex flex-col gap-2 lg:hidden">
-            <div className="flex items-center gap-2">
-              <LanguagePicker compact label="" value={settings.nativeLang} onChange={(code) => update({ nativeLang: code })} />
-              <span className="text-xs text-[var(--muted)]">→</span>
-              <LanguagePicker compact label="" value={settings.targetLang} onChange={(code) => update({ targetLang: code })} />
+          {/* Mobile header — single line */}
+          <header className="mb-1 flex items-center gap-1.5 lg:hidden">
+            <LanguagePicker compact label="" value={settings.nativeLang} onChange={(code) => update({ nativeLang: code })} />
+            <span className="text-[0.6rem] text-[var(--muted)]">→</span>
+            <LanguagePicker compact label="" value={settings.targetLang} onChange={(code) => update({ targetLang: code })} />
 
-              {isPracticeMode && (
-                <div className="relative ml-auto">
-                  <button
-                    className="flex items-center gap-1 rounded-full border border-[var(--line)] bg-[var(--glass)] px-2 py-1.5 text-xs font-semibold text-[var(--muted)]"
-                  onClick={() => setLevelOpen(!levelOpen)}
-                >
-                  <span>Lv {currentLevel}</span>
-                  <span className="max-w-24 truncate">{currentLevelLabel}</span>
-                    <ChevronDown className={`h-3 w-3 transition-transform ${levelOpen ? 'rotate-180' : ''}`} strokeWidth={2.2} />
-                  </button>
-                  {levelOpen && (
-                    <>
-                      <div className="fixed inset-0 z-40" onClick={() => setLevelOpen(false)} />
-                      <div className="absolute right-0 top-full z-50 mt-1 max-h-72 w-48 overflow-y-auto rounded-[1rem] border border-[var(--line-strong)] bg-[var(--panel-strong)] p-1 shadow-[var(--shadow-soft)] backdrop-blur-xl">
-                        {levelOptions.map((l) => (
-                          <button
-                            key={l}
-                            className={`flex w-full items-center gap-2 rounded-[0.75rem] px-3 py-2 text-left text-sm ${
-                              l === currentLevel
-                                ? 'bg-[var(--accent-gradient)] font-semibold text-[var(--ink)]'
-                                : 'text-[var(--muted)] hover:bg-[var(--glass-hover)] hover:text-[var(--ink)]'
-                            }`}
-                            onClick={() => { update({ cardLevel: l }); setLevelOpen(false) }}
-                          >
-                            <span className="font-bold">{l}</span>
-                            <span>{LEVEL_LABELS[l]}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </div>
-              )}
-
-              {isPracticeMode && (
-                <button
-                  className={`rounded-full px-2 py-1.5 text-xs font-semibold ${showStats ? 'bg-[var(--sky)] text-[var(--paper)]' : 'text-[var(--muted)]'}`}
-                  onClick={() => setShowStats(!showStats)}
-                >
-                  {showStats ? tt('play') : tt('stats')}
-                </button>
-              )}
-              {isWordPracticeMode && (
-                <button
-                  className={`flex h-8 w-8 items-center justify-center rounded-full border border-[var(--line)] ${settings.flashcardAudio ? 'bg-[var(--accent)]/25 text-[var(--accent)]' : 'bg-[var(--glass)] text-[var(--muted)]'}`}
-                  onClick={() => update({ flashcardAudio: !settings.flashcardAudio })}
-                >
-                  {settings.flashcardAudio ? (
-                    <Volume2 className="h-4 w-4" strokeWidth={2} />
-                  ) : (
-                    <VolumeX className="h-4 w-4" strokeWidth={2} />
-                  )}
-                </button>
-              )}
-            </div>
+            <div className="flex-1" />
 
             {isPracticeMode && (
-              <div className="flex justify-center">
-                <FlashcardModeSwitch
-                  value={activeInputMode}
-                  uiLang={settings.interfaceLang}
-                  onChange={(nextMode) => {
-                    if (isWordPracticeMode) update({ flashcardInputMode: nextMode })
-                    else update({ sentenceInputMode: nextMode })
-                  }}
-                  compact
-                />
+              <div className="relative">
+                <button
+                  className="flex items-center gap-0.5 rounded-full border border-[var(--line)] bg-[var(--glass)] px-1.5 py-1 text-[0.65rem] font-bold text-[var(--muted)]"
+                  onClick={() => setLevelOpen(!levelOpen)}
+                >
+                  {currentLevel}
+                  <ChevronDown className={`h-2.5 w-2.5 transition-transform ${levelOpen ? 'rotate-180' : ''}`} strokeWidth={2.5} />
+                </button>
+                {levelOpen && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setLevelOpen(false)} />
+                    <div className="absolute right-0 top-full z-50 mt-1 max-h-72 w-44 overflow-y-auto rounded-[1rem] border border-[var(--line-strong)] bg-[var(--panel-strong)] p-1 shadow-[var(--shadow-soft)] backdrop-blur-xl">
+                      {levelOptions.map((l) => (
+                        <button
+                          key={l}
+                          className={`flex w-full items-center gap-2 rounded-[0.75rem] px-3 py-2 text-left text-sm ${
+                            l === currentLevel
+                              ? 'bg-[var(--accent-gradient)] font-semibold text-[var(--ink)]'
+                              : 'text-[var(--muted)] hover:bg-[var(--glass-hover)] hover:text-[var(--ink)]'
+                          }`}
+                          onClick={() => { update({ cardLevel: l }); setLevelOpen(false) }}
+                        >
+                          <span className="font-bold">{l}</span>
+                          <span>{LEVEL_LABELS[l]}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
               </div>
+            )}
+
+            {isPracticeMode && (
+              <FlashcardModeSwitch
+                value={activeInputMode}
+                uiLang={settings.interfaceLang}
+                onChange={(nextMode) => {
+                  if (isWordPracticeMode) update({ flashcardInputMode: nextMode })
+                  else update({ sentenceInputMode: nextMode })
+                }}
+                compact
+              />
+            )}
+
+
+            {isWordPracticeMode && (
+              <button
+                className={`flex h-7 w-7 items-center justify-center rounded-full ${settings.flashcardAudio ? 'text-[var(--accent)]' : 'text-[var(--muted)]'}`}
+                onClick={() => update({ flashcardAudio: !settings.flashcardAudio })}
+              >
+                {settings.flashcardAudio ? (
+                  <Volume2 className="h-4 w-4" strokeWidth={2} />
+                ) : (
+                  <VolumeX className="h-4 w-4" strokeWidth={2} />
+                )}
+              </button>
             )}
           </header>
 

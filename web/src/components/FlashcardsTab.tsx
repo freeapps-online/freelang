@@ -376,11 +376,14 @@ export function FlashcardsTab({
                 <BookOpen className="h-4 w-4" strokeWidth={1.8} />
                 <span className="hidden sm:inline">{t(uiLang, 'meaning')}</span>
               </button>
-              <div className="flex items-center gap-2 text-xs font-bold">
+              <button
+                className="flex items-center gap-1 rounded-full border border-[var(--line)] bg-[var(--glass)] px-2 py-1 text-xs font-bold"
+                onClick={() => onShowStatsChange(!showStats)}
+              >
                 <span className="text-[var(--success)]">{scores.correct}</span>
                 <span className="text-[var(--muted)]">/</span>
                 <span className="text-[var(--error)]">{scores.total - scores.correct}</span>
-              </div>
+              </button>
             </div>
           </div>
 
