@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Volume2, Mic, ArrowRight } from 'lucide-react'
-import { FlashcardModeSwitch } from './FlashcardModeSwitch.tsx'
+
 import { speech } from '../services/speech.ts'
 import { useSpeech } from '../useSpeech.ts'
 import { t } from '../services/i18n.ts'
@@ -180,7 +180,7 @@ export function ClozeTab({
   uiLang,
   showStats: showStatsExternal,
   onShowStatsChange,
-  onInputModeChange,
+  onInputModeChange: _onInputModeChange,
 }: {
   nativeLang: string
   targetLang: string
@@ -392,22 +392,6 @@ export function ClozeTab({
         />
       ) : (
         <>
-          <div className="flex items-center justify-between gap-2">
-            <div className="lg:hidden">
-              <FlashcardModeSwitch value={inputMode} uiLang={uiLang} onChange={onInputModeChange} />
-            </div>
-            <div className="rounded-full border border-[var(--line)] bg-[var(--glass)] px-3 py-1.5 text-xs font-semibold text-[var(--muted)]">
-              Lv {level} · {levelLabel}
-            </div>
-            <div className="flex items-center gap-2">
-              {inputMode === 'speak' && (
-                <span className="text-xs font-semibold text-[var(--muted)]">
-                  {sp.isListening ? t(uiLang, 'micLive') : speakStatus === 'prompting' ? t(uiLang, 'prompting') : t(uiLang, 'auto')}
-                </span>
-              )}
-            </div>
-          </div>
-
           <div className="flex flex-1 items-center justify-center overflow-hidden">
             <div
               className={`relative flex w-full max-w-2xl flex-col items-center gap-2.5 rounded-[1.5rem] border border-[var(--line-strong)] px-4 py-4 text-center shadow-[var(--shadow-soft)] select-none touch-none sm:gap-3 sm:rounded-[2rem] sm:px-6 sm:py-8 ${inputMode === 'keyboard' ? 'cursor-grab active:cursor-grabbing' : ''}`}

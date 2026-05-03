@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Headphones } from 'lucide-react'
 import { loadLevel, getLoadedWords } from '../services/vocabulary.ts'
 import { createMissingLetterRound, type MissingLetterRound } from '../services/missingLetters.ts'
 import { loadScores, pickWeightedCard, recordAnswer, loadWordStats, recordWordAnswer, type WordStatsMap } from '../services/scores.ts'
@@ -7,7 +6,7 @@ import { speech } from '../services/speech.ts'
 import { useSpeech } from '../useSpeech.ts'
 import { reportCardScore } from '../services/cloud.ts'
 import { isSpeechMatch } from '../services/flashcardsVoice.ts'
-import { FlashcardModeSwitch } from './FlashcardModeSwitch.tsx'
+
 import { WordStatsPanel } from './FlashcardsTab.tsx'
 import { t } from '../services/i18n.ts'
 import type { PracticeInputMode } from '../services/settings.ts'
@@ -44,7 +43,7 @@ export function MissingLetterTab({
   audioEnabled,
   inputMode,
   uiLang,
-  onInputModeChange,
+  onInputModeChange: _onInputModeChange,
   level,
   levelLabel,
   showStats,
@@ -226,16 +225,6 @@ export function MissingLetterTab({
     onShowStatsChange(false)
   }, [onShowStatsChange, targetLang, words])
 
-  const handleInputModeSwitch = useCallback((mode: PracticeInputMode) => {
-    speakRunId.current += 1
-    window.clearTimeout(speakTimer.current)
-    speech.stopListening()
-    speech.stopSpeaking()
-    setVoiceAttempt('')
-    setSpeakStatus('idle')
-    onInputModeChange(mode)
-  }, [onInputModeChange])
-
   useEffect(() => {
     if (inputMode !== 'speak' || showStats || !round || transitioning) return
 
@@ -300,30 +289,6 @@ export function MissingLetterTab({
     <div className="flex h-[calc(100dvh-80px)] flex-col lg:h-auto">
       <section className="flex flex-1 flex-col p-2 sm:p-3 lg:p-4" style={{ background: 'var(--warm-gradient)' }}>
         <div className="flex h-full flex-col gap-2">
-          <div className="flex items-center justify-between gap-2">
-            <div className="lg:hidden">
-              <FlashcardModeSwitch value={inputMode} uiLang={uiLang} onChange={handleInputModeSwitch} />
-            </div>
-            <div className="rounded-full border border-[var(--line)] bg-[var(--glass)] px-3 py-1.5 text-xs font-semibold text-[var(--muted)]">
-              Lv {level} · {levelLabel}
-            </div>
-            <div className="ml-auto flex items-center gap-2">
-              <button
-                className="flex h-9 items-center justify-center gap-2 rounded-full border border-[var(--line)] bg-[var(--glass)] px-3 text-xs font-bold text-[var(--muted)] shadow-[var(--shadow-soft)]"
-                onClick={() => { void speech.speak(round.displayText, targetLang) }}
-                title={t(uiLang, 'hearWordAgain')}
-              >
-                <Headphones className="h-4 w-4" strokeWidth={1.8} />
-                <span className="hidden sm:inline">{t(uiLang, 'hearWordAgain')}</span>
-              </button>
-              <div className="flex items-center gap-2 text-xs font-bold">
-                <span className="text-[var(--success)]">{scores.correct}</span>
-                <span className="text-[var(--muted)]">/</span>
-                <span className="text-[var(--error)]">{scores.total - scores.correct}</span>
-              </div>
-            </div>
-          </div>
-
           {showStats ? (
             <WordStatsPanel
               words={words}
@@ -336,14 +301,6 @@ export function MissingLetterTab({
             />
           ) : (
             <>
-              {inputMode === 'keyboard' ? null : (
-                <div className="rounded-[1rem] border border-[var(--line)] bg-[var(--glass)] px-4 py-3 text-sm text-[var(--muted)]">
-                  {voiceAttempt
-                    ? `${t(uiLang, 'answer')}: ${voiceAttempt}`
-                    : t(uiLang, 'sayMissingLetterHelp')}
-                </div>
-              )}
-
               <div className="flex flex-1 items-center justify-center overflow-hidden">
                 <div
                   className={`relative flex w-full max-w-[26rem] flex-col items-center justify-center gap-2 rounded-[1.25rem] border border-[var(--line-strong)] px-3 py-4 text-center shadow-[var(--shadow-soft)] select-none touch-none sm:gap-3 sm:rounded-[2rem] sm:px-5 sm:py-8 ${
