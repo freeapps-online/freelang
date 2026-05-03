@@ -223,7 +223,7 @@ export default function App() {
         <div className="absolute bottom-[-10%] left-[10%] h-80 w-80 rounded-full bg-[var(--mint-soft)]/25 blur-3xl lg:left-[45%] lg:h-[26rem] lg:w-[26rem]" />
       </div>
 
-      <div className="absolute right-2 top-2 z-50 sm:right-4 lg:right-8 lg:top-8">
+      <div className="absolute right-2 top-2 z-50 hidden lg:block lg:right-8 lg:top-8">
         <InterfaceLanguagePicker
           value={settings.interfaceLang}
           onChange={(interfaceLang) => update({ interfaceLang })}
@@ -494,7 +494,7 @@ function TabButton({ icon, label, active, onClick, onPreload }: { icon: string; 
       onFocus={onPreload}
     >
       <TabIcon name={icon} />
-      <span className="text-[0.6rem] font-bold uppercase tracking-[0.14em]">{label}</span>
+      <span className="hidden text-[0.6rem] font-bold uppercase tracking-[0.14em] lg:inline">{label}</span>
     </button>
   )
 }

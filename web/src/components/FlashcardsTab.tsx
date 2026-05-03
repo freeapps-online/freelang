@@ -6,7 +6,6 @@ import { speech } from '../services/speech.ts'
 import { useSpeech } from '../useSpeech.ts'
 import { reportCardScore } from '../services/cloud.ts'
 import { evaluateVoiceAttempt } from '../services/flashcardsVoice.ts'
-import { FlashcardModeSwitch } from './FlashcardModeSwitch.tsx'
 import { t } from '../services/i18n.ts'
 import type { PracticeInputMode, DictionaryViewPreference } from '../services/settings.ts'
 import type { DictionaryLookupResult } from '../services/dictionary.ts'
@@ -24,7 +23,7 @@ export function FlashcardsTab({
   inputMode,
   dictionaryDefaultView,
   uiLang,
-  onInputModeChange,
+  onInputModeChange: _onInputModeChange,
   level,
   levelLabel,
   showStats,
@@ -245,17 +244,6 @@ export function FlashcardsTab({
     }
   }, [dragX, handleAnswer, audioEnabled, display, targetLang])
 
-  const handleInputModeSwitch = useCallback((mode: PracticeInputMode) => {
-    speakRunId.current += 1
-    window.clearTimeout(speakTimer.current)
-    speech.stopListening()
-    speech.stopSpeaking()
-    setVoiceStep('repeat')
-    setVoiceAttempt(null)
-    heardTargetRef.current = ''
-    setSpeakStatus('idle')
-    onInputModeChange(mode)
-  }, [onInputModeChange])
 
   const focusCard = useCallback((card: FlashCard) => {
     speech.stopListening()
@@ -366,13 +354,7 @@ export function FlashcardsTab({
         style={{ background: 'var(--warm-gradient)' }}
       >
         <div className="flex h-full flex-col gap-2">
-          <div className="flex items-center justify-between gap-2">
-            <div className="lg:hidden">
-              <FlashcardModeSwitch value={inputMode} uiLang={uiLang} onChange={handleInputModeSwitch} />
-            </div>
-            <div className="rounded-full border border-[var(--line)] bg-[var(--glass)] px-3 py-1.5 text-xs font-semibold text-[var(--muted)]">
-              Lv {level} · {levelLabel}
-            </div>
+          <div className="flex items-center justify-end gap-2">
             <div className="flex items-center gap-2">
               <button
                 className={`flex h-9 items-center justify-center gap-2 rounded-full border px-3 text-xs font-bold shadow-[var(--shadow-soft)] ${

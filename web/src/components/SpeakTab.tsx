@@ -3,7 +3,6 @@ import { ArrowRight, Headphones, Mic, Volume2 } from 'lucide-react'
 import { speech } from '../services/speech.ts'
 import { useSpeech } from '../useSpeech.ts'
 import { reportSentenceScore } from '../services/cloud.ts'
-import { FlashcardModeSwitch } from './FlashcardModeSwitch.tsx'
 import { t } from '../services/i18n.ts'
 import { filterSentencesByLength, loadPracticeDeck, type SentenceLengthFilter } from '../services/practiceContent.ts'
 import { SENTENCE_PASS_SCORE, loadSentenceStats, recordSentenceAttempt, type SentenceStatsMap } from '../services/sentenceStats.ts'
@@ -58,7 +57,7 @@ export function SentencesTab({
   uiLang,
   showStats: showStatsExternal,
   onShowStatsChange,
-  onInputModeChange,
+  onInputModeChange: _onInputModeChange,
   onLengthFilterChange,
 }: {
   nativeLang: string
@@ -299,13 +298,7 @@ export function SentencesTab({
         />
       ) : (
         <>
-          <div className="flex items-center justify-between gap-2">
-            <div className="lg:hidden">
-              <FlashcardModeSwitch value={inputMode} uiLang={uiLang} onChange={onInputModeChange} />
-            </div>
-            <div className="rounded-full border border-[var(--line)] bg-[var(--glass)] px-3 py-1.5 text-xs font-semibold text-[var(--muted)]">
-              Lv {level} · {levelLabel}
-            </div>
+          <div className="flex items-center justify-end gap-2">
             <div className="flex items-center gap-2">
               <button
                 className={`flex h-9 items-center justify-center gap-2 rounded-full border px-3 text-xs font-bold shadow-[var(--shadow-soft)] ${
