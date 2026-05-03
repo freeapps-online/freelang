@@ -26,6 +26,7 @@ export function FlashcardsTab({
   onInputModeChange: _onInputModeChange,
   level,
   levelLabel,
+  listenOnly,
   showStats,
   onShowStatsChange,
 }: {
@@ -38,6 +39,7 @@ export function FlashcardsTab({
   onInputModeChange: (mode: PracticeInputMode) => void
   level: number
   levelLabel: string
+  listenOnly: boolean
   showStats: boolean
   onShowStatsChange: (show: boolean) => void
 }) {
@@ -55,9 +57,6 @@ export function FlashcardsTab({
   const [voiceStep, setVoiceStep] = useState<VoiceStep>('repeat')
   const [voiceAttempt, setVoiceAttempt] = useState<{ heardTarget: string; heardAnswer: string; repeatMatched: boolean } | null>(null)
   const [speakStatus, setSpeakStatus] = useState<SpeakStatus>('idle')
-  const [listenOnly] = useState(() => {
-    try { return localStorage.getItem('freelang-listen-only') === '1' } catch { return false }
-  })
   const [dictionaryOpen, setDictionaryOpen] = useState(false)
   const [dictionaryStatus, setDictionaryStatus] = useState<DictionaryStatus>('idle')
   const [dictionaryData, setDictionaryData] = useState<DictionaryLookupResult | null>(null)

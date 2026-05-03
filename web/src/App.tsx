@@ -1,5 +1,5 @@
 import { Suspense, lazy, startTransition, useState, useEffect, useCallback } from 'react'
-import { ChevronDown, Layers3, MessageSquare, Mic, Settings2, Type, Volume2, VolumeX } from 'lucide-react'
+import { ChevronDown, Headphones, Layers3, MessageSquare, Mic, Settings2, Type, Volume2, VolumeX } from 'lucide-react'
 import { useApplySettings, useSettings } from './hooks.ts'
 import { FlashcardModeSwitch } from './components/FlashcardModeSwitch.tsx'
 import { InterfaceLanguagePicker } from './components/InterfaceLanguagePicker.tsx'
@@ -85,6 +85,16 @@ export default function App() {
   useApplySettings(settings)
   const [levelOpen, setLevelOpen] = useState(false)
   const [showStats, setShowStats] = useState(false)
+  const [listenOnly, setListenOnly] = useState(() => {
+    try { return localStorage.getItem('freelang-listen-only') === '1' } catch { return false }
+  })
+  const toggleListenOnly = useCallback(() => {
+    setListenOnly(prev => {
+      const next = !prev
+      localStorage.setItem('freelang-listen-only', next ? '1' : '0')
+      return next
+    })
+  }, [])
 
   const navigate = useCallback((m: Mode) => {
     startTransition(() => setMode(m))
@@ -156,6 +166,7 @@ export default function App() {
             uiLang={settings.interfaceLang}
             level={currentLevel}
             levelLabel={currentLevelLabel}
+            listenOnly={listenOnly}
             onInputModeChange={(flashcardInputMode) => update({ flashcardInputMode })}
             showStats={showStats}
             onShowStatsChange={setShowStats}
@@ -441,6 +452,15 @@ export default function App() {
                 ) : (
                   <VolumeX className="h-4 w-4" strokeWidth={2} />
                 )}
+              </button>
+            )}
+
+            {isWordPracticeMode && (
+              <button
+                className={`flex h-7 w-7 items-center justify-center rounded-full ${listenOnly ? 'bg-[var(--accent)]/20 text-[var(--accent)]' : 'text-[var(--muted)]'}`}
+                onClick={toggleListenOnly}
+              >
+                <Headphones className="h-4 w-4" strokeWidth={2} />
               </button>
             )}
 
