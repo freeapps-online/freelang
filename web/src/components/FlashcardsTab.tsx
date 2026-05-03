@@ -419,7 +419,7 @@ export function FlashcardsTab({
               {/* Card */}
               <div className="flex flex-1 items-center justify-center overflow-hidden">
                 <div
-                  className={`relative flex w-full max-w-[24rem] flex-col items-center justify-center gap-3 rounded-[1.5rem] border border-[var(--line-strong)] px-4 py-6 text-center shadow-[var(--shadow-soft)] select-none touch-none sm:rounded-[2rem] sm:px-5 sm:py-10 ${
+                  className={`relative flex w-full max-w-[24rem] flex-col items-center justify-center gap-2 rounded-[1.25rem] border border-[var(--line-strong)] px-3 py-4 text-center shadow-[var(--shadow-soft)] select-none touch-none sm:gap-3 sm:rounded-[2rem] sm:px-5 sm:py-8 ${
                     inputMode === 'keyboard' ? 'cursor-grab active:cursor-grabbing' : ''
                   }`}
                   style={{

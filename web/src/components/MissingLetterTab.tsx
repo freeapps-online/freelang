@@ -346,7 +346,7 @@ export function MissingLetterTab({
 
               <div className="flex flex-1 items-center justify-center overflow-hidden">
                 <div
-                  className={`relative flex w-full max-w-[26rem] flex-col items-center justify-center gap-3 rounded-[1.5rem] border border-[var(--line-strong)] px-4 py-6 text-center shadow-[var(--shadow-soft)] select-none touch-none sm:gap-4 sm:rounded-[2rem] sm:px-5 sm:py-10 ${
+                  className={`relative flex w-full max-w-[26rem] flex-col items-center justify-center gap-2 rounded-[1.25rem] border border-[var(--line-strong)] px-3 py-4 text-center shadow-[var(--shadow-soft)] select-none touch-none sm:gap-3 sm:rounded-[2rem] sm:px-5 sm:py-8 ${
                     inputMode === 'keyboard' ? 'cursor-grab active:cursor-grabbing' : ''
                   }`}
                   style={{
@@ -375,9 +375,6 @@ export function MissingLetterTab({
                     </div>
                   )}
 
-                  <div className="rounded-full border border-[var(--line)] bg-[var(--glass)] px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-[var(--accent-deep)]">
-                    {t(uiLang, 'completeTheWord')}
-                  </div>
                   <div className="drop-shadow-sm" style={{ fontSize: `calc(4.5rem * var(--content-scale))` }}>{round.card.emoji}</div>
                   <div className="text-sm font-semibold uppercase tracking-[0.14em] text-[var(--muted)]">{meaning}</div>
                   <div className="display-font leading-none text-[var(--ink)]" style={{ fontSize: `calc(2.4rem * var(--content-scale))` }}>
