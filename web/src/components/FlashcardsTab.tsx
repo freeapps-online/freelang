@@ -117,7 +117,7 @@ export function FlashcardsTab({
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [answer, displayText, inputMode, nativeLang, result, round, targetLang, transitioning])
+  }, [answer, displayText, inputMode, nativeLang, result, round, speechRate, targetLang, transitioning])
 
   // --- Cleanup ---
   useEffect(() => () => { speech.stopSpeaking(); speech.stopListening() }, [])

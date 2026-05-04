@@ -193,7 +193,7 @@ export function PreferencesTab({
         </div>
 
         <a
-          href="https://prolanguageapp.pages.dev"
+          href="https://prolanguageapp.online"
           target="_blank"
           rel="noopener"
           className="block rounded-[1.5rem] border border-[var(--accent-soft)] p-4 shadow-[var(--shadow-card)]"

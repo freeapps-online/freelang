@@ -96,7 +96,7 @@ export function useCardRound({ level, nativeLang, targetLang, correctDelay = 400
     feedbackTimer.current = window.setTimeout(() => setFeedback(null), 3500)
 
     return correct
-  }, [advanceToNext, onTransitionStart, result, round, targetLang, transitioning, words])
+  }, [advanceToNext, correctDelay, onTransitionStart, result, round, targetLang, transitioning, words, wrongDelay])
 
   const focusCard = useCallback((card: FlashCard) => {
     window.clearTimeout(feedbackTimer.current)
