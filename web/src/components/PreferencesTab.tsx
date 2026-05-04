@@ -204,6 +204,12 @@ export function PreferencesTab({
           <div className="mt-1 text-xs text-[var(--muted)]">prolanguageapp.online</div>
         </a>
       </aside>
+
+      <div className="pt-4 text-center">
+        <a href="https://freeappstore.online" target="_blank" rel="noopener" className="text-[0.7rem] font-medium text-[var(--muted)] hover:text-[var(--ink)] transition-colors">
+          Part of FreeAppStore — free forever
+        </a>
+      </div>
     </div>
   )
 }
