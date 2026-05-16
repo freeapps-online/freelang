@@ -17,5 +17,9 @@
   },
   "devDependencies": {
     "wrangler": "^4.87.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/freeappstore-online/language.git"
   }
 }
