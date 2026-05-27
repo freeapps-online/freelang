@@ -3,6 +3,7 @@ dist
 .env
 *.local
 *.png
+!web/public/apple-touch-icon.png
 .playwright-mcp/
 web/public/learn/
 web/public/robots.txt
